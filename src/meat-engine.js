@@ -34,18 +34,32 @@ export function calculateFinishedProtein({ adults = 0, kids = 0, selected, servi
   const proteins = [...selected];
   if (!eaters || !proteins.length) return [];
 
-  const mult = multiplier(proteins.length, serving);
-  return proteins.map((id) => {
+  const bases = proteins.map((id) => {
     const base = DISTRIBUTION_BASE[id];
     if (base == null) throw new Error(`Unknown protein: ${id}`);
-    const finished = eaters * base * mult;
-    return {
+    return { id, base };
+  });
+
+  if (mode === 'family') {
+    // Family preserves the validated relative mix, but normalizes the shares
+    // so the chosen portion is exactly the total finished meat per person.
+    const baseTotal = bases.reduce((sum, row) => sum + row.base, 0);
+    return bases.map(({ id, base }) => ({
       id,
-      finishedLb: finished,
+      finishedLb: eaters * Number(serving) * (base / baseTotal),
       mode,
       servingLb: Number(serving),
-    };
-  });
+    }));
+  }
+
+  // Meatfest keeps the legacy multiplier coefficients unchanged for parity.
+  const mult = multiplier(proteins.length, serving);
+  return bases.map(({ id, base }) => ({
+    id,
+    finishedLb: eaters * base * mult,
+    mode,
+    servingLb: Number(serving),
+  }));
 }
 
 export function calculateFamilyFinishedProtein(args) {
