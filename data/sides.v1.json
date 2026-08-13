@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "sides": {
+    "mac": {"name":"Mac & Cheese","group":"main","quantityStrategy":"purchase-unit","unit":"tin","base":0.75,"min":0.25,"sensitivity":0.45,"round":0.25},
+    "cauli": {"name":"Cauliflower Mac & Cheese","group":"main","quantityStrategy":"purchase-unit","unit":"tin","base":0.75,"min":0.25,"sensitivity":0.70,"round":0.25},
+    "slaw": {"name":"Coleslaw","group":"main","quantityStrategy":"recipe","unit":"recipe","base":2.5,"min":0.5,"sensitivity":0.45,"round":0.5},
+    "collards": {"name":"Collard Greens","group":"main","quantityStrategy":"recipe","unit":"recipe","base":1.25,"min":0.5,"sensitivity":0.70,"round":0.25},
+    "broccoli": {"name":"Broccoli Salad","group":"main","quantityStrategy":"recipe","unit":"recipe","base":1.0,"min":0.5,"sensitivity":0.70,"round":0.25},
+    "cucumber": {"name":"Cucumber Salad","group":"main","quantityStrategy":"recipe","unit":"recipe","base":1.0,"min":0.5,"sensitivity":0.70,"round":0.25},
+    "kraut": {"name":"Sauerkraut","group":"main","quantityStrategy":"purchase-unit","unit":"tin","base":0.5,"min":0.25,"sensitivity":0.90,"round":0.25},
+    "beans": {"name":"Baked Beans","group":"main","quantityStrategy":"purchase-unit","unit":"tin","base":0.5,"min":0.25,"sensitivity":0.90,"round":0.25},
+    "corn": {"name":"Corn on the Cob","group":"unit","quantityStrategy":"individual-unit","unit":"ear","base":7,"min":4,"sensitivity":0.60,"round":2},
+    "cornbread": {"name":"Cornbread","group":"accomp","quantityStrategy":"individual-unit","unit":"piece","base":24,"min":12,"sensitivity":0.20,"round":6,"recipePieces":24},
+    "rolls": {"name":"Hawaiian Rolls","group":"accomp","quantityStrategy":"individual-unit","unit":"piece","base":16,"min":8,"sensitivity":0.10,"round":8,"packagePieces":32},
+    "greenBeans": {"name":"Green Beans","group":"main","quantityStrategy":"recipe-or-purchase","unit":"serving","status":"new-design"},
+    "asparagus": {"name":"Asparagus","group":"main","quantityStrategy":"recipe-or-purchase","unit":"serving","status":"new-design"},
+    "potatoSalad": {"name":"Potato Salad","group":"main","quantityStrategy":"recipe","unit":"recipe","status":"new-design","note":"User/family recipe determines yield."},
+    "pastaSalad": {"name":"Pasta Salad","group":"main","quantityStrategy":"recipe","unit":"recipe","status":"new-design","note":"User/family recipe determines yield."}
+  }
+}
