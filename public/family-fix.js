@@ -1,4 +1,4 @@
-// Family mode correction: the selected portion size is the complete finished-meat target.
+// Family mode correction v1.1 — selected portion is the complete finished-meat target.
 (function(){
   function correctedMultiplier(n,serv){
     const t={".5":[1,.6,.376455,.2857,.25,.22221,.19442,.1782092],".333333":[1,.4,.25,.1904667,.1666667,.14814,.1296133,.1188061],".25":[.75,.3333,.2,.1667,.125,.111105,.0909,.0817429]};
