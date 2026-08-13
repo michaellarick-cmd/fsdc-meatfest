@@ -31,7 +31,9 @@ export default {
         '}\n';
 
       html = html.replace('function calc(){', turkeyFamilyFunction + 'function calc(){');
-      html = html.replace('const fp=familyPurchase(k,o,bought);', 'const fp=familyPurchase(k,o,bought)||(k==="turkey"?turkeyFamilyPurchase(o,bought):null);');
+      const familyCall = 'const fp=familyPurchase(k,o,bought);';
+      const turkeyCall = 'const fp=familyPurchase(k,o,bought)||(k==="turkey"?turkeyFamilyPurchase(o,bought):null);';
+      html = html.split(familyCall).join(turkeyCall);
     }
 
     const headers = new Headers(response.headers);
