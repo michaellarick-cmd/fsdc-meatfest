@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#151515">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Meatfest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="FSDC Meatfest Calculator">
+<meta name="apple-touch-fullscreen" content="yes">
+<link rel="icon" type="image/png" sizes="512x512" href="/fsdc-icon.png">
+<link rel="apple-touch-icon" href="/fsdc-icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/fsdc-icon-192.png">
+<title>FSDC Meatfest Calculator 2.2.3</title>
+<style>
+:root{--bg:#0e1012;--card:#191c20;--card2:#22262b;--text:#f5f2e9;--muted:#aeb3b9;--accent:#f39a32;--line:#30353b;--good:#75d39b;--warn:#f4c76b;--danger:#ff8585}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% -10%,#322719 0,#0e1012 38%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding-bottom:60px}.wrap{max-width:920px;margin:auto;padding:18px 14px 40px}
+header{padding:8px 4px 20px}.eyebrow{font-size:11px;font-weight:900;letter-spacing:.16em;color:#ffc273}.title{font-size:38px;font-weight:950;line-height:1;margin:6px 0}.sub{color:var(--muted);font-size:15px}
+.card{background:linear-gradient(145deg,#1b1e22,#15181b);border:1px solid var(--line);border-radius:20px;padding:17px;margin:11px 0;box-shadow:0 12px 30px #0004}.card h2{font-size:17px;margin:0 0 13px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}.field label{display:block;color:var(--muted);font-size:11px;font-weight:800;margin:0 0 6px}.field input,.field select,.paste{width:100%;background:var(--card2);border:1px solid #3a4047;color:var(--text);border-radius:11px;padding:11px;font-size:16px;outline:none}.paste{min-height:110px;font-size:13px;resize:vertical}.field input:focus,.field select:focus,.paste:focus{border-color:var(--accent)}
+.btn{border:0;border-radius:12px;padding:11px 14px;font-weight:850;font-size:13px;cursor:pointer}.primary{background:var(--accent);color:#151515}.secondary{background:#2b3036;color:var(--text)}.danger{background:#3b2424;color:#ff9c9c}.smallbtn{padding:8px 10px}
+.tabs{display:flex;gap:7px;margin-bottom:12px}.tab{flex:1}.tab.active{background:var(--accent);color:#151515}
+.note{font-size:11px;color:var(--muted);line-height:1.45}.hidden{display:none!important}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{background:#121518;border:1px solid var(--line);border-radius:13px;padding:11px}.stat .n{font-size:23px;font-weight:950}.stat .l{font-size:10px;color:var(--muted)}
+.guest{display:grid;grid-template-columns:1.3fr 70px 70px 70px 34px;gap:6px;margin:6px 0}.guest input{width:100%;background:#121518;border:1px solid var(--line);color:var(--text);border-radius:9px;padding:9px}.guestHead{display:grid;grid-template-columns:1.3fr 70px 70px 70px 34px;gap:6px;color:var(--muted);font-size:10px;font-weight:800;margin-bottom:4px}
+.meats{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.meat{background:#14171a;border:1px solid var(--line);border-radius:15px;padding:12px;cursor:pointer}.meat.on{border-color:var(--accent);background:linear-gradient(145deg,#2b2116,#17191b)}.top{display:flex;justify-content:space-between;gap:8px}.check{width:20px;height:20px;border:2px solid #5a6068;border-radius:6px;position:relative}.on .check{background:var(--accent);border-color:var(--accent)}.on .check:after{content:"✓";position:absolute;left:3px;top:-2px;color:#151515;font-weight:950}.meat small{display:block;color:var(--muted);font-size:11px;margin-top:6px}.choice{margin-top:9px}.choice select{font-size:12px;padding:8px;width:100%}
+.brandBar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0 0 10px}.brandLogo{flex:1;min-width:0}.brandLogo img{display:block;width:min(100%,210px);height:auto;margin:0}.modeWrap{flex:0 0 auto;text-align:center}.modeLabel{font-size:9px;font-weight:900;letter-spacing:.12em;color:#8f959c;margin-bottom:6px}.modeSwitch{position:relative;display:grid;grid-template-columns:1fr 1fr;width:252px;height:44px;padding:4px;border:1px solid #3b4046;border-radius:999px;background:#121518;box-shadow:inset 0 1px 2px #0008}.modeThumb{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:999px;background:var(--accent);transition:transform .2s ease;box-shadow:0 3px 10px #0006}.modeSwitch.family .modeThumb{transform:translateX(100%)}.modeBtn{position:relative;z-index:1;border:0;background:transparent;color:#9da3aa;font:inherit;font-size:12px;font-weight:950;cursor:pointer;border-radius:999px}.modeBtn.active{color:#151515}.modeHint{font-size:9px;color:#777e86;margin-top:5px}@media(max-width:600px){.brandBar{gap:10px}.brandLogo img{width:180px}.modeSwitch{width:225px;height:42px}.modeBtn{font-size:11px}}.hero{background:linear-gradient(135deg,#3a2715,#17191c);border-color:#80511f}.hero .small{font-size:11px;color:#d6c5ae}.hero .big{font-size:40px;font-weight:950;line-height:1;margin:4px 0}.hero .subbig{font-size:13px;color:#dfcdb7}
+.result{border:1px solid var(--line);background:#121518;border-radius:15px;padding:13px;margin:8px 0}.resultTop{display:flex;justify-content:space-between;gap:10px}.resultTitle{font-weight:900}.buy{font-size:16px;font-weight:950;text-align:right}.details{color:var(--muted);font-size:11px;margin-top:5px;line-height:1.45}.pill{display:inline-block;border:1px solid #4a5057;border-radius:999px;padding:3px 7px;font-size:10px;color:#cbd0d5;margin:2px 4px 0 0}.footer{text-align:center;color:#666c73;font-size:10px;margin-top:18px}
+@media(max-width:600px){.title{font-size:34px}.grid{grid-template-columns:1fr 1fr}.meats{grid-template-columns:1fr}.guest,.guestHead{grid-template-columns:1fr 52px 52px 52px 32px}.buy{font-size:14px}}
+
+
+/* V2.0 side planner */
+.sideGroups{display:grid;grid-template-columns:1fr;gap:14px}
+.sideGroupTitle{font-size:11px;font-weight:900;letter-spacing:.12em;color:#c9cdd2;margin:2px 0 7px}
+.sideCards{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.sideCard{background:#14171a;border:1px solid var(--line);border-radius:15px;padding:12px;cursor:pointer;position:relative;min-height:92px}
+.sideCard.on{border-color:var(--accent);background:linear-gradient(145deg,#2b2116,#17191b)}
+.sideCard.recommended:not(.on){border-color:#755020}
+.sideTop{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.sideCheck{width:20px;height:20px;border:2px solid #5a6068;border-radius:50%;position:relative;flex:0 0 auto}
+.sideCard.on .sideCheck{background:var(--accent);border-color:var(--accent)}
+.sideCard.on .sideCheck:after{content:"✓";position:absolute;left:3px;top:-2px;color:#151515;font-weight:950}
+.sideCard b{font-size:14px}.sideCard small{display:block;color:var(--muted);font-size:10px;line-height:1.35;margin-top:6px}
+.sideRec{display:inline-block;margin-top:7px;font-size:8px;font-weight:900;letter-spacing:.07em;color:#111;background:#f59b2b;border-radius:3px;padding:2px 5px}
+.sideModelNote{margin-top:11px;padding:9px 10px;border-left:3px solid var(--accent);background:#1d1914;color:#d9c7ae;font-size:10px;line-height:1.4;border-radius:0 7px 7px 0}
+.sideResult{border:1px solid var(--line);background:#121518;border-radius:15px;padding:13px;margin:8px 0}
+.sideResult .buy{font-size:16px}
+.sideResult .sideReason{font-size:10px;color:#c7b18f;margin-top:5px}
+.sideDivider{margin:14px 0 8px;border-top:1px solid var(--line);padding-top:12px}
+@media(max-width:600px){.sideCards{grid-template-columns:1fr}}
+
+/* Print / Notes summary */
+#printSheet{display:none}
+@media print{
+  @page{size:letter landscape;margin:.35in}
+  body{background:#fff!important;color:#111!important;padding:0!important}
+  body>*{display:none!important}
+  #printSheet{display:block!important;width:10.3in;height:7.8in;margin:0 auto;padding:.25in;border:1px solid #777;position:relative;background:#fff;color:#111;font-family:Arial,sans-serif}
+  #printSheet .ps-title{font-size:22px;font-weight:900;margin:0 0 3px}
+  #printSheet .ps-sub{font-size:11px;color:#444;margin-bottom:10px}
+  #printSheet .ps-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  #printSheet .ps-box{border:1px solid #aaa;border-radius:6px;padding:8px;margin-bottom:8px}
+  #printSheet h3{font-size:11px;letter-spacing:.08em;margin:0 0 5px}
+  #printSheet .ps-headcount{display:flex;gap:16px;font-size:11px}
+  #printSheet .ps-big{font-size:17px;font-weight:900}
+  #printSheet .ps-row{display:grid;grid-template-columns:1fr auto;gap:8px;border-bottom:1px solid #ddd;padding:6px 0}
+  #printSheet .ps-row:last-child{border-bottom:0}
+  #printSheet .ps-name{font-size:11px;font-weight:800}
+  #printSheet .ps-buy{font-size:12px;font-weight:900;text-align:right}
+  #printSheet .ps-detail{font-size:9px;color:#555;margin-top:2px}
+  #printSheet .ps-note{font-size:9px;color:#555;line-height:1.25}
+  #printSheet .fold{position:absolute;left:0;right:0;top:50%;border-top:1px dashed #aaa}
+  #printSheet .foldlabel{position:absolute;right:8px;top:calc(50% - 7px);font-size:8px;color:#777;background:#fff;padding:0 3px}
+  #printSheet .ps-footer{position:absolute;bottom:6px;left:.25in;right:.25in;display:flex;justify-content:space-between;font-size:8px;color:#666}
+}
+
+.familyOnlyNote{margin-top:10px;padding:9px 10px;border-left:3px solid var(--good);background:#16221b;color:#ccebd8;font-size:10px;line-height:1.4;border-radius:0 7px 7px 0}.purchaseNote{margin-top:6px;padding:7px 8px;border-left:3px solid var(--accent);background:#1d1914;color:#d9c7ae;font-size:10px;line-height:1.35;border-radius:0 6px 6px 0}
+.excess{color:#f4c76b;font-weight:800}
+
+.eventPanel{margin:12px 0 14px;padding:13px 15px;border:1px solid #3b3b3b;border-radius:12px;background:#17191b}
+.eventTitle{font-size:11px;font-weight:900;letter-spacing:.12em;margin-bottom:8px}
+.eventGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.62fr);gap:10px}
+.eventGrid label{font-size:11px;font-weight:700}
+.eventGrid input{display:block;width:100%;box-sizing:border-box;margin-top:5px;padding:10px;border:1px solid #555;border-radius:7px;background:#0f1113;color:inherit;font:inherit}
+.servingChoices{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.servingChoice{display:flex;align-items:flex-start;gap:10px;text-align:left;padding:13px;border:1px solid #3f4346;border-radius:10px;background:#121518;color:#eee;cursor:pointer;min-height:92px}
+.servingChoice.recommended{border-color:#f59b2b}
+.servingChoice.active{border-color:#f59b2b;box-shadow:inset 0 0 0 1px #f59b2b;background:#1c1b18}
+.radioDot{width:20px;height:20px;border:2px solid #777;border-radius:50%;flex:0 0 auto;margin-top:2px;box-sizing:border-box}
+.servingChoice.active .radioDot{border:6px solid #f59b2b}
+.servingCopy{display:flex;flex-direction:column;gap:4px}
+.servingCopy b{font-size:14px}
+.servingCopy small{font-size:10px;color:#b7b7b7;line-height:1.3}
+.servingCopy em{font-style:normal;font-size:8px;font-weight:900;letter-spacing:.08em;color:#111;background:#f59b2b;border-radius:3px;padding:2px 5px;width:max-content}
+.servingNote{text-align:center;color:#aaa;font-size:11px;margin-top:10px}
+.hiddenServing{display:none!important}
+@media(max-width:700px){.servingChoices{grid-template-columns:1fr}.servingChoice{min-height:auto}.eventGrid{grid-template-columns:1fr}}
+
+/* V1.7.1: prevent Event Date from overflowing its grid column */
+.eventGrid > label{min-width:0}
+.eventGrid input{min-width:0;max-width:100%}
+.eventGrid input[type="date"]{width:100%;min-width:0;max-width:260px;justify-self:end}
+
+/* V1.8.1: unmistakable selected-state dot */
+.servingChoice .radioDot{position:relative}
+.servingChoice.active .radioDot{
+  border:2px solid #f59b2b;
+}
+.servingChoice.active .radioDot::after{
+  content:"";
+  position:absolute;
+  width:8px;height:8px;border-radius:50%;
+  background:#f59b2b;
+  left:50%;top:50%;transform:translate(-50%,-50%);
+}
+
+.choice .fixedChoice{font-size:12px;padding:8px 0 2px;color:#cfd3d7}
+</style>
+<!-- Meatfest Calculator V2.2.3 -->
+<link rel="manifest" href="/manifest.json">
+</head>
+<body><div class="wrap">
+<header><div class="brandBar"><div class="brandLogo"><img src="fsdc-logo.png" alt="FSDC Brews &amp; BBQ Catering"></div><div class="modeWrap"><div class="modeLabel">PLANNING MODE</div><div class="modeSwitch" id="planningSwitch"><span class="modeThumb"></span><button class="modeBtn active" data-plan-mode="meatfest" type="button">MEATFEST</button><button class="modeBtn" data-plan-mode="family" type="button">FAMILY</button></div><div class="modeHint" id="modeHint">Large-group model • default</div></div></div><div class="eyebrow">MEATFEST • VERSION 2.2.3</div><div class="title" id="pageTitle">How much food?</div><div class="sub" id="pageSub">Your Meatfest model, turned into a practical shopping list.</div></header>
+<div class="eventPanel" id="globalEventPanel">
+  <div class="eventTitle">EVENT</div>
+  <div class="eventGrid">
+    <label>Event Name
+      <input id="eventName" type="text" value="Your Event" maxlength="80" autocomplete="off">
+    </label>
+    <label>Event Date
+      <input id="eventDate" type="date">
+    </label>
+  </div>
+</div>
+
+
+<div class="eventPanel" id="planningNote"><div class="eventTitle">PLANNING MODE</div><div class="note" id="planningNoteText">Meatfest mode uses the established large-group purchase units and historical planning model.</div></div>
+
+<section class="card">
+<h2>1. Headcount</h2>
+<div class="tabs"><button class="btn tab active" id="manualTab">Quick Count</button><button class="btn tab" id="guestTab">Guest List</button></div>
+<div id="manualPane"><div class="grid">
+<div class="field"><label>Adults</label><input id="adults" type="number" min="0" value="0"></div>
+<div class="field"><label>Kids</label><input id="kids" type="number" min="0" value="0"></div>
+</div><p class="note">Kids are automatically counted as ½ adult-equivalent. This is a Meatfest model assumption, not a user setting.</p></div>
+<div id="guestPane" class="hidden">
+<div class="row" style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:9px"><label class="btn secondary" style="cursor:pointer">Upload CSV<input id="file" type="file" accept=".csv,.txt" hidden></label><button class="btn secondary" id="pasteBtn">Paste from Excel</button><button class="btn danger" id="clearGuests">Clear</button></div>
+<div id="pasteArea" class="hidden"><textarea class="paste" id="paste" placeholder="Last Name&#9;Count&#9;Adults&#9;Kids&#10;Larick&#9;4&#10;Stilwill&#9;4&#9;2&#9;2"></textarea><button class="btn primary" id="importPaste" style="margin-top:7px">Import pasted list</button></div>
+<div class="guestHead"><span>Last Name</span><span>Count</span><span>Adults</span><span>Kids</span><span></span></div>
+<div id="guestList"></div>
+<p class="note">Columns: Last Name, Count, Adults, Kids. If Adults/Kids are blank, Count is treated as adults. Uploading a list becomes the active headcount.</p>
+</div>
+</section>
+
+<section class="card"><h2>Headcount</h2><div class="stats"><div class="stat"><div class="n" id="statAdults">33</div><div class="l">Adults</div></div><div class="stat"><div class="n" id="statKids">12</div><div class="l">Kids</div></div><div class="stat"><div class="n" id="statEaters">39</div><div class="l">Adult-equivalent</div></div></div></section>
+
+
+<section class="card">
+  <h2>2. How Much Meat Should We Plan For?</h2>
+  <div class="servingChoices" id="servingChoices">
+    <button type="button" class="servingChoice" data-serving-choice=".25">
+      <span class="radioDot"></span>
+      <span class="servingCopy"><b>Light — ¼ lb/person</b><small>Good when there are lots of other foods.</small></span>
+    </button>
+    <button type="button" class="servingChoice recommended active" data-serving-choice=".333333">
+      <span class="radioDot"></span>
+      <span class="servingCopy"><b>Standard — ⅓ lb/person</b><em>RECOMMENDED</em><small>The recommended starting point.</small></span>
+    </button>
+    <button type="button" class="servingChoice" data-serving-choice=".5">
+      <span class="radioDot"></span>
+      <span class="servingCopy"><b>Generous — ½ lb/person</b><small>Good for meat-heavy events or big eaters.</small></span>
+    </button>
+  </div>
+  <select id="serving" class="hiddenServing">
+    <option value=".5">Generous</option>
+    <option value=".333333" selected>Standard</option>
+    <option value=".25">Light</option>
+  </select>
+  <div class="servingNote">Portions automatically adjust based on the number of proteins you select.</div>
+</section>
+
+
+<section class="card"><h2>3. Pick Your Meats</h2><div class="meats" id="meats"></div><p class="note">Choose the form you will actually buy and serve. The calculator changes the yield and practical purchase quantity when the cut or preparation materially changes.</p><p class="note"><b>Whole Hog is a feature-protein scenario:</b> it is not combined with another protein. Selecting Whole Hog clears other proteins; selecting another protein switches away from Whole Hog.</p></section>
+
+<section class="card">
+  <h2>4. Pick Your Sides</h2>
+  <div class="sideGroups">
+    <div>
+      <div class="sideGroupTitle">MAIN SIDES</div>
+      <div class="sideCards" id="mainSideCards"></div>
+    </div>
+    <div>
+      <div class="sideGroupTitle">ACCOMPANIMENTS</div>
+      <div class="sideCards" id="accompSideCards"></div>
+    </div>
+  </div>
+  <div class="sideModelNote" id="sideModelNote">V2 plans for a Meatfest feast: enough to avoid running out, with modest useful leftovers. Recommendations are highlighted; you choose the sides.</div>
+</section>
+
+<section class="card hero"><div class="small">TOTAL RAW MEAT TO BUY</div><div class="big" id="totalRaw">0 lb</div><div class="subbig" id="summary">Select at least one protein.</div></section>
+
+<section class="card"><h2>5. Shopping List</h2><div id="results"></div><div class="sideDivider"><h2 style="margin-bottom:8px">Side Shopping List</h2><div id="sideResults"></div></div><div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:12px"><button class="btn primary" id="save">Save / Share</button><button class="btn secondary" id="print">Print Pocket Sheet</button><button class="btn secondary" id="reset">Reset</button></div></section>
+<div class="footer">FSDC Meatfest Calculator • v2.2.3 • Original Meatfest yields preserved</div>
+</div>
+
+<script>
+const meats={
+ chicken:{name:"Chicken / Poultry",default:"whole",options:{
+  whole:{label:"Whole Fryer — Pulled",yield:.62,unitWeight:4.5,unit:"whole fryer",mode:"units",note:"Meatfest planning unit: about 4.5 lb per Costco fryer."},
+  legq:{label:"Leg Quarters",yield:.42,unitWeight:.59375,unit:"leg quarter",mode:"units",note:"USDA planning yield for bone-in, skin-on leg quarters; about 9.5 oz each."},
+  thigh:{label:"Bone-In Thighs",yield:.52,unitWeight:.25,unit:"thigh",mode:"units",note:"USDA planning yield for bone-in, skin-on thighs; about 4 oz each."}
+ }},
+ fish:{name:"Fish",default:"filet",options:{filet:{label:"Fillets (perch/fish-fry style)",yield:.76,unitWeight:.33,unit:"filet",mode:"units",note:"Planning unit: about ⅓ lb per filet."}}},
+ pork:{name:"Pulled Pork",default:"bone",options:{
+  bone:{label:"Bone-in Boston Butt",yield:.60,unitWeight:8.5,unit:"bone-in butt",mode:"units"},
+  boneless:{label:"Boneless Pork Shoulder",yield:.60,unitWeight:8,unit:"boneless shoulder",mode:"units"}
+ }},
+ hog:{name:"Whole Hog",default:"hog",options:{hog:{label:"Whole Hog",yield:"hog",unitWeight:null,unit:"whole hog",mode:"hog",note:"Feature protein only — not combined with other proteins."}}},
+ brats:{name:"Polish / Brats",default:"links",options:{links:{label:"Links",yield:.90,unitWeight:.5,unit:"links",mode:"units"}}},
+ brisket:{name:"Brisket",default:"packer",options:{
+  packer:{label:"Whole Packer",yield:.50,unitWeight:14,unit:"packer",mode:"units"},
+  flat:{label:"Brisket Flat",yield:.55,unitWeight:7,unit:"flat",mode:"units"}
+ }},
+ pmbe:{name:"Poor Man's Burnt Ends",default:"chuck",options:{
+  chuck:{label:"Chuck Roast — Burnt Ends",yield:.60,unitWeight:4,unit:"chuck roast",mode:"units",note:"Planning yield set at 60% to account for chuck's normal cooked yield plus the additional cubing/caramelizing step."}
+ }},
+ prime:{name:"Prime Rib",default:"whole",options:{
+  whole:{label:"Whole Roast",yield:.80,unitWeight:5,unit:"roast",mode:"units"},
+  bone:{label:"Bone-in Standing Rib Roast",yield:.80,unitWeight:5,unit:"bone-in roast",mode:"units"}
+ }},
+ ribs:{name:"Ribs",default:"loin",options:{
+  loin:{label:"Loin Back / Baby Back",yield:.70,unitWeight:2.25,unit:"rack",mode:"units"},
+  spare:{label:"Spare / St. Louis",yield:.70,unitWeight:2.25,unit:"rack",mode:"units"}
+ }}
+};
+
+/*
+ * V2.2.3 recommendation engine
+ * --------------------------------
+ * Recommendations are driven by the actual selected protein AND its
+ * preparation.  This is intentionally separate from side quantity math.
+ *
+ * Section 4 (side picker) and Section 5 (shopping list) both call the
+ * same sideRecommendation() function so there is one source of truth.
+ */
+function chickenPrep(id){
+  return choices.chicken || meats.chicken.default;
+}
+function selectedProteinTags(){
+  const tags=new Set();
+  selected.forEach(k=>{
+    if(k==="chicken"){
+      const prep=chickenPrep();
+      if(prep==="whole") tags.add("chicken_pulled");
+      else if(prep==="legq") tags.add("chicken_quarters");
+      else if(prep==="thigh") tags.add("chicken_thighs");
+    }
+    if(k==="fish") tags.add("fish");
+    if(k==="pork") tags.add("pulled_pork");
+    if(k==="brisket") tags.add("brisket");
+    if(k==="pmbe") tags.add("pmbe");
+    if(k==="brats") tags.add("brats");
+    if(k==="ribs") tags.add("ribs");
+    if(k==="prime") tags.add("prime_rib");
+    if(k==="hog") tags.add("whole_hog");
+  });
+  return tags;
+}
+function hasAnyTag(tags){
+  const active=selectedProteinTags();
+  return tags.some(t=>active.has(t));
+}
+function sideRecommendation(id){
+  /*
+   * These are culinary pairing signals, not quantity rules.
+   * A recommendation highlights a useful pairing; it never auto-selects
+   * a side and never changes sideQty().
+   */
+  const active=selectedProteinTags();
+  switch(id){
+    case "mac":
+      return active.size>0;
+    case "cauli":
+      return hasAnyTag(["chicken_pulled","chicken_quarters","chicken_thighs","fish"]);
+    case "slaw":
+      return hasAnyTag(["pulled_pork","brisket","pmbe","ribs","brats","chicken_pulled","chicken_quarters","chicken_thighs","fish"]);
+    case "collards":
+      return hasAnyTag(["pulled_pork","brisket","pmbe","ribs"]);
+    case "broccoli":
+      return hasAnyTag(["fish","chicken_pulled","chicken_quarters","chicken_thighs","pulled_pork","brisket","pmbe","ribs"]);
+    case "cucumber":
+      return hasAnyTag(["fish","chicken_pulled","chicken_quarters","chicken_thighs"]);
+    case "kraut":
+      return active.has("brats");
+    case "beans":
+      return false;
+    case "corn":
+      return hasAnyTag(["chicken_pulled","chicken_quarters","chicken_thighs","fish","pulled_pork","brisket","pmbe","ribs"]);
+    case "cornbread":
+      return active.size>0;
+    case "rolls":
+      /*
+       * Rolls are a sandwich vehicle.  Chicken only qualifies when the
+       * selected preparation is Whole Fryer — Pulled; quarters/thighs do not.
+       */
+      return hasAnyTag(["pulled_pork","chicken_pulled","brisket"]);
+    default:
+      return false;
+  }
+}
+
+const sides={
+ mac:{name:"Mac & Cheese",group:"main",unit:"tin",base:0.75,min:0.25,sensitivity:.45,round:.25,fill:"nearly full",note:"Anchor favorite; planned leftover is useful."},
+ cauli:{name:"Cauliflower Mac & Cheese",group:"main",unit:"tin",base:0.75,min:0.25,sensitivity:.70,round:.25,fill:"nearly full",note:"Perennial favorite; historically less total demand than regular Mac."},
+ slaw:{name:"Coleslaw",group:"main",unit:"recipe",base:2.50,min:0.5,sensitivity:.45,round:.5,fill:"recipe",note:"Anchor favorite; your 2024 double recipe ran out."},
+ collards:{name:"Collard Greens",group:"main",unit:"recipe",base:1.25,min:0.5,sensitivity:.70,round:.25,fill:"recipe",note:"Popular, but leftovers are intentionally limited because they do not reheat well."},
+ broccoli:{name:"Broccoli Salad",group:"main",unit:"recipe",base:1.0,min:0.5,sensitivity:.70,round:.25,fill:"recipe",note:"BBQ-style salad; one recipe has historically been about right."},
+ cucumber:{name:"Cucumber Salad",group:"main",unit:"recipe",base:1.0,min:0.5,sensitivity:.70,round:.25,fill:"recipe",note:"One recipe has historically been about right."},
+ kraut:{name:"Sauerkraut",group:"main",unit:"tin",base:0.50,min:0.25,sensitivity:.90,round:.25,fill:"thumb clearance",note:"Strongly paired with Polish Brats; keep leftovers tight because it does not reheat well."},
+ beans:{name:"Baked Beans",group:"main",unit:"tin",base:0.50,min:0.25,sensitivity:.90,round:.25,fill:"thumb clearance",note:"Deliberately restrained; Meatfest history shows chronic overproduction."},
+ corn:{name:"Corn on the Cob",group:"unit",unit:"ear",base:7,min:4,sensitivity:.60,round:2,fill:"half-ear portions",note:"Served as half ears. Historical target is deliberately modest."},
+ cornbread:{name:"Cornbread",group:"accomp",unit:"piece",base:24,min:12,sensitivity:.20,round:6,fill:"mini cupcake",recipePieces:24,note:"BBQ accompaniment; traditional + gluten-free pieces can be mixed as needed."},
+ rolls:{name:"Hawaiian Rolls",group:"accomp",unit:"piece",base:16,min:8,sensitivity:.10,round:8,fill:"piece",packagePieces:32,note:"Sandwich vehicle for pulled pork, pulled chicken and sliced brisket. Costco twin pack is 32 rolls."}
+};
+let selectedSides=new Set();
+const sideOrder=["mac","cauli","slaw","collards","broccoli","cucumber","kraut","beans","corn","cornbread","rolls"];
+function sideProteinFactor(n){return ({1:1.20,2:1.15,3:1.10,4:1.05,5:1.00,6:.95,7:.92,8:.90})[Math.max(1,Math.min(8,n))]||.90}
+function sideVarietyFactor(n){return ({1:1.35,2:1.18,3:1.08,4:1.00,5:.97,6:.94,7:.92,8:.90})[Math.max(1,Math.min(8,n))]||.90}
+function niceFraction(x){
+  const whole=Math.floor(x+1e-8), frac=x-whole;
+  let f="";
+  if(Math.abs(frac-.25)<.03)f="¼"; else if(Math.abs(frac-.5)<.03)f="½"; else if(Math.abs(frac-.75)<.03)f="¾";
+  return whole?(f?`${whole}${f}`:`${Math.round(x*10)/10}`):(f||`${Math.round(x*10)/10}`);
+}
+function roundUpTo(x,step){return Math.ceil((x-1e-9)/step)*step}
+function roundNearest(x,step){return Math.round(x/step)*step}
+function sideQty(id){
+  const s=sides[id], [adults,kids]=activeTotals(), eaters=adults+kids*.5;
+  if(!eaters)return 0;
+  const pFactor=sideProteinFactor(selected.size);
+  const nMain=Math.max(1,[...selectedSides].filter(x=>sides[x].group==="main").length);
+  const vFactor=sideVarietyFactor(nMain);
+  let q=s.base*(eaters/47)*pFactor*(1+(vFactor-1)*s.sensitivity);
+  if(planningMode==="family") q*=1.125;
+  if(id==="kraut"&&selected.has("brats"))q*=1.15;
+  if(id==="corn"&&selected.size>=4)q*=.90;
+  if(id==="rolls"){
+    const sandwichProtein=(selected.has("pork")?1:0)+(selected.has("chicken")?1:0)+(selected.has("brisket")?1:0);
+    q*=sandwichProtein?(0.65+0.12*Math.min(3,sandwichProtein)):.35;
+  }
+  if(id==="cornbread")q*=selected.size?(1.0+0.06*Math.min(4,selected.size)):0;
+  /*
+   * Low-headcount floor for recipe/tin sides:
+   * These are practical batch/serving-pan units, not infinitely scalable
+   * portions.  At small events, scaling them below their established
+   * planning baseline produces unusably small amounts (e.g. ¼ tin of mac
+   * or 1½ recipes of slaw for a 20-person Meatfest).  Piece/package
+   * accompaniments continue to scale normally.
+   */
+  if(planningMode==="family") q=Math.max(s.min,q);
+  else if(s.unit==="tin" || s.unit==="recipe") q=Math.max(s.base,q);
+  else q=Math.max(s.min,q);
+  if(s.unit==="tin")return roundNearest(q,s.round);
+  if(s.unit==="recipe")return roundUpTo(q,s.round);
+  if(s.unit==="ear")return Math.max(4,roundUpTo(q,2));
+  return Math.max(s.min,roundUpTo(q,s.round));
+}
+function sideBuyText(id,q){
+  const s=sides[id];
+  if(s.unit==="tin"){
+    if(q===.25)return "¼ tin"; if(q===.5)return "½ tin"; if(q===.75)return "¾ tin"; if(q===1)return "1 full tin";
+    const full=Math.floor(q+1e-8), rem=Math.round((q-full)*4)/4, parts=[];
+    if(full)parts.push(`${full} full tin${full>1?"s":""}`);
+    if(rem===.25)parts.push("¼ tin"); if(rem===.5)parts.push("½ tin"); if(rem===.75)parts.push("¾ tin");
+    return parts.join(" + ");
+  }
+  if(s.unit==="recipe")return `${niceFraction(q)} recipe${q===1?"":"s"}`;
+  if(s.unit==="ear")return `${Math.round(q)} ear${q===1?"":"s"} (${Math.round(q*2)} half-ear pieces)`;
+  if(s.unit==="piece"){
+    if(id==="cornbread")return `${Math.round(q)} pieces • make ${Math.ceil(q/s.recipePieces)} recipe${Math.ceil(q/s.recipePieces)===1?"":"s"} (${s.recipePieces} pieces each)`;
+    const pk=Math.ceil(q/s.packagePieces);return `${Math.round(q)} pieces • buy ${pk} package${pk===1?"":"s"} (${s.packagePieces} each)`;
+  }
+  return `${Math.round(q)} ${s.unit}`;
+}
+function sideDetails(id,q){const s=sides[id];return id==="rolls"?s.note:id==="corn"?s.note:`${s.note} Fill: ${s.fill}.`}
+function renderSideCards(){
+  const main=sideOrder.filter(id=>sides[id].group==="main"||sides[id].group==="unit"), accomp=sideOrder.filter(id=>sides[id].group==="accomp");
+  const card=id=>{const s=sides[id],on=selectedSides.has(id),rec=sideRecommendation(id);return `<div class="sideCard ${on?"on":""} ${rec?"recommended":""}" data-side="${id}"><div class="sideTop"><div><b>${s.name}</b>${rec?'<span class="sideRec">RECOMMENDED</span>':''}</div><span class="sideCheck"></span></div><small>${s.unit==="tin"?"Practical serving-pan unit":s.unit==="recipe"?"Prepared from your recipe":s.unit==="ear"?"Whole ears → half-ear servings":s.unit==="piece"?"Plan pieces → buy packages":"Practical serving unit"}</small></div>`};
+  $("mainSideCards").innerHTML=main.map(card).join("");$("accompSideCards").innerHTML=accomp.map(card).join("");
+  document.querySelectorAll("[data-side]").forEach(el=>el.onclick=()=>{const id=el.dataset.side;if(selectedSides.has(id))selectedSides.delete(id);else selectedSides.add(id);renderSideCards();calcSides();save()});
+}
+function calcSides(){
+  const box=$("sideResults"); if(!box)return;
+  if(!selectedSides.size){box.innerHTML='<p class="note">Select any sides you want the calculator to plan. Recommended choices are highlighted above.</p>';return}
+  const rows=[...selectedSides].sort((a,b)=>sideOrder.indexOf(a)-sideOrder.indexOf(b)).map(id=>({id,q:sideQty(id)}));
+  box.innerHTML=rows.map(r=>{const s=sides[r.id];return `<div class="sideResult"><div class="resultTop"><div><div class="resultTitle">${s.name}</div><span class="pill">${s.unit==="tin"?"Tin":s.unit==="recipe"?"Recipe":s.unit==="ear"?"Ears":"Pieces"}</span>${sideRecommendation(r.id)?'<span class="pill">Recommended</span>':''}</div><div class="buy">${sideBuyText(r.id,r.q)}</div></div><div class="sideReason">${sideDetails(r.id,r.q)}</div></div>`}).join("");
+}
+
+const order=["chicken","fish","pork","hog","brats","brisket","pmbe","prime","ribs"];
+let selected=new Set();let choices={};let guests=[];let mode="manual";let planningMode="meatfest";
+order.forEach(k=>choices[k]=meats[k].default);
+const $=id=>document.getElementById(id);
+function multiplier(n,serv){const t={".5":[1,.6,.376455,.2857,.25,.22221,.19442,.1782092],".333333":[1,.4,.25097,.1904667,.1666667,.14814,.1296133,.1188061],".25":[.75,.3333,.2,.1667,.125,.111105,.0909,.0817429]};const v=Number(serv);const key=Math.abs(v-.5)<1e-6?".5":Math.abs(v-.25)<1e-6?".25":".333333";return (t[key])[Math.max(1,Math.min(8,n))-1]}
+
+function localISODate(){
+  const d=new Date();
+  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function eventDetails(){
+  const name=(document.getElementById("eventName")?.value||"Your Event").trim()||"Your Event";
+  const date=document.getElementById("eventDate")?.value||localISODate();
+  const d=new Date(date+"T12:00:00");
+  const display=d.toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
+  return {name,date,display};
+}
+function loadEventDetails(){
+  try{
+    const x=JSON.parse(localStorage.getItem("mfEvent16")||"{}");
+    $("eventName").value=x.name||"Your Event";
+    $("eventDate").value=x.date||localISODate();
+  }catch(e){
+    $("eventName").value="Your Event";
+    $("eventDate").value=localISODate();
+  }
+  // V1.7.1: Standard is the explicit default for a fresh event.
+  if(!localStorage.getItem("mf11")){
+    $("serving").value=".333333";
+  }
+}
+function saveEventDetails(){
+  const e=eventDetails();
+  localStorage.setItem("mfEvent16",JSON.stringify(e));
+  return e;
+}
+function syncServingCards(){
+  let value=Number($("serving").value);
+  if(value>=.30&&value<.32){$("serving").value=".333333";value=.333333}
+  document.querySelectorAll("[data-serving-choice]").forEach(b=>{
+    b.classList.toggle("active",Math.abs(Number(b.dataset.servingChoice)-value)<0.000001);
+  });
+}
+
+function save(){localStorage.setItem("mf11",JSON.stringify({adults:+$("adults").value||0,kids:+$("kids").value||0,serving:+$("serving").value,selected:[...selected],selectedSides:[...selectedSides],choices,guests,mode,planningMode}))}
+function load(){try{let x=JSON.parse(localStorage.getItem("mf11"));if(!x)return;$("adults").value=x.adults??0;$("kids").value=x.kids??0;let s=Number(x.serving??.333333);$("serving").value=(s>=.30&&s<.32)||Math.abs(s-.333333)<.000001?".333333":String(s);selected=new Set(x.selected||[]);choices=Object.assign(choices,x.choices||{});guests=x.guests||[];mode=x.mode||"manual";planningMode=x.planningMode||"meatfest";selectedSides=new Set(x.selectedSides||[])}catch(e){}}
+function setPlanningMode(next){
+  planningMode=next==="family"?"family":"meatfest";
+  if(planningMode==="family" && selected.has("hog")) selected.delete("hog");
+  syncPlanningUI();
+  renderMeats();
+  renderSideCards();
+  calc();
+  save();
+}
+function syncPlanningUI(){
+  const family=planningMode==="family";
+  const sw=$("planningSwitch");
+  if(sw)sw.classList.toggle("family",family);
+  document.querySelectorAll("[data-plan-mode]").forEach(b=>b.classList.toggle("active",b.dataset.planMode===planningMode));
+  const title=$("pageTitle"),sub=$("pageSub"),hint=$("modeHint"),note=$("planningNoteText");
+  if(title)title.textContent=family?"How much should I buy?":"How much food?";
+  if(sub)sub.textContent=family?"A practical family-BBQ model with butcher-friendly purchase sizes.":"Your Meatfest model, turned into a practical shopping list.";
+  if(hint)hint.textContent=family?"Family model • small-batch buying":"Large-group model • default";
+  if(note)note.innerHTML=family?"Family mode is designed for roughly 3–10 people (but is not limited to that range). It adds a 10–15% finished-meat cushion and uses practical small-batch purchase sizes; a specialty butcher may be needed for custom cuts.":"Meatfest mode uses the established large-group purchase units and historical planning model.";
+  const n=$("planningNote"); if(n)n.classList.toggle("familyMode",family);
+  const sn=$("sideModelNote"); if(sn)sn.textContent=family?"Family mode uses practical small-batch side quantities with a modest 10–15% cushion. Minimums stay useful for real recipes and small pans; you choose the sides.":"V2 plans for a Meatfest feast: enough to avoid running out, with modest useful leftovers. Recommendations are highlighted; you choose the sides.";
+}
+function renderMeats(){ const visibleOrder=planningMode==="family"?order.filter(k=>k!=="hog"):order; $("meats").innerHTML=visibleOrder.map(k=>{
+  let m=meats[k],o=m.options[choices[k]],ids=Object.keys(m.options);
+  if(planningMode==="family" && k==="brisket") ids=["flat"];
+  if(planningMode==="family" && k==="brisket" && choices[k]!=="flat"){ choices[k]="flat"; o=m.options.flat; }
+  let choiceControl=ids.length>1
+    ? `<select data-choice="${k}">${Object.entries(m.options).map(([id,v])=>`<option value="${id}" ${id===choices[k]?"selected":""}>${v.label}</option>`).join("")}</select>`
+    : `<div class="fixedChoice">${o.label}</div>`;
+  return `<div class="meat ${selected.has(k)?"on":""}" data-k="${k}">
+    <div class="top"><b>${m.name}</b><span class="check"></span></div>
+    <small>${o.label}${k==="fish"?" • purchased as fillets":""}</small>
+    <div class="choice" onclick="event.stopPropagation()">${choiceControl}</div>
+  </div>`;
+}).join("");
+document.querySelectorAll(".meat").forEach(el=>el.onclick=()=>{
+  let k=el.dataset.k;
+  if(k==="hog"){
+    if(selected.has("hog")) selected.delete("hog");
+    else selected=new Set(["hog"]);
+  }else{
+    if(selected.has("hog")) selected.delete("hog");
+    selected.has(k)?selected.delete(k):selected.add(k);
+  }
+  renderMeats();renderSideCards();calc();save()
+});
+document.querySelectorAll("[data-choice]").forEach(el=>el.onchange=()=>{
+  choices[el.dataset.choice]=el.value;renderMeats();renderSideCards();calc();save()
+});
+}
+function renderGuests(){ $("guestList").innerHTML=guests.map((g,i)=>`<div class="guest"><input data-i="${i}" data-f="name" value="${g.name||""}" placeholder="Last name"><input data-i="${i}" data-f="count" type="number" min="0" value="${g.count??""}" placeholder="-"><input data-i="${i}" data-f="a" type="number" min="0" value="${g.a??""}" placeholder="-"><input data-i="${i}" data-f="k" type="number" min="0" value="${g.k??""}" placeholder="-"><button class="btn smallbtn danger" data-del="${i}">×</button></div>`).join("");
+document.querySelectorAll(".guest input").forEach(x=>x.oninput=()=>{let i=+x.dataset.i,f=x.dataset.f;guests[i][f]=f==="name"?x.value:(x.value===""?null:+x.value);calc();save()});
+document.querySelectorAll("[data-del]").forEach(x=>x.onclick=()=>{guests.splice(+x.dataset.del,1);renderGuests();calc();save()});
+}
+function guestTotals(){let a=0,k=0;guests.forEach(g=>{let hasBreak=g.a!=null||g.k!=null;if(hasBreak){a+=+g.a||0;k+=+g.k||0}else{a+=+g.count||0}});return[a,k]}
+function activeTotals(){if(mode==="guest"&&guests.length){return guestTotals()}return[+$("adults").value||0,+$("kids").value||0]}
+function parseRows(text){let lines=text.trim().split(/\r?\n/).filter(Boolean);if(!lines.length)return[];let delim=lines[0].includes("\t")?"\t":",";let header=lines[0].toLowerCase().split(delim).map(x=>x.trim());let idx={name:header.findIndex(x=>/last|name/.test(x)),count:header.findIndex(x=>/count|total|guests|people/.test(x)),a:header.findIndex(x=>/^adult/.test(x)),k:header.findIndex(x=>/^kid|child/.test(x))};if(idx.name<0)idx.name=0;let out=[];for(let i=1;i<lines.length;i++){let p=lines[i].split(delim).map(x=>x.trim());if(!p.length)continue;let num=(j)=>j>=0&&p[j]!==""?parseFloat(p[j]):null;out.push({name:p[idx.name]||"",count:num(idx.count),a:num(idx.a),k:num(idx.k)})}return out}
+function importText(text){let rows=parseRows(text);if(!rows.length){alert("I couldn't find any guest rows. Use columns like Last Name, Count, Adults, Kids.");return}guests=rows;mode="guest";$("manualTab").classList.remove("active");$("guestTab").classList.add("active");$("manualPane").classList.add("hidden");$("guestPane").classList.remove("hidden");renderGuests();calc();save()}
+
+function purchaseDisplay(k,o,units,buyWeight){
+  if(k==="fish"){
+    return `BUY ${units} filet${units===1?"":"s"} (~${Math.ceil(buyWeight*100)/100} lb total)`;
+  }
+  if(k==="chicken"){
+    if(o.unit==="leg quarter"||o.unit==="thigh"){
+      return `BUY ${units} ${o.unit}${units===1?"":"s"} (~${Math.ceil(buyWeight*10)/10} lb total)`;
+    }
+    if(o.unit==="whole fryer"){
+      return `BUY ${units} whole fryer${units===1?"":"s"} (~${Math.ceil(buyWeight*10)/10} lb total)`;
+    }
+  }
+  if(k==="pmbe"){
+    return `BUY ${units} chuck roast${units===1?"":"s"} (~${Math.ceil(buyWeight*10)/10} lb total)`;
+  }
+  return null;
+}
+function cutNote(k,o){
+  if(o.note)return o.note;
+  if(k==="brisket" && o.unit==="packer")return "Whole packers are commonly 14–18 lb. Excess is planned leftovers.";
+  return "";
+}
+
+function wholeHogYield(hangingWeight){
+  // Calibrated to the Meatfest 4.0 whole-hog results by translating the
+  // original 50/75/100-attendee yield bands into hanging-weight anchors
+  // under the standard 1/3-lb serving model: about 41.7 lb @ 40%,
+  // 55.6 lb @ 45%, and 66.7 lb @ 50%. Yield then continues to improve
+  // with carcass size, more slowly, to 55% @ 100 lb and 60% @ 150 lb+.
+  // This is a Meatfest planning curve, not a universal hog-yield claim.
+  const p=[[41.6667,.40],[55.5556,.45],[66.6667,.50],[100,.55],[150,.60]];
+  if(hangingWeight<=p[0][0])return p[0][1];
+  for(let i=1;i<p.length;i++){const [x2,y2]=p[i],[x1,y1]=p[i-1];if(hangingWeight<=x2)return y1+((hangingWeight-x1)/(x2-x1))*(y2-y1);}
+  return .60;
+}
+function wholeHogPlan(finishedMeat){
+  // Solve hangingWeight = finishedMeat / yield(hangingWeight).
+  let w=Math.max(0.1,finishedMeat/.50);
+  for(let i=0;i<40;i++){const next=finishedMeat/wholeHogYield(w);if(Math.abs(next-w)<0.0001){w=next;break}w=next;}
+  return {hangingWeight:w,yield:wholeHogYield(w)};
+}
+function wholeHogWarning(hangingWeight){
+  return hangingWeight>100?`<div class="purchaseNote hogWarning"><b>⚠️ Cooker capacity reminder:</b> target is about ${Math.ceil(hangingWeight)} lb hanging weight. A typical home hog cooker is generally around 100 lb capacity; verify your cooker before purchasing.</div>`:"";
+}
+function familyPurchase(k,o,bought){
+  const up=x=>Math.ceil((x-1e-9)*2)/2;
+  const lb=x=>Math.ceil((x-1e-9)*10)/10;
+  if(k==="pork"){
+    const w=Math.max(4,up(bought));
+    return {units:1,buyWeight:w,buy:`ASK FOR ~${lb(w)} lb ${choices[k]==="boneless"?"boneless pork shoulder":"pork butt"}`,note:w<=5?"Specialty butcher recommended. A 4–5 lb butt is a practical family-BBQ size; grocery-store butts are often larger.":"Ask your butcher for a custom-size shoulder close to the calculated weight."};
+  }
+  if(k==="brisket"){
+    const w=Math.max(4,up(bought));
+    return {units:1,buyWeight:w,buy:`ASK FOR ~${lb(w)} lb brisket flat`,note:w<=6?"Specialty butcher recommended. A 4–6 lb flat is a practical small-BBQ size.":"Ask your butcher for a custom-size flat rather than a full packer."};
+  }
+  if(k==="ribs"){
+    const halfRack=2.25/2;
+    const halves=Math.max(1,Math.ceil((bought-1e-9)/halfRack));
+    const racks=halves/2;
+    const w=racks*2.25;
+    let buy;
+    if(halves===1) buy="BUY 1 half-rack";
+    else if(halves===2) buy="BUY 1 rack (2 half-racks)";
+    else buy=`BUY ${halves} half-racks (${niceFraction(racks)} full racks total)`;
+    return {units:racks,buyWeight:w,buy,note:"Half-rack increments are supported for small gatherings; a specialty butcher can sell or cut the rack to size."};
+  }
+  if(k==="prime"){
+    const w=Math.max(3,up(bought));
+    return {units:1,buyWeight:w,buy:`ASK FOR ~${lb(w)} lb ${choices[k]==="bone"?"bone-in standing rib roast":"prime rib roast"}`,note:w<=4?"Specialty butcher recommended. A ~3 lb roast is a practical family-BBQ size.":"Ask your butcher for a custom-size roast close to the calculated weight."};
+  }
+  if(k==="brats"){
+    const units=Math.max(1,Math.ceil(bought/.5));
+    return {units,buyWeight:units*.5,buy:`BUY ${units} link${units===1?"":"s"}`,note:"Individual-link buying; no large package-size inflation."};
+  }
+  if(k==="fish"){
+    const units=Math.max(1,Math.ceil(bought/.33));
+    return {units,buyWeight:units*.33,buy:`BUY ${units} filet${units===1?"":"s"} (~${lb(units*.33)} lb total)`,note:"Individual fillets; purchase only what the family-sized event needs."};
+  }
+  if(k==="chicken"){
+    if(o.unit==="whole fryer") { const units=Math.max(1,Math.ceil(bought/o.unitWeight)); return {units,buyWeight:units*o.unitWeight,buy:`BUY ${units} whole fryer${units===1?"":"s"} (~${lb(units*o.unitWeight)} lb total)`,note:units===1?"One whole fryer is the practical family purchase unit.":"Buy whole birds; the calculator avoids forcing a large packaged quantity."}; }
+    const units=Math.max(1,Math.ceil(bought/o.unitWeight));
+    return {units,buyWeight:units*o.unitWeight,buy:`BUY ${units} ${o.unit}${units===1?"":"s"}`,note:"Small-batch poultry purchase; specialty butcher can provide exact quantities."};
+  }
+  if(k==="pmbe"){
+    const w=Math.max(3,up(bought));
+    return {units:1,buyWeight:w,buy:`ASK FOR ~${lb(w)} lb chuck roast`,note:"Ask the butcher for a small chuck roast close to the calculated weight."};
+  }
+  return null;
+}
+function calc(){let [adults,kids]=activeTotals(), eaters=adults+kids*.5, n=selected.size, mult=multiplier(n,+$("serving").value), rows=[],raw=0;
+selected.forEach(k=>{
+ let m=meats[k],o=m.options[choices[k]],per;
+ if(k==="chicken")per=((.5+1/3)/2)*mult;else if(k==="fish")per=.25*mult;else if(k==="pork"||k==="hog")per=(1/3)*mult;else if(k==="brats")per=.25*mult;else per=.5*mult;
+ let finished=eaters*per, targetFinished=planningMode==="family"?finished*1.125:finished, hogPlan=o.yield==="hog"?wholeHogPlan(targetFinished):null, y=hogPlan?hogPlan.yield:o.yield, bought=hogPlan?hogPlan.hangingWeight:targetFinished/y;
+ let units=null,buyWeight=bought,purchaseNote="",excess=0,buyOverride=null;
+ if(planningMode==="family" && k!=="hog"){
+   const fp=familyPurchase(k,o,bought); if(fp){units=fp.units;buyWeight=fp.buyWeight;buyOverride=fp.buy;purchaseNote=fp.note;excess=Math.max(0,buyWeight-bought)}
+ } else if(o.mode==="units"){
+   units=Math.max(1,Math.ceil(bought/o.unitWeight));buyWeight=units*o.unitWeight;
+   if(k==="brisket"&&choices[k]==="packer"){units=Math.max(1,Math.ceil(bought/14));buyWeight=units*14;excess=Math.max(0,buyWeight-bought);purchaseNote=cutNote(k,o)}
+   else {excess=Math.max(0,buyWeight-bought);purchaseNote=cutNote(k,o);if(!purchaseNote&&excess>.5)purchaseNote=`Purchase amount is rounded to practical units; excess is planned leftovers.`}
+ } else if(o.mode==="hog"){units=1;buyWeight=bought;purchaseNote="Buy one whole hog; target the calculated hanging-weight requirement."}
+ else purchaseNote="Fish is always calculated as purchased fillets.";
+ raw+=buyWeight;rows.push({k,m,o,finished,targetFinished,y,bought,units,buyWeight,excess,purchaseNote,buyOverride});
+});
+$("statAdults").textContent=adults;$("statKids").textContent=kids;$("statEaters").textContent=Math.round(eaters*10)/10;$("totalRaw").textContent=raw?`${Math.ceil(raw*10)/10} lb`:"0 lb";$("summary").textContent=n?`${n} protein${n>1?"s":""} • ${Math.round(eaters*10)/10} adult-equivalent eaters${planningMode==="family"?" • 10–15% family cushion":""}`:"Select at least one protein.";
+$("results").innerHTML=rows.length?rows.map(r=>{let specialBuy=purchaseDisplay(r.k,r.o,r.units,r.buyWeight);let buy=r.buyOverride|| (r.o.mode==="weight"?`BUY ${Math.ceil(r.bought*10)/10} lb of fillets`:r.k==="hog"?`BUY 1 whole hog (~${Math.ceil(r.buyWeight)} lb hanging weight)`:r.k==="brisket"&&choices[r.k]==="packer"?`BUY ${r.units} ${r.o.unit}${r.units>1?"s":""} (~${r.units*14}–${r.units*18} lb total)`:specialBuy||`BUY ${r.units} ${r.o.unit}${r.units>1?"s":""} (~${Math.ceil(r.buyWeight*10)/10} lb total)`);let ex=r.excess>.5?` • Planned excess: <span class="excess">${Math.round(r.excess*10)/10} lb</span>`:"";let cushion=planningMode==="family"?` • Family cushion target: <b>${Math.round((r.targetFinished-r.finished)*10)/10} lb finished</b>`:"";return `<div class="result"><div class="resultTop"><div><div class="resultTitle">${r.m.name}</div><span class="pill">${r.o.label}</span><span class="pill">${Math.round(r.y*100)}% yield</span></div><div class="buy">${buy}</div></div><div class="details">Finished meat needed: <b>${Math.round(r.finished*10)/10} lb</b>${cushion} • Raw requirement: <b>${Math.round(r.bought*10)/10} lb</b>${r.o.mode==="units"&&r.k!=="hog"&&planningMode!=="family"?` • Planning unit: ${r.o.unitWeight} lb`:""}${ex}</div>${r.purchaseNote?`<div class="purchaseNote">${r.purchaseNote}</div>`:""}${r.k==="hog"?wholeHogWarning(r.buyWeight):""}</div>`}).join(""):"<p class='note'>Select at least one protein.</p>";calcSides();}
+$("file").onchange=e=>{let f=e.target.files[0];if(!f)return;let rd=new FileReader();rd.onload=()=>importText(rd.result);rd.readAsText(f)};
+$("pasteBtn").onclick=()=>$("pasteArea").classList.toggle("hidden");
+$("importPaste").onclick=()=>importText($("paste").value);
+$("manualTab").onclick=()=>{mode="manual";$("manualTab").classList.add("active");$("guestTab").classList.remove("active");$("manualPane").classList.remove("hidden");$("guestPane").classList.add("hidden");calc();save()};
+$("guestTab").onclick=()=>{mode="guest";$("guestTab").classList.add("active");$("manualTab").classList.remove("active");$("guestPane").classList.remove("hidden");$("manualPane").classList.add("hidden");calc();save()};
+$("clearGuests").onclick=()=>{guests=[];mode="manual";renderGuests();calc();save()};
+["adults","kids","serving"].forEach(id=>$(id).oninput=()=>{if(id!=="serving")mode="manual";calc();save()});
+
+function buildSummary(){
+ const [adults,kids]=activeTotals(),eaters=adults+kids*.5,rows=[];
+ selected.forEach(k=>{const m=meats[k],o=m.options[choices[k]];let per,mult=multiplier(selected.size,+$("serving").value);
+ if(k==="chicken")per=((.5+1/3)/2)*mult;else if(k==="fish")per=.25*mult;else if(k==="pork"||k==="hog")per=(1/3)*mult;else if(k==="brats")per=.25*mult;else per=.5*mult;
+ const finished=eaters*per,targetFinished=planningMode==="family"?finished*1.125:finished,hogPlan=o.yield==="hog"?wholeHogPlan(targetFinished):null,y=hogPlan?hogPlan.yield:o.yield,bought=hogPlan?hogPlan.hangingWeight:targetFinished/y;let units=null,buyWeight=bought,buy,purchaseNote="";
+ if(planningMode==="family"&&k!=="hog"){const fp=familyPurchase(k,o,bought);units=fp.units;buyWeight=fp.buyWeight;buy=fp.buy;purchaseNote=fp.note}
+ else if(o.mode==="units"){units=Math.max(1,Math.ceil(bought/o.unitWeight));buyWeight=units*o.unitWeight;if(k==="brisket"&&choices[k]==="packer"){units=Math.max(1,Math.ceil(bought/14));buyWeight=units*14;buy=`${units} ${o.unit}${units>1?"s":""} (~${units*14}–${units*18} lb total)`;purchaseNote="Excess is planned leftovers."}else buy=purchaseDisplay(k,o,units,buyWeight)||`${units} ${o.unit}${units>1?"s":""} (~${Math.ceil(buyWeight*10)/10} lb total)`}
+ else if(k==="hog")buy=`1 whole hog (~${Math.ceil(buyWeight)} lb hanging weight)`;else if(k==="fish")buy=`${units} filet${units===1?"":"s"} (~${Math.ceil(buyWeight*100)/100} lb total)`;else buy=`${Math.ceil(bought*10)/10} lb of fillets`;
+ rows.push({k,m,o,finished,targetFinished,y,bought,buyWeight,buy,purchaseNote})});
+ return {adults,kids,eaters,rows,total:rows.reduce((s,r)=>s+r.buyWeight,0)};
+}
+function populatePrint(){
+  const s=buildSummary();
+  const ev=eventDetails(); $("psTitle").textContent=ev.name.toUpperCase();
+  $("psSub").textContent=`${ev.display}  |  ${s.rows.map(r=>r.m.name).join(" • ")}`;
+  $("psAdults").textContent=s.adults;$("psKids").textContent=s.kids;$("psEaters").textContent=Math.round(s.eaters*10)/10;
+  $("psProteins").innerHTML=s.rows.map(r=>`<span class="pill">${r.o.label}</span>`).join(" ");
+  $("psSides").innerHTML=selectedSides.size?[...selectedSides].sort((a,b)=>sideOrder.indexOf(a)-sideOrder.indexOf(b)).map(id=>`<span class="pill">${sides[id].name}: ${sideBuyText(id,sideQty(id))}</span>`).join(" "):"<span class=\"ps-note\">None selected</span>";
+  $("psBuyRows").innerHTML=s.rows.map(r=>`<div class="ps-row"><div><div class="ps-name">${r.m.name}</div><div class="ps-detail">${r.o.label} • ${Math.round(r.y*100)}% yield • ${Math.round(r.bought*10)/10} lb raw</div></div><div class="ps-buy">${r.buy.replace(/^BUY /,"")}</div></div>`).join("");
+  $("psTotal").textContent=`${Math.ceil(s.total*10)/10} lb`;
+  return s;
+}
+async function saveShare(){
+  save(); const ev=saveEventDetails(); const s=populatePrint();
+  const lines=[ev.name.toUpperCase(),`Event date: ${ev.display}`,`Planning mode: ${planningMode==="family"?"Family BBQ":"Meatfest"}`,`Guests: ${s.adults} adults + ${s.kids} kids (${Math.round(s.eaters*10)/10} adult-equivalent)`,"", "WHAT TO BUY"];
+  s.rows.forEach(r=>lines.push(`${r.m.name} — ${r.buy.replace(/^BUY /,"")}`,`  ${r.o.label} | ${Math.round(r.y*100)}% yield | ${Math.round(r.bought*10)/10} lb raw`));
+  if(selectedSides.size){lines.push("","SIDES");[...selectedSides].sort((a,b)=>sideOrder.indexOf(a)-sideOrder.indexOf(b)).forEach(id=>lines.push(`${sides[id].name} — ${sideBuyText(id,sideQty(id))}`));}
+  lines.push("",`TOTAL RAW MEAT: ${Math.ceil(s.total*10)/10} lb`);
+  const text=lines.join("\n");
+  if(navigator.share){
+    try{await navigator.share({title:"Meatfest Shopping List",text});return}catch(e){}
+  }
+  try{await navigator.clipboard.writeText(text);alert("Shopping list copied. Open Notes and paste it into a new note.")}catch(e){alert("Shopping list prepared. Use Print Pocket Sheet for a paper copy.")};
+}
+$("save").onclick=saveShare;
+$("print").onclick=()=>{save();populatePrint();window.print()};
+$("reset").onclick=()=>{if(confirm("Reset this Meatfest? This will clear the event name, reset the date to today, clear adults and kids, remove all protein and side selections, and clear the guest list.")){localStorage.clear();location.reload()}};
+
+
+document.querySelectorAll("[data-plan-mode]").forEach(b=>b.onclick=()=>setPlanningMode(b.dataset.planMode));
+syncPlanningUI();
+loadEventDetails();
+$("eventName").addEventListener("change",saveEventDetails);
+$("eventDate").addEventListener("change",saveEventDetails);
+document.querySelectorAll("[data-serving-choice]").forEach(b=>b.onclick=()=>{
+  $("serving").value=b.dataset.servingChoice;
+  syncServingCards();
+  calc();
+  save();
+});
+
+load();
+syncPlanningUI();
+if(!localStorage.getItem("mf11")) $("serving").value=".333333";
+syncServingCards();
+renderMeats();
+renderSideCards();
+renderGuests();if(mode==="guest"){ $("manualTab").classList.remove("active");$("guestTab").classList.add("active");$("manualPane").classList.add("hidden");$("guestPane").classList.remove("hidden") }calc();
+</script>
+
+<div id="printSheet">
+  <div class="ps-title" id="psTitle">MEATFEST SHOPPING LIST</div>
+  <div class="ps-sub" id="psSub"></div>
+  <div class="ps-grid">
+    <div>
+      <div class="ps-box">
+        <h3>HEADCOUNT</h3>
+        <div class="ps-headcount">
+          <span><b id="psAdults">0</b> adults</span>
+          <span><b id="psKids">0</b> kids</span>
+          <span><b id="psEaters">0</b> adult-equiv.</span>
+        </div>
+      </div>
+      <div class="ps-box">
+        <h3>PROTEINS</h3>
+        <div id="psProteins" class="ps-note"></div>
+      </div>
+      <div class="ps-box">
+        <h3>SIDES</h3>
+        <div id="psSides" class="ps-note"></div>
+      </div>
+    </div>
+    <div>
+      <div class="ps-box">
+        <h3>WHAT TO BUY</h3>
+        <div id="psBuyRows"></div>
+      </div>
+      <div class="ps-box">
+        <h3>TOTAL RAW MEAT</h3>
+        <div class="ps-big" id="psTotal">0 lb</div>
+        <div class="ps-note">Purchase amounts are rounded to practical units where applicable.</div>
+      </div>
+    </div>
+  </div>
+  <div class="fold"></div><div class="foldlabel">FOLD</div>
+  <div class="ps-footer"><span>Meatfest Calculator</span><span>Keep this sheet with the shopping list.</span></div>
+</div>
+</body>
+</html>
