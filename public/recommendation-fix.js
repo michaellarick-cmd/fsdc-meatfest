@@ -24,15 +24,19 @@
       case "rolls": return any(t,["pulled_pork","chicken_pulled","brisket"]);
       case "greenbeans": return any(t,["prime_rib","pulled_pork","brats","chicken_pulled","chicken_quarters","chicken_thighs","turkey","fish"]);
       case "asparagus": return any(t,["prime_rib","chicken_pulled","chicken_quarters","chicken_thighs","turkey"]);
-      case "potatosalad": return any(t,["brisket","pmbe","pulled_pork","ribs","brats","chicken_pulled","chicken_quarters","chicken_thighs","turkey","fish"]);
+      case "potatosalad": return any(t,["brisket","pmbe","pulled_pork","ribs","brats","pork_belly","chicken_pulled","chicken_quarters","chicken_thighs","turkey","fish"]);
       case "pastasalad": return any(t,["fish","chicken_pulled","chicken_quarters","chicken_thighs"]);
       default:return false;
     }
   }
   function paint(){
     document.querySelectorAll("[data-side]").forEach(card=>{
-      const id=card.getAttribute("data-side"), label=(card.querySelector("b")?.textContent||"").trim().toLowerCase();
-      const yes=label==="potato salad" ? recommended("potatosalad") : recommended(id);
+      const id=(card.getAttribute("data-side")||"").trim().toLowerCase();
+      const label=(card.querySelector("b")?.textContent||"").replace(/\s+/g," ").trim().toLowerCase();
+      let yes;
+      if(label==="potato salad" || id==="potatosalad" || id==="potato-salad" || id==="potato_salad") yes=recommended("potatosalad");
+      else if(label==="pasta salad" || id==="pastasalad" || id==="pasta-salad" || id==="pasta_salad") yes=recommended("pastasalad");
+      else yes=recommended(id);
       const top=card.querySelector(".sideTop > div");
       const hasBadge=!!card.querySelector(".sideRec");
       const hasClass=card.classList.contains("recommended");
