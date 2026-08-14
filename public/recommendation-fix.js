@@ -31,7 +31,9 @@
   }
   function paint(){
     document.querySelectorAll("[data-side]").forEach(card=>{
-      const id=card.getAttribute("data-side"), yes=recommended(id), top=card.querySelector(".sideTop > div");
+      const id=card.getAttribute("data-side"), label=(card.querySelector("b")?.textContent||"").trim().toLowerCase();
+      const yes=label==="potato salad" ? recommended("potatosalad") : recommended(id);
+      const top=card.querySelector(".sideTop > div");
       const hasBadge=!!card.querySelector(".sideRec");
       const hasClass=card.classList.contains("recommended");
       if(hasClass!==yes) card.classList.toggle("recommended",yes);
