@@ -11,15 +11,46 @@
   if(!order.includes(TURKEY_KEY)) order.push(TURKEY_KEY);
   choices[TURKEY_KEY]=choices[TURKEY_KEY]||meats[TURKEY_KEY].default;
 
+  // Pork Belly Burnt Ends: rich secondary protein. Keep the user's universal
+  // portion choices (¼ / ⅓ / ½ lb) while applying a 25% richness adjustment
+  // to the standard ⅓-lb target. Planning yield is 62% for skinless belly.
+  const PORK_BELLY_KEY="porkbelly";
+  meats[PORK_BELLY_KEY]={
+    name:"Pork Belly Burnt Ends",
+    default:"belly",
+    options:{
+      belly:{
+        label:"Skinless Pork Belly",
+        yield:.62,
+        unitWeight:10,
+        unit:"whole pork belly",
+        mode:"units",
+        note:"Rich secondary protein. Whole skinless bellies commonly run about 8–10 lb; portion and freeze any excess for a future cook."
+      }
+    }
+  };
+  if(!order.includes(PORK_BELLY_KEY)) order.push(PORK_BELLY_KEY);
+  choices[PORK_BELLY_KEY]=choices[PORK_BELLY_KEY]||meats[PORK_BELLY_KEY].default;
+
   sides.greenbeans={name:"Green Beans",group:"main",unit:"recipe",base:1.0,min:.5,sensitivity:.70,round:.25,fill:"recipe",note:"Grilled or smoked BBQ vegetable side."};
   sides.asparagus={name:"Asparagus",group:"main",unit:"recipe",base:1.0,min:.5,sensitivity:.70,round:.25,fill:"recipe",note:"Grilled or smoked BBQ vegetable side."};
   sides.potatosalad={name:"Potato Salad",group:"main",unit:"recipe",base:1.5,min:.5,sensitivity:.55,round:.5,fill:"recipe",note:"Classic BBQ side."};
   sides.pastasalad={name:"Pasta Salad",group:"main",unit:"recipe",base:1.5,min:.5,sensitivity:.55,round:.5,fill:"recipe",note:"Classic BBQ side."};
   ["greenbeans","asparagus","potatosalad","pastasalad"].forEach(id=>{if(!sideOrder.includes(id))sideOrder.push(id)});
 
-  // Turkey has practical family purchase units that differ from the generic unit math.
+  // Turkey and pork belly have practical whole-piece family purchase units.
   const baseFamilyPurchase=familyPurchase;
   familyPurchase=function(k,o,bought){
+    if(k===PORK_BELLY_KEY){
+      const w=Number(bought);
+      const units=Math.max(1,Math.ceil((w-1e-9)/10));
+      return {
+        units,
+        buyWeight:units*10,
+        buy:`BUY ${units} whole skinless pork belly${units===1?"":"s"} (~${units*10} lb total)`,
+        note:"Whole bellies commonly run about 8–10 lb. If the package is larger than needed, portion and freeze the excess for a future cook.",
+      };
+    }
     if(k!==TURKEY_KEY)return baseFamilyPurchase(k,o,bought);
     const lb=x=>Math.ceil((x-1e-9)*10)/10;
     const form=choices[TURKEY_KEY]||"whole";
