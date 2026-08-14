@@ -1,7 +1,6 @@
 /* Pork Belly presentation fix — loaded after meatfest-additions.js. */
 (function(){
   const KEY="porkbelly";
-  let applying=false;
 
   function porkBellyCalc(){
     const [adults,kids]=activeTotals();
@@ -18,32 +17,38 @@
   }
 
   function apply(){
-    if(applying)return;
     const p=porkBellyCalc();
     if(!p)return;
-    applying=true;
-    try{
-      const totalEl=$("totalRaw");
-      if(totalEl){
-        const old=parseFloat((totalEl.textContent||"0").replace(/[^0-9.]/g,""))||0;
-        // Base engine treats the belly as a 10-lb planning unit. Replace that
-        // display value with the actual calculated raw requirement.
-        const corrected=old-(p.units*10)+p.raw;
-        totalEl.textContent=`${Math.round(corrected*10)/10} lb`;
-      }
 
+    // Rebuild the displayed total from the rendered cards rather than
+    // subtracting from the previous total. This prevents repeated calc()
+    // calls from producing impossible negative totals.
+    const totalEl=$("totalRaw");
+    if(totalEl){
+      let total=0;
       document.querySelectorAll("#results .result").forEach(card=>{
         const title=card.querySelector(".resultTitle");
-        if(!title||title.textContent.trim()!=="Pork Belly Burnt Ends")return;
-        const buy=card.querySelector(".buy");
-        if(buy)buy.textContent=`BUY ${p.units} whole skinless pork belly${p.units===1?"":"s"} (~${p.units*8}–${p.units*10} lb total)`;
         const details=card.querySelector(".details");
-        if(details)details.innerHTML=`Finished meat needed: <b>${Math.round(p.finished*10)/10} lb</b> • Raw requirement: <b>${Math.round(p.raw*10)/10} lb</b>`;
-        let note=card.querySelector(".purchaseNote");
-        if(!note){note=document.createElement("div");note.className="purchaseNote";card.appendChild(note)}
-        note.textContent="Whole skinless bellies commonly run about 8–10 lb. Buy one whole belly for this cook; if the package is larger than needed, portion and freeze the excess for a future cook.";
+        if(!details)return;
+        const match=details.textContent.match(/Raw requirement:\s*([0-9.]+)\s*lb/);
+        if(!match)return;
+        const value=parseFloat(match[1])||0;
+        total += title && title.textContent.trim()==="Pork Belly Burnt Ends" ? p.raw : value;
       });
-    }finally{applying=false;}
+      totalEl.textContent=`${Math.round(total*10)/10} lb`;
+    }
+
+    document.querySelectorAll("#results .result").forEach(card=>{
+      const title=card.querySelector(".resultTitle");
+      if(!title||title.textContent.trim()!=="Pork Belly Burnt Ends")return;
+      const buy=card.querySelector(".buy");
+      if(buy)buy.textContent=`BUY ${p.units} whole skinless pork belly${p.units===1?"":"s"} (~${p.units*8}–${p.units*10} lb total)`;
+      const details=card.querySelector(".details");
+      if(details)details.innerHTML=`Finished meat needed: <b>${Math.round(p.finished*10)/10} lb</b> • Raw requirement: <b>${Math.round(p.raw*10)/10} lb</b>`;
+      let note=card.querySelector(".purchaseNote");
+      if(!note){note=document.createElement("div");note.className="purchaseNote";card.appendChild(note)}
+      note.textContent="Whole skinless bellies commonly run 8–10 lb. Buy one whole belly for this cook; if the package is larger than needed, portion and freeze the excess for a future cook.";
+    });
   }
 
   function patchSummary(){
