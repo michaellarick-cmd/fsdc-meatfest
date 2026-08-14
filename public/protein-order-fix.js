@@ -7,12 +7,12 @@
     "fish"
   ];
   function apply(){
-    if(!Array.isArray(window.order)||typeof window.renderMeats!=="function")return;
-    const present=new Set(window.order);
+    if(typeof order==="undefined"||typeof renderMeats!=="function")return;
+    const present=new Set(order);
     const arranged=desired.filter(k=>present.has(k));
-    window.order.forEach(k=>{if(!arranged.includes(k))arranged.push(k)});
-    window.order.splice(0,window.order.length,...arranged);
-    window.renderMeats();
+    order.forEach(k=>{if(!arranged.includes(k))arranged.push(k)});
+    order.splice(0,order.length,...arranged);
+    renderMeats();
   }
   setTimeout(apply,0);
   setTimeout(apply,50);
