@@ -32,13 +32,23 @@
   function paint(){
     document.querySelectorAll("[data-side]").forEach(card=>{
       const id=card.getAttribute("data-side"), yes=recommended(id), top=card.querySelector(".sideTop > div");
-      card.classList.toggle("recommended",yes);
-      const old=card.querySelector(".sideRec"); if(old) old.remove();
-      if(yes && top){const badge=document.createElement("span");badge.className="sideRec";badge.textContent="RECOMMENDED";top.appendChild(badge);}
+      const hasBadge=!!card.querySelector(".sideRec");
+      const hasClass=card.classList.contains("recommended");
+      if(hasClass!==yes) card.classList.toggle("recommended",yes);
+      if(yes && !hasBadge && top){
+        const badge=document.createElement("span");badge.className="sideRec";badge.textContent="RECOMMENDED";top.appendChild(badge);
+      } else if(!yes && hasBadge){
+        card.querySelector(".sideRec").remove();
+      }
     });
   }
   window.meatfestRecommendationAudit={recommended,paint};
-  const run=()=>paint();
-  setTimeout(run,50);setTimeout(run,200);setTimeout(run,700);
-  new MutationObserver(run).observe(document.body,{childList:true,subtree:true});
+  let scheduled=false;
+  function schedule(){
+    if(scheduled)return;
+    scheduled=true;
+    setTimeout(()=>{scheduled=false;try{paint();}catch(e){}},0);
+  }
+  setTimeout(schedule,50);setTimeout(schedule,200);setTimeout(schedule,700);
+  new MutationObserver(schedule).observe(document.body,{childList:true,subtree:true});
 })();
