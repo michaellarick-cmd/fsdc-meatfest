@@ -8,6 +8,7 @@ const DISTRIBUTION_BASE = Object.freeze({
   pmbe: 0.5,
   prime: 0.5,
   ribs: 0.5,
+  porkbelly: (1 / 3) * 0.75,
 });
 
 const MULTIPLIERS = Object.freeze({
