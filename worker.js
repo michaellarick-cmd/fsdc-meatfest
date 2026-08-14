@@ -5,7 +5,9 @@ export default {
     if (!type.includes("text/html")) return response;
     let html = await response.text();
     if (!html.includes("/meatfest-additions.js")) {
-      html = html.replace("</body>", "<script src=\"/meatfest-additions.js?v=1\"></script></body>");
+      html = html.replace("</body>", "<script src=\"/meatfest-additions.js?v=1\"></script><script src=\"/porkbelly-fix.js?v=2\"></script></body>");
+    } else if (!html.includes("/porkbelly-fix.js")) {
+      html = html.replace("</body>", "<script src=\"/porkbelly-fix.js?v=2\"></script></body>");
     }
     const headers = new Headers(response.headers);
     headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
