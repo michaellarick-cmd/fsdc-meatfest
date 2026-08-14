@@ -21,7 +21,7 @@
     if(totalEl){
       const old=parseFloat((totalEl.textContent||"0").replace(/[^0-9.]/g,""))||0;
       const corrected=old-(p.units*10)+p.raw;
-      totalEl.textContent=`${Math.ceil(corrected*10)/10} lb`;
+      totalEl.textContent=`${Math.round(corrected*10)/10} lb`;
     }
     document.querySelectorAll("#results .result").forEach(card=>{
       const title=card.querySelector(".resultTitle");
