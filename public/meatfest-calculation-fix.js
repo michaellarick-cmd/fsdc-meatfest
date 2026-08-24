@@ -1,5 +1,5 @@
 /*
- * Meatfest calculation correction v1.0
+ * Meatfest calculation correction v1.1
  *
  * The portion choice is the TOTAL finished-meat target per adult-equivalent,
  * not a separate portion for every selected protein.
@@ -93,6 +93,17 @@
     if(special)return special;
     return `BUY ${r.units} ${r.o.unit}${r.units>1?"s":""} (~${Math.ceil(r.buyWeight*10)/10} lb total)`;
   }
+
+  // The base family helper historically treated a brat "unit" as ½ lb.
+  // Meatfest links are ~¼ lb each, so correct the family purchase helper too.
+  const originalFamilyPurchase=window.familyPurchase;
+  window.familyPurchase=function(k,o,bought){
+    if(k==="brats"){
+      const units=Math.max(1,Math.ceil(bought/.25));
+      return {units,buyWeight:units*.25,buy:`BUY ${units} link${units===1?"":"s"}`,note:"Individual-link buying at approximately ¼ lb per link; no large package-size inflation."};
+    }
+    return originalFamilyPurchase(k,o,bought);
+  };
 
   window.calc=function(){
     const s=calculateRows();
