@@ -5,18 +5,19 @@ export default {
     if (!type.includes("text/html")) return response;
     let html = await response.text();
     const recommendationScript = '<script src="/recommendation-fix.js?v=3"></script>';
+    const calculationScript = '<script src="/meatfest-calculation-fix.js?v=1"></script>';
     if (!html.includes("/meatfest-additions.js")) {
-      html = html.replace("</body>", `<script src="/meatfest-additions.js?v=1"></script><script src="/porkbelly-fix.js?v=2"></script><script src="/protein-order-fix.js?v=1"></script><script src="/side-order-fix.js?v=1"></script>${recommendationScript}</body>`);
+      html = html.replace("</body>", `<script src="/meatfest-additions.js?v=1"></script><script src="/porkbelly-fix.js?v=2"></script><script src="/protein-order-fix.js?v=1"></script><script src="/side-order-fix.js?v=1"></script>${recommendationScript}${calculationScript}</body>`);
     } else if (!html.includes("/porkbelly-fix.js")) {
-      html = html.replace("</body>", `<script src="/porkbelly-fix.js?v=2"></script><script src="/protein-order-fix.js?v=1"></script><script src="/side-order-fix.js?v=1"></script>${recommendationScript}</body>`);
+      html = html.replace("</body>", `<script src="/porkbelly-fix.js?v=2"></script><script src="/protein-order-fix.js?v=1"></script><script src="/side-order-fix.js?v=1"></script>${recommendationScript}${calculationScript}</body>`);
     } else if (!html.includes("/protein-order-fix.js")) {
-      html = html.replace("</body>", `<script src="/protein-order-fix.js?v=1"></script><script src="/side-order-fix.js?v=1"></script>${recommendationScript}</body>`);
+      html = html.replace("</body>", `<script src="/protein-order-fix.js?v=1"></script><script src="/side-order-fix.js?v=1"></script>${recommendationScript}${calculationScript}</body>`);
     } else if (!html.includes("/side-order-fix.js")) {
-      html = html.replace("</body>", `<script src="/side-order-fix.js?v=1"></script>${recommendationScript}</body>`);
+      html = html.replace("</body>", `<script src="/side-order-fix.js?v=1"></script>${recommendationScript}${calculationScript}</body>`);
     } else if (!html.includes("/recommendation-fix.js")) {
-      html = html.replace("</body>", `${recommendationScript}</body>`);
-    } else {
-      html = html.replace(/<script\s+src=["']\/recommendation-fix\.js(?:\?[^"']*)?["']\s*><\/script>/i, recommendationScript);
+      html = html.replace("</body>", `${recommendationScript}${calculationScript}</body>`);
+    } else if (!html.includes("/meatfest-calculation-fix.js")) {
+      html = html.replace("</body>", `${calculationScript}</body>`);
     }
     const headers = new Headers(response.headers);
     headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
