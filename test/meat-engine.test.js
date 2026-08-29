@@ -47,8 +47,10 @@ test('Family: no hidden 12.5% meat cushion', () => {
 test('Meatfest: six proteins apply the 60% floor to the overall portion only', () => {
   const rows = calculateFinishedProtein({ adults: 48, selected: ['chicken', 'pork', 'brats', 'brisket', 'pmbe', 'ribs'], serving: 1 / 3 });
   assert.equal(rows.length, 6);
-  assert.ok(rows.every((row) => Math.abs(row.finishedLb - 9.6) < 0.002));
-  assert.ok(Math.abs(total(rows) - 57.6) < 0.01);
+  // 48 x 1/3 lb = 16 lb base; the 60% Meatfest floor makes the shared
+  // finished-meat target 9.6 lb TOTAL, then divides it equally across six proteins.
+  assert.ok(rows.every((row) => Math.abs(row.finishedLb - 1.6) < 0.002));
+  assert.ok(Math.abs(total(rows) - 9.6) < 0.01);
   assert.ok(rows.every((row) => row.takeRate === 0.60));
 });
 
