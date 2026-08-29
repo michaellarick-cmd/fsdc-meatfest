@@ -22,6 +22,7 @@ export default {
         "prime-rib-fix.js",
         "meatfest-calculation-fix.js",
         "meatfest-render-repair.js",
+        "meatfest-final.js",
       ];
       for (const name of injected) {
         const re = new RegExp(`<script\\s+src=[\"']\\/${name}(?:\\?[^\"']*)?[\"']\\s*><\\/script>`, "gi");
@@ -29,7 +30,7 @@ export default {
       }
 
       const scripts = [
-        '<script src="/app.js?v=6"></script>',
+        '<script src="/app.js?v=7"></script>',
         '<script>\n'
           + 'try {\n'
           + '  if (typeof meats !== "undefined") {\n'
@@ -53,6 +54,7 @@ export default {
         '<script src="/recommendation-fix.js?v=5"></script>',
         '<script src="/meatfest-calculation-lock.js?v=4"></script>',
         '<script src="/meatfest-render-repair.js?v=2"></script>',
+        '<script src="/meatfest-final.js?v=1"></script>',
       ].join("");
       html = html.replace("</body>", `${scripts}</body>`);
       const headers = new Headers(response.headers);
