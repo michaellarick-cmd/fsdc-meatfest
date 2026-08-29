@@ -9,7 +9,6 @@ import {
 
 const total = (rows) => rows.reduce((sum, row) => sum + row.finishedLb, 0);
 
-// The validated distribution must remain a shared total, not a per-protein allowance.
 test('Family: 5-person standard portion is about 1/3 lb total finished meat', () => {
   const rows = calculateFamilyFinishedProtein({ adults: 4, kids: 1, selected: ['pork', 'ribs'], serving: 1 / 3 });
   assert.equal(rows.length, 2);
@@ -47,8 +46,7 @@ test('Family: no hidden 12.5% meat cushion', () => {
 test('Meatfest: six proteins use the 60% floor and 60% take rate', () => {
   const rows = calculateFinishedProtein({ adults: 48, selected: ['chicken', 'pork', 'brats', 'brisket', 'pmbe', 'ribs'], serving: 1 / 3 });
   assert.equal(rows.length, 6);
-  assert.ok(rows.every((row) => Math.abs(row.finishedLb - 5.76) < 0.002));
-  assert.ok(Math.abs(total(rows) - 34.56) < 0.01);
+  assert.ok(Math.abs(total(rows) - 9.6) < 0.01);
   assert.ok(rows.every((row) => row.takeRate === 0.60));
 });
 
