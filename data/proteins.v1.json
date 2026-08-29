@@ -5,7 +5,7 @@
     "chicken": {
       "name": "Chicken / Poultry",
       "variants": {
-        "whole": {"label": "Whole Fryer — Pulled", "yield": 0.62, "unitWeightLb": 4.5, "unit": "whole fryer"},
+        "whole": {"label": "Whole Fryer — Pulled", "yield": 0.62, "unitWeightLb": 5.0, "unit": "whole chicken"},
         "legq": {"label": "Leg Quarters", "yield": 0.42, "unitWeightLb": 0.59375, "unit": "leg quarter"},
         "thigh": {"label": "Bone-In Thighs", "yield": 0.52, "unitWeightLb": 0.25, "unit": "thigh"}
       }
@@ -26,7 +26,7 @@
     "brats": {
       "name": "Polish / Brats",
       "variants": {
-        "links": {"label": "Links", "yield": 0.90, "unitWeightLb": 0.5, "unit": "links"}
+        "links": {"label": "Links", "yield": 0.90, "unitWeightLb": 0.5, "unit": "link"}
       }
     },
     "brisket": {
@@ -52,8 +52,8 @@
     "ribs": {
       "name": "Ribs",
       "variants": {
-        "loin": {"label": "Loin Back / Baby Back", "yield": 0.70, "unitWeightLb": 2.25, "unit": "rack", "familyUnitFraction": 0.5},
-        "spare": {"label": "Spare / St. Louis", "yield": 0.70, "unitWeightLb": 2.25, "unit": "rack", "familyUnitFraction": 0.5}
+        "loin": {"label": "Loin Back / Baby Back", "yield": 0.70, "unitWeightLb": 2.25, "unit": "rack", "familyUnitFraction": 0.5, "typicalRibsPerRack": 11},
+        "spare": {"label": "Spare / St. Louis", "yield": 0.70, "unitWeightLb": 2.25, "unit": "rack", "familyUnitFraction": 0.5, "typicalRibsPerRack": 11}
       }
     },
     "hog": {
