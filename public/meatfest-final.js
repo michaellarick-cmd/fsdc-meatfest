@@ -1,18 +1,30 @@
-/* Meatfest authoritative calculation pass — v2.2.5 */
+/* Meatfest authoritative calculation pass — v2.2.6
+ *
+ * The important rule here is that the selected serving amount is the TOTAL
+ * finished-meat target per adult-equivalent eater. Additional proteins reduce
+ * that total; the total is then divided equally across the selected proteins.
+ * Each protein then applies its own yield and practical purchase unit.
+ *
+ * This file also re-runs the authoritative calculation after the legacy app's
+ * event handlers. The old app.js remains useful for UI/state management, but
+ * it must not be allowed to put its older protein math back on screen.
+ */
 (function(){
-  if(window.__MEATFEST_FINAL__) return;
-  window.__MEATFEST_FINAL__=true;
-
   const TAKE_RATE=.60;
+  const VERSION="2.2.6";
 
   function active(){
     const [adults,kids]=activeTotals();
-    return {adults:Number(adults)||0,kids:Number(kids)||0,eaters:(Number(adults)||0)+(Number(kids)||0)*.5};
+    return {
+      adults:Number(adults)||0,
+      kids:Number(kids)||0,
+      eaters:(Number(adults)||0)+(Number(kids)||0)*.5
+    };
   }
 
   function serving(){
     const v=Number($("serving")?.value);
-    return v===.25||v===.5||v===.333333||Math.abs(v-1/3)<.001?v:1/3;
+    return v===.25||v===.5||Math.abs(v-1/3)<.001?v:1/3;
   }
 
   function multiplier(n){
@@ -20,7 +32,7 @@
   }
 
   function unitWeight(k,o){
-    if(k==="chicken"&&choices[k]==="whole")return 4.5;
+    if(k==="chicken"&&choices[k]==="whole")return Number(o.unitWeight)||4.5;
     if(k==="brats")return .5;
     if(k==="ribs")return 2.25;
     if(k==="brisket"&&choices[k]==="packer")return 14;
@@ -88,37 +100,48 @@
     if(typeof calcSides==="function")calcSides();
   }
 
-  window.calc=function(){
-    if(planningMode!=="meatfest")return;
+  function authoritativeCalc(){
+    if(typeof planningMode!=="undefined"&&planningMode!=="meatfest")return;
     const s=calculateMeatfest();
     if(s)renderFinal(s);
     return s;
-  };
+  }
 
+  // Replace the global property used by save/print/share paths.
+  window.calc=authoritativeCalc;
   window.buildSummary=function(){
-    if(planningMode!=="meatfest")return {};
     const s=calculateMeatfest();
     return s?{adults:s.adults,kids:s.kids,eaters:s.eaters,rows:s.rows,total:s.total,multiplier:s.multiplier,servingLb:s.servingLb,takeRate:s.takeRate,totalFinished:s.totalFinished}:{};
   };
 
+  // app.js contains older inline handlers that can run after this file.
+  // Reconcile after those handlers finish so the old calculation cannot
+  // overwrite the authoritative result. This is intentionally delegated and
+  // does not replace the app's UI/state handlers.
+  let queued=false;
+  function reconcile(){
+    if(queued)return;
+    queued=true;
+    setTimeout(function(){queued=false;try{authoritativeCalc()}catch(e){console.error("Meatfest authority reconciliation failed",e)}},0);
+  }
+  document.addEventListener("input",reconcile);
+  document.addEventListener("change",reconcile);
+  document.addEventListener("click",function(e){
+    if(e.target.closest("[data-plan-mode],[data-serving-choice],.meat,[data-choice],[data-side],#manualTab,#guestTab,#clearGuests,#importPaste"))reconcile();
+  });
+
   function installFinalUI(){
-    if(!document.getElementById("meatfest-final-ui")){
-      const style=document.createElement("style");
-      style.id="meatfest-final-ui";
-      style.textContent=`.meatfestPortionNote{margin-top:10px;padding:9px 11px;border-left:3px solid var(--accent);background:#1d1914;color:#d9c7ae;font-size:11px;line-height:1.4;border-radius:0 7px 7px 0}.meatfestPortionNote b{color:#f0eee7}@media(max-width:600px){.meats{grid-template-columns:1fr}.result{padding:12px}.resultTop{align-items:flex-start}.buy{max-width:52%;line-height:1.15}}`;
-      document.head.appendChild(style);
-    }
+    const eyebrow=document.querySelector(".eyebrow");if(eyebrow)eyebrow.textContent=`MEATFEST • VERSION ${VERSION}`;
+    const footer=document.querySelector(".footer");if(footer)footer.textContent=`FSDC Meatfest Calculator • v${VERSION} • Authoritative portion model`;
+    document.title=`FSDC Meatfest Calculator ${VERSION}`;
     const note=document.querySelector("#serving")?.parentElement;
     if(note&&!document.getElementById("meatfestPortionNote")){
       const el=document.createElement("div");
       el.id="meatfestPortionNote";
       el.className="meatfestPortionNote";
-      el.innerHTML='<b>Important:</b> the selected portion is the total finished-meat target per eater. When you select more proteins, that total is reduced and then divided equally across the selected proteins.';
+      el.innerHTML='<b>Important:</b> the selected portion is the total finished-meat target per eater. When more proteins are selected, that total is reduced and then divided equally across the selected proteins.';
       note.appendChild(el);
     }
-    const eyebrow=document.querySelector(".eyebrow");if(eyebrow)eyebrow.textContent="MEATFEST • VERSION 2.2.5";
-    const footer=document.querySelector(".footer");if(footer)footer.textContent="FSDC Meatfest Calculator • v2.2.5 • Authoritative portion model";
-    document.title="FSDC Meatfest Calculator 2.2.5";
   }
 
   installFinalUI();
@@ -126,7 +149,7 @@
     try{
       if(typeof renderMeats==="function")renderMeats();
       if(typeof renderSideCards==="function")renderSideCards();
-      window.calc();
+      authoritativeCalc();
     }catch(e){console.error("Meatfest authoritative pass failed",e)}
   },0);
 })();
