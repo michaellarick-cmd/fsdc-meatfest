@@ -11,13 +11,18 @@ const DISTRIBUTION_BASE = Object.freeze({
   porkbelly: (1 / 3) * 0.75,
 });
 
+const MEATFEST_TAKE_RATE = 0.60;
+const MEATFEST_FLOOR = 0.60;
+const RIBS_PER_TAKER = 1.75;
+const SAUSAGE_SLICES_PER_TAKER = 3.5;
+
 // Meatfest buffet rule: each additional protein reduces the normal portion
 // by 15%, with a 60% floor. The overall portion selector remains the only
-// crowd-size adjustment; proteins are then converted through their own yields
-// and practical purchase units.
+// crowd-size adjustment. Serving-unit conversions are handled explicitly
+// downstream so the calculator reflects how each protein is actually served.
 export function multiplier(proteinCount) {
   if (proteinCount < 1) return 0;
-  return Math.max(0.60, 1 - 0.15 * (proteinCount - 1));
+  return Math.max(MEATFEST_FLOOR, 1 - 0.15 * (proteinCount - 1));
 }
 
 export function calculateFinishedProtein({ adults = 0, kids = 0, selected, serving = 1 / 3, mode = 'meatfest' }) {
@@ -41,16 +46,22 @@ export function calculateFinishedProtein({ adults = 0, kids = 0, selected, servi
     }));
   }
 
-  // Meatfest: total portion × buffet sampling factor. Serving format and
-  // purchase-unit conversion happen downstream; do not reapply protein-specific
-  // portion weights here.
   const mult = multiplier(proteins.length);
   return bases.map(({ id }) => ({
     id,
     finishedLb: eaters * Number(serving) * mult,
     mode,
     servingLb: Number(serving),
+    takeRate: MEATFEST_TAKE_RATE,
+    servingUnits: servingUnitsFor(id, eaters),
   }));
+}
+
+function servingUnitsFor(id, eaters) {
+  const takers = eaters * MEATFEST_TAKE_RATE;
+  if (id === 'ribs') return { takers, units: takers * RIBS_PER_TAKER, unit: 'ribs' };
+  if (id === 'brats') return { takers, units: takers * SAUSAGE_SLICES_PER_TAKER, unit: 'slices' };
+  return { takers };
 }
 
 export function calculateFamilyFinishedProtein(args) {
@@ -69,4 +80,4 @@ export function roundUpPurchase(requiredLb, unitWeightLb) {
   return { units, purchasedLb, leftoverLb: Math.max(0, purchasedLb - requiredLb) };
 }
 
-export { DISTRIBUTION_BASE };
+export { DISTRIBUTION_BASE, MEATFEST_TAKE_RATE, MEATFEST_FLOOR, RIBS_PER_TAKER, SAUSAGE_SLICES_PER_TAKER };
