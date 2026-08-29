@@ -16,6 +16,7 @@
       else if(o.mode==="units"){const unitWeight=k==="brats"?.25:o.unitWeight;units=Math.max(1,Math.ceil(bought/unitWeight));buyWeight=units*unitWeight;excess=Math.max(0,buyWeight-bought);purchaseNote=cutNote(k,o);if(!purchaseNote&&excess>.5)purchaseNote="Purchase amount is rounded to practical units; excess is planned leftovers.";}
       else if(o.mode==="hog"){units=1;buyWeight=bought;purchaseNote="Buy one whole hog; target the calculated hanging-weight requirement.";}
       else purchaseNote="Fish is always calculated as purchased fillets.";
+      if(k==="chicken"&&choices[k]==="whole")purchaseNote="Meatfest planning unit: about 5 lb per whole chicken.";
       rows.push({k,m,o,finished,targetFinished,y,bought,units,buyWeight,excess,purchaseNote,buyOverride});
     });
     return {adults,kids,eaters,totalFinishedTarget,rows,total:rows.reduce((s,r)=>s+r.buyWeight,0)};
