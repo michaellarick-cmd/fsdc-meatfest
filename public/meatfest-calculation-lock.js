@@ -1,85 +1,173 @@
 /*
- * Meatfest calculation lock — authoritative final calculation path.
+ * Meatfest calculation lock — authoritative recommendation engine.
  *
- * This is deliberately loaded LAST by worker.js. It overrides the legacy
- * calc()/buildSummary() so the displayed shopping list has exactly one
- * calculation path.
+ * UI/configuration is intentionally unchanged. This file owns only the
+ * protein Recommended Buy calculation.
  *
- * IMPORTANT: the serving choice is the TOTAL finished-meat target per
- * adult-equivalent for the event. The validated Meatfest distribution
- * allocates that total across the selected proteins; it does not multiply
- * the serving target by the number of proteins.
+ * Model:
+ *   1. Establish total finished-meat consumption from adult-equivalents.
+ *   2. Distribute that total across selected proteins using Meatfest-specific
+ *      consumption weights (not one full serving target per protein).
+ *   3. Apply the original Meatfest yield assumptions from the established
+ *      calculator model.
+ *   4. Round to practical purchase units. The rounding itself supplies the
+ *      intentional Meatfest cushion; we do not multiply the whole menu by an
+ *      arbitrary leftover percentage.
+ *
+ * Serving behavior behind the weights:
+ *   PMBE          ~2 cubes/person when selected
+ *   Pork belly    ~2 cubes/person when selected
+ *   Ribs          ~2–3 king-cut ribs for people choosing ribs
+ *   Brats         ~3–4 sliced bites for people choosing brats
+ *   Brisket       ~2–3 lean slices, with a smaller fatty take-rate
+ *   Pulled meats  ~1 scoop, about 1/3 lb
+ *
+ * The weights are deliberately normalized over the proteins actually chosen.
+ * They therefore represent the share of the TOTAL Meatfest meat consumption,
+ * rather than multiplying the total by the number of proteins selected.
  */
 (function(){
-  const BASE=Object.freeze({
-    chicken:(.5+1/3)/2,
-    fish:.25,
-    pork:1/3,
-    hog:1/3,
+  const ROLE_WEIGHT=Object.freeze({
+    brisket:.22,
+    pork:.18,
+    chicken:.15,
+    ribs:.15,
+    brats:.12,
+    pmbe:.10,
+    porkbelly:.08,
+    prime:.10,
+    turkey:.12,
+    fish:.08,
+    hog:1
+  });
+
+  // Original/validated Meatfest yield assumptions remain authoritative.
+  const YIELD=Object.freeze({
+    chicken:.62,
+    fish:.76,
+    pork:.60,
+    brats:.90,
+    brisket:.50,
+    pmbe:.60,
+    prime:.80,
+    ribs:.70,
+    porkbelly:.62,
+    turkey:.55
+  });
+
+  // Representative purchase units. The model uses market-wide planning
+  // sizes rather than a particular store's package size.
+  const UNIT=Object.freeze({
+    chicken:5,
+    fish:.33,
+    pork:8.5,
     brats:.25,
-    brisket:.5,
-    pmbe:.5,
-    prime:.5,
-    ribs:.5,
-    porkbelly:(1/3)*.75
+    brisket:14,
+    pmbe:4,
+    prime:5,
+    ribs:2.75,
+    porkbelly:10,
+    turkey:14
   });
-  const MULT=Object.freeze({
-    '.5':[1,.6,.376455,.2857,.25,.22221,.19442,.1782092],
-    '.333333':[1,.4,.25097,.1904667,.1666667,.14814,.1296133,.1188061],
-    '.25':[.75,.3333,.2,.1667,.125,.111105,.0909,.0817429]
-  });
-  function servingKey(v){v=Number(v);if(Math.abs(v-.5)<1e-6)return '.5';if(Math.abs(v-.25)<1e-6)return '.25';return '.333333';}
-  function validatedMultiplier(n,serving){const t=MULT[servingKey(serving)];return t[Math.max(1,Math.min(8,n))-1];}
+
+  function servingTarget(){
+    const v=Number($("serving").value);
+    return v===.25||v===.5?v:1/3;
+  }
+
+  function activeEaters(){
+    const [adults,kids]=activeTotals();
+    return {adults,kids,eaters:adults+kids*.5};
+  }
+
+  function normalizeWeights(keys){
+    // Whole hog remains a feature protein in the existing product design.
+    if(keys.includes("hog")){
+      const out={}; keys.forEach(k=>out[k]=k==="hog"?1:0); return out;
+    }
+    const total=keys.reduce((s,k)=>s+(ROLE_WEIGHT[k]||0),0);
+    const out={};
+    keys.forEach(k=>out[k]=total?(ROLE_WEIGHT[k]||0)/total:1/keys.length);
+    return out;
+  }
+
+  function effectiveYield(k,o){
+    return (o&&typeof o.yield==="number")?o.yield:(YIELD[k]||1);
+  }
+
+  function effectiveUnit(k,o){
+    // Current site choices are retained. These are the Meatfest planning
+    // standards for the recommendation engine.
+    if(k==="chicken" && choices[k]==="whole") return 5;
+    if(k==="brats") return .25;
+    if(k==="ribs") return 2.75;
+    if(k==="porkbelly") return 10;
+    if(k==="brisket" && choices[k]==="packer") return 14;
+    if(k==="pmbe") return 4;
+    if(o && Number.isFinite(Number(o.unitWeight))) return Number(o.unitWeight);
+    return UNIT[k]||1;
+  }
+
+  function roundUnits(raw,unit){
+    return Math.max(1,Math.ceil((raw-1e-9)/unit));
+  }
+
+  function purchaseText(k,units,weight,o){
+    if(k==="brisket" && choices[k]==="packer"){
+      return `BUY ${units} whole packer${units===1?"":"s"} (~${units*14}–${units*18} lb total)`;
+    }
+    if(k==="brats") return `BUY ${units} link${units===1?"":"s"} (~${Math.round(weight*10)/10} lb total)`;
+    if(k==="chicken" && choices[k]==="whole") return `BUY ${units} whole chicken${units===1?"":"s"} (~${Math.round(weight*10)/10} lb total)`;
+    if(k==="pmbe") return `BUY ${units} chuck roast${units===1?"":"s"} (~${Math.round(weight*10)/10} lb total)`;
+    if(k==="ribs") return `BUY ${units} rack${units===1?"":"s"} (~${Math.round(weight*10)/10} lb total)`;
+    if(k==="porkbelly") return `BUY ${units} whole skinless pork belly${units===1?"":"s"} (~${Math.round(weight*10)/10} lb total)`;
+    if(k==="pork") return `BUY ${units} ${o.unit}${units===1?"":"s"} (~${Math.round(weight*10)/10} lb total)`;
+    if(k==="fish") return `BUY ${units} ${o.unit}${units===1?"":"s"} (~${Math.round(weight*10)/10} lb total)`;
+    if(k==="hog") return `BUY 1 whole hog (~${Math.ceil(weight)} lb hanging weight)`;
+    return `BUY ${units} ${o.unit}${units===1?"":"s"} (~${Math.round(weight*10)/10} lb total)`;
+  }
+
+  function noteFor(k,raw,buyWeight){
+    const excess=Math.max(0,buyWeight-raw);
+    if(k==="porkbelly") return "Rich secondary protein. Whole belly is a practical batch; portion and freeze excess for a future cook.";
+    if(excess>.5) return `Purchase is rounded to practical units; approximately ${Math.round(excess*10)/10} lb becomes planned leftovers.`;
+    return "Purchase amount is rounded to a practical unit.";
+  }
 
   function calculateRows(){
-    const [adults,kids]=activeTotals();
-    const eaters=adults+kids*.5;
+    const {adults,kids,eaters}=activeEaters();
     const keys=[...selected];
-    if(!eaters||!keys.length)return {adults,kids,eaters,rows:[],total:0};
-    const mult=validatedMultiplier(keys.length,+$("serving").value);
+    if(!eaters || !keys.length) return {adults,kids,eaters,totalFinishedTarget:0,rows:[],total:0};
+
+    const totalFinishedTarget=eaters*servingTarget();
+    const weights=normalizeWeights(keys);
     const rows=[];
 
     keys.forEach(k=>{
       const m=meats[k],o=m.options[choices[k]];
-      const per=BASE[k]==null?0:BASE[k]*mult;
-      const finished=eaters*per;
+      const share=weights[k]||0;
+      const finished=eaters?totalFinishedTarget*share:0;
       const targetFinished=planningMode==="family"?finished*1.125:finished;
-      const hogPlan=o.yield==="hog"?wholeHogPlan(targetFinished):null;
-      const y=hogPlan?hogPlan.yield:o.yield;
-      const bought=hogPlan?hogPlan.hangingWeight:(y?targetFinished/y:targetFinished);
-      let units=null,buyWeight=bought,purchaseNote="",excess=0,buyOverride=null;
 
-      if(k==="porkbelly"){
-        units=1;buyWeight=bought;
-        buyOverride="BUY 1 whole skinless pork belly (~8–10 lb)";
-        purchaseNote="Rich secondary protein. Use the calculated amount for this cook and portion/freeze the remaining belly for a future cook.";
-      }else if(planningMode==="family"&&k!=="hog"){
-        const fp=familyPurchase(k,o,bought);
-        if(fp){units=fp.units;buyWeight=fp.buyWeight;buyOverride=fp.buy;purchaseNote=fp.note;excess=Math.max(0,buyWeight-bought);}
-      }else if(o.mode==="units"){
-        const unitWeight=k==="brats"?.25:o.unitWeight;
-        units=Math.max(1,Math.ceil(bought/unitWeight));
-        buyWeight=units*unitWeight;
-        excess=Math.max(0,buyWeight-bought);
-        purchaseNote=cutNote(k,o);
-        if(!purchaseNote&&excess>.5)purchaseNote="Purchase amount is rounded to practical units; excess is planned leftovers.";
-      }else if(o.mode==="hog"){
-        units=1;buyWeight=bought;purchaseNote="Buy one whole hog; target the calculated hanging-weight requirement.";
-      }else{
-        purchaseNote="Fish is always calculated as purchased fillets.";
+      if(k==="hog"){
+        const plan=typeof wholeHogPlan==="function"?wholeHogPlan(targetFinished):{hangingWeight:targetFinished,yield:.50};
+        const buyWeight=plan.hangingWeight;
+        rows.push({k,m,o,finished,targetFinished,y:plan.yield,bought:buyWeight,units:1,buyWeight,excess:0,
+          purchaseNote:"Whole hog remains a feature protein and is not combined with the other-protein allocation.",
+          buyOverride:`BUY 1 whole hog (~${Math.ceil(buyWeight)} lb hanging weight)`});
+        return;
       }
-      rows.push({k,m,o,finished,targetFinished,y,bought,units,buyWeight,excess,purchaseNote,buyOverride});
-    });
-    return {adults,kids,eaters,rows,total:rows.reduce((s,r)=>s+r.buyWeight,0)};
-  }
 
-  function buyText(r){
-    if(r.buyOverride)return r.buyOverride;
-    if(r.k==="hog")return `BUY 1 whole hog (~${Math.ceil(r.buyWeight)} lb hanging weight)`;
-    if(r.k==="brisket"&&choices[r.k]==="packer")return `BUY ${r.units} ${r.o.unit}${r.units>1?'s':''} (~${r.units*14}–${r.units*18} lb total)`;
-    if(r.k==="brats")return `BUY ${r.units} link${r.units===1?'':'s'} (~${Math.ceil(r.buyWeight*10)/10} lb total)`;
-    const special=purchaseDisplay(r.k,r.o,r.units,r.buyWeight);
-    return special||`BUY ${r.units} ${r.o.unit}${r.units>1?'s':''} (~${Math.ceil(r.buyWeight*10)/10} lb total)`;
+      const y=effectiveYield(k,o);
+      const raw=targetFinished/y;
+      const unit=effectiveUnit(k,o);
+      const units=roundUnits(raw,unit);
+      const buyWeight=units*unit;
+      rows.push({k,m,o,finished,targetFinished,y,bought:raw,units,buyWeight,
+        excess:Math.max(0,buyWeight-raw),purchaseNote:noteFor(k,raw,buyWeight),buyOverride:null});
+    });
+
+    return {adults,kids,eaters,totalFinishedTarget,rows,total:rows.reduce((s,r)=>s+r.buyWeight,0)};
   }
 
   function render(s){
@@ -87,21 +175,27 @@
     $("statKids").textContent=s.kids;
     $("statEaters").textContent=Math.round(s.eaters*10)/10;
     $("totalRaw").textContent=s.total?`${Math.ceil(s.total*10)/10} lb`:"0 lb";
-    $("summary").textContent=s.rows.length?`${s.rows.length} protein${s.rows.length>1?'s':''} • ${Math.round(s.eaters*10)/10} adult-equivalent eaters${planningMode==='family'?' • 10–15% family cushion':''}`:"Select at least one protein.";
+    $("summary").textContent=s.rows.length
+      ?`${s.rows.length} protein${s.rows.length>1?"s":""} • ${Math.round(s.eaters*10)/10} adult-equivalent eaters${planningMode==="family"?" • 10–15% family cushion":""}`
+      :"Select at least one protein.";
+
     $("results").innerHTML=s.rows.length?s.rows.map(r=>{
-      const buy=buyText(r);
-      const ex=r.excess>.5?` • Planned excess: <span class="excess">${Math.round(r.excess*10)/10} lb</span>`:"";
-      const cushion=planningMode==='family'?` • Family cushion target: <b>${Math.round((r.targetFinished-r.finished)*10)/10} lb finished</b>`:"";
-      const unit=(r.k!=="porkbelly"&&r.o.mode==="units"&&r.k!=="hog"&&planningMode!=="family")?` • Planning unit: ${r.k==='brats'?.25:r.o.unitWeight} lb`:"";
-      return `<div class="result"><div class="resultTop"><div><div class="resultTitle">${r.m.name}</div><span class="pill">${r.o.label}</span><span class="pill">${Math.round(r.y*100)}% yield</span></div><div class="buy">${buy}</div></div><div class="details">Finished meat needed: <b>${Math.round(r.finished*10)/10} lb</b>${cushion} • Raw requirement: <b>${Math.round(r.bought*10)/10} lb</b>${unit}${ex}</div>${r.purchaseNote?`<div class="purchaseNote">${r.purchaseNote}</div>`:""}${r.k==='hog'?wholeHogWarning(r.buyWeight):""}</div>`;
+      const buy=r.buyOverride||purchaseText(r.k,r.units,r.buyWeight,r.o);
+      const excess=r.excess>.5?` • Planned excess: <span class="excess">${Math.round(r.excess*10)/10} lb</span>`:"";
+      const cushion=planningMode==="family"?` • Family cushion target: <b>${Math.round((r.targetFinished-r.finished)*10)/10} lb finished</b>`:"";
+      return `<div class="result"><div class="resultTop"><div><div class="resultTitle">${r.m.name}</div><span class="pill">${r.o.label}</span><span class="pill">${Math.round(r.y*100)}% yield</span></div><div class="buy">${buy}</div></div><div class="details">Finished meat needed: <b>${Math.round(r.finished*10)/10} lb</b>${cushion} • Raw requirement: <b>${Math.round(r.bought*10)/10} lb</b>${excess}</div>${r.purchaseNote?`<div class="purchaseNote">${r.purchaseNote}</div>`:""}${r.k==="hog"&&typeof wholeHogWarning==="function"?wholeHogWarning(r.buyWeight):""}</div>`;
     }).join(""):"<p class='note'>Select at least one protein.</p>";
     calcSides();
   }
 
   window.calc=function(){render(calculateRows());};
-  window.buildSummary=function(){const s=calculateRows();return {adults:s.adults,kids:s.kids,eaters:s.eaters,rows:s.rows.map(r=>({...r,buy:buyText(r)})),total:s.total};};
+  window.buildSummary=function(){
+    const s=calculateRows();
+    return {adults:s.adults,kids:s.kids,eaters:s.eaters,rows:s.rows.map(r=>({...r,buy:r.buyOverride||purchaseText(r.k,r.units,r.buyWeight,r.o)})),total:s.total};
+  };
 
-  if(meats.brats&&meats.brats.options&&meats.brats.options.links)meats.brats.options.links.unitWeight=.25;
-
-  setTimeout(function(){if(typeof renderMeats==='function')renderMeats();calc();},0);
+  setTimeout(function(){
+    if(typeof renderMeats==="function")renderMeats();
+    calc();
+  },0);
 })();
