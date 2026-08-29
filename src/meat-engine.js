@@ -16,9 +16,10 @@ const MEATFEST_FLOOR = 0.60;
 const RIBS_PER_TAKER = 1.75;
 const SAUSAGE_SLICES_PER_TAKER = 3.5;
 
-// Meatfest buffet rule: each additional protein reduces the overall normal
-// portion by 15%, with a 60% floor. This is applied ONCE to the overall
-// portion size. It is NOT another reduction at the individual-protein level.
+// Meatfest rule: the selected portion is the TOTAL finished-meat target per
+// adult-equivalent eater. Adding proteins reduces that total. The resulting
+// total is then divided evenly across the selected proteins before each
+// protein's yield and practical purchase unit are applied.
 export function multiplier(proteinCount) {
   if (proteinCount < 1) return 0;
   return Math.max(MEATFEST_FLOOR, 1 - 0.15 * (proteinCount - 1));
@@ -46,10 +47,9 @@ export function calculateFinishedProtein({ adults = 0, kids = 0, selected, servi
   }
 
   const mult = multiplier(proteins.length);
-  // The multi-protein rule changes the overall portion size. Do not apply
-  // MEATFEST_TAKE_RATE here; that rate is reserved for count-based serving
-  // units such as ribs and sausage slices.
-  const finishedPerProtein = eaters * Number(serving) * mult;
+  const totalFinished = eaters * Number(serving) * mult;
+  const finishedPerProtein = totalFinished / proteins.length;
+
   return bases.map(({ id }) => ({
     id,
     finishedLb: finishedPerProtein,
@@ -57,6 +57,7 @@ export function calculateFinishedProtein({ adults = 0, kids = 0, selected, servi
     servingLb: Number(serving),
     takeRate: MEATFEST_TAKE_RATE,
     servingUnits: servingUnitsFor(id, eaters),
+    totalFinishedLb: totalFinished,
   }));
 }
 
