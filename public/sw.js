@@ -1,4 +1,4 @@
-const CACHE = "meatfest-2.2.4";
+const CACHE = "meatfest-2.2.5";
 const SHELL = ["/", "/index.html", "/manifest.json", "/fsdc-icon-192.png", "/fsdc-icon.png", "/fsdc-logo.png"];
 
 self.addEventListener("install", event => {
@@ -13,7 +13,6 @@ self.addEventListener("fetch", event => {
   const req = event.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
-  if (url.pathname === "/meatfest-additions.js") return;
 
   if (req.mode === "navigate") {
     event.respondWith(
