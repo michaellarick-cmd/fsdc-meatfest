@@ -1,110 +1,22 @@
 /* Meatfest calculation lock — authoritative recommendation engine.
+ * The UI remains unchanged. This is the single production calculation layer.
  *
- * The UI stays unchanged. This lock deliberately uses the original Meatfest
- * 4.0 protein-allocation model rather than equal-weighting every protein.
- * The original multiplier is the serving-behavior layer: as more proteins are
- * selected, the planned amount of each individual protein decreases.
- *
- * Established Meatfest serving assumptions:
- *   PMBE: about 2 chunks/person who takes it
- *   Pork belly: same chunk logic as PMBE
- *   Ribs: 2–3 individual king-cut ribs/person who takes them
- *   Polish/brats: about 3–4 sliced bites/person who takes them
- *   Brisket: typically 2–3 lean slices; fatty slices have a lower take-rate
- *   Pulled pork/chicken: roughly one scoop, about 1/3 lb
- *
- * Original purchase units/yields are preserved, with the measured Meatfest
- * correction that Polish/brats are 0.50 lb per link. Whole-fryer chicken is
- * planned at 5 lb per bird, per the Meatfest buying decision.
+ * Serving behavior already validated for Meatfest:
+ * PMBE/pork belly: chunk-based; ribs: 2–3 king-cut ribs; brats: 3–4 slices;
+ * brisket: 2–3 lean slices with lower fatty take-rate; pulled meats: ~1/3-lb scoop.
+ * Original Meatfest multiplier coefficients are preserved.
+ * Measured/approved purchase assumptions: brats = 0.50 lb/link; chicken = 5 lb.
  */
 (function(){
   const YIELD=Object.freeze({chicken:.62,fish:.76,pork:.60,brats:.90,brisket:.50,pmbe:.60,prime:.80,ribs:.70,porkbelly:.62,turkey:.55});
   const UNIT=Object.freeze({chicken:5,fish:.33,pork:8.5,brats:.50,brisket:14,pmbe:4,prime:5,ribs:2.25,porkbelly:10,turkey:14});
-  const multiplierTable=Object.freeze({
-    ".5":[1,.6,.376455,.2857,.25,.22221,.19442,.1782092],
-    ".333333":[1,.4,.25097,.1904667,.1666667,.14814,.1296133,.1188061],
-    ".25":[.75,.3333,.2,.1667,.125,.111105,.0909,.0817429]
-  });
-  function multiplier(n,serv){
-    const v=Number(serv);
-    const key=Math.abs(v-.5)<1e-6?".5":Math.abs(v-.25)<1e-6?".25":".333333";
-    return multiplierTable[key][Math.max(1,Math.min(8,n))-1];
-  }
+  const MULTIPLIERS=Object.freeze({".5":[1,.6,.376455,.2857,.25,.22221,.19442,.1782092],".333333":[1,.4,.25097,.1904667,.1666667,.14814,.1296133,.1188061],".25":[.75,.3333,.2,.1667,.125,.111105,.0909,.0817429]});
+  function multiplier(n,serv){const v=Number(serv);const key=Math.abs(v-.5)<1e-6?".5":Math.abs(v-.25)<1e-6?".25":".333333";return MULTIPLIERS[key][Math.max(1,Math.min(8,n))-1]}
   function activeEaters(){const [adults,kids]=activeTotals();return {adults,kids,eaters:adults+kids*.5}}
-  function effectiveUnit(k,o){
-    if(k==="chicken"&&choices[k]==="whole")return 5;
-    if(k==="brats")return .50;
-    if(k==="ribs")return 2.25;
-    if(k==="porkbelly")return 10;
-    if(k==="brisket"&&choices[k]==="packer")return 14;
-    if(k==="pmbe")return 4;
-    if(o&&Number.isFinite(Number(o.unitWeight)))return Number(o.unitWeight);
-    return UNIT[k]||1;
-  }
-  function purchaseText(k,units,weight,o){
-    if(k==="brisket"&&choices[k]==="packer")return `BUY ${units} whole packer${units===1?"":"s"} (~${units*14}–${units*18} lb total)`;
-    if(k==="brats")return `BUY ${units} link${units===1?"":"s"} (~${Math.round(weight*10)/10} lb total)`;
-    if(k==="chicken"&&choices[k]==="whole")return `BUY ${units} whole chicken${units===1?"":"s"} (~${Math.round(weight*10)/10} lb total)`;
-    if(k==="pmbe")return `BUY ${units} chuck roast${units===1?"":"s"} (~${Math.round(weight*10)/10} lb total)`;
-    if(k==="ribs")return `BUY ${units} rack${units===1?"":"s"} (~${Math.round(weight*10)/10} lb total)`;
-    return `BUY ${units} ${o.unit}${units===1?"":"s"} (~${Math.round(weight*10)/10} lb total)`;
-  }
-  function portionPerPerson(k,mult){
-    if(k==="chicken")return ((.5+1/3)/2)*mult;
-    if(k==="fish")return .25*mult;
-    if(k==="pork"||k==="hog")return (1/3)*mult;
-    if(k==="brats")return .25*mult;
-    return .5*mult;
-  }
-  function calculateRows(){
-    const {adults,kids,eaters}=activeEaters();
-    const keys=[...selected];
-    if(!eaters||!keys.length)return {adults,kids,eaters,rows:[],total:0};
-    const mult=multiplier(keys.length,Number($("serving").value));
-    const rows=[];
-    keys.forEach(k=>{
-      const m=meats[k],o=m.options[choices[k]],per=portionPerPerson(k,mult);
-      const finished=eaters*per;
-      const targetFinished=planningMode==="family"?finished*1.125:finished;
-      const hogPlan=o.yield==="hog"&&typeof wholeHogPlan==="function"?wholeHogPlan(targetFinished):null;
-      const y=hogPlan?hogPlan.yield:o.yield;
-      const bought=hogPlan?hogPlan.hangingWeight:targetFinished/y;
-      let units=1,buyWeight=bought,buyOverride=null,purchaseNote="",excess=0;
-      if(planningMode==="family"&&k!=="hog"&&typeof familyPurchase==="function"){
-        const fp=familyPurchase(k,o,bought);
-        if(fp){units=fp.units;buyWeight=fp.buyWeight;buyOverride=fp.buy;purchaseNote=fp.note;excess=Math.max(0,buyWeight-bought)}
-      }else if(o.mode==="units"){
-        const unit=effectiveUnit(k,o);
-        units=Math.max(1,Math.ceil(bought/unit));
-        buyWeight=units*unit;
-        excess=Math.max(0,buyWeight-bought);
-        if(k==="brisket"&&choices[k]==="packer"){
-          units=Math.max(1,Math.ceil(bought/14));
-          buyWeight=units*14;
-          excess=Math.max(0,buyWeight-bought);
-        }
-        purchaseNote=(typeof cutNote==="function"?cutNote(k,o):"")||((excess>.5)?`Purchase amount is rounded to practical units; approximately ${Math.round(excess*10)/10} lb becomes planned leftovers.`:"Purchase amount is rounded to a practical unit.");
-      }else if(k==="hog"){
-        units=1;buyWeight=bought;purchaseNote="Buy one whole hog; target the calculated hanging-weight requirement.";
-      }
-      const buy=buyOverride||purchaseText(k,units,buyWeight,o);
-      rows.push({k,m,o,finished,targetFinished,y,bought,units,buyWeight,excess,purchaseNote,buyOverride,buy});
-    });
-    return {adults,kids,eaters,rows,total:rows.reduce((s,r)=>s+r.buyWeight,0)};
-  }
-  function render(s){
-    $("statAdults").textContent=s.adults;
-    $("statKids").textContent=s.kids;
-    $("statEaters").textContent=Math.round(s.eaters*10)/10;
-    $("totalRaw").textContent=s.total?`${Math.ceil(s.total*10)/10} lb`:"0 lb";
-    $("summary").textContent=s.rows.length?`${s.rows.length} protein${s.rows.length>1?"s":""} • ${Math.round(s.eaters*10)/10} adult-equivalent eaters${planningMode==="family"?" • 10–15% family cushion":""}`:"Select at least one protein.";
-    $("results").innerHTML=s.rows.length?s.rows.map(r=>{
-      const excess=r.excess>.5?` • Planned excess: <span class="excess">${Math.round(r.excess*10)/10} lb</span>`:"";
-      const cushion=planningMode==="family"?` • Family cushion target: <b>${Math.round((r.targetFinished-r.finished)*10)/10} lb finished</b>`:"";
-      return `<div class="result"><div class="resultTop"><div><div class="resultTitle">${r.m.name}</div><span class="pill">${r.o.label}</span><span class="pill">${Math.round(r.y*100)}% yield</span></div><div class="buy">${r.buy}</div></div><div class="details">Finished meat needed: <b>${Math.round(r.finished*10)/10} lb</b>${cushion} • Raw requirement: <b>${Math.round(r.bought*10)/10} lb</b>${excess}</div>${r.purchaseNote?`<div class="purchaseNote">${r.purchaseNote}</div>`:""}${r.k==="hog"&&typeof wholeHogWarning==="function"?wholeHogWarning(r.buyWeight):""}</div>`;
-    }).join(""):"<p class='note'>Select at least one protein.</p>";
-    calcSides();
-  }
-  window.calc=function(){render(calculateRows())};
-  setTimeout(function(){if(typeof renderMeats==="function")renderMeats();if(typeof calcSides==="function")calcSides();calc()},0);
+  function effectiveUnit(k,o){if(k==="chicken"&&choices[k]==="whole")return 5;if(k==="brats")return .5;if(k==="ribs")return 2.25;if(k==="porkbelly")return 10;if(k==="brisket"&&choices[k]==="packer")return 14;if(k==="pmbe")return 4;return Number.isFinite(Number(o.unitWeight))?Number(o.unitWeight):(UNIT[k]||1)}
+  function portionPerPerson(k,mult){if(k==="chicken")return ((.5+1/3)/2)*mult;if(k==="fish")return .25*mult;if(k==="pork"||k==="hog")return (1/3)*mult;if(k==="brats")return .25*mult;return .5*mult}
+  function purchaseText(k,units,weight,o){if(k==="brisket"&&choices[k]==="packer")return `BUY ${units} whole packer${units===1?"":"s"} (~${units*14}–${units*18} lb total)`;if(k==="brats")return `BUY ${units} link${units===1?"":"s"} (~${Math.round(weight*10)/10} lb total)`;if(k==="chicken"&&choices[k]==="whole")return `BUY ${units} whole chicken${units===1?"":"s"} (~${Math.round(weight*10)/10} lb total)`;if(k==="pmbe")return `BUY ${units} chuck roast${units===1?"":"s"} (~${Math.round(weight*10)/10} lb total)`;if(k==="ribs")return `BUY ${units} rack${units===1?"":"s"} (~${Math.round(weight*10)/10} lb total)`;return `BUY ${units} ${o.unit}${units===1?"":"s"} (~${Math.round(weight*10)/10} lb total)`}
+  function calculateRows(){const {adults,kids,eaters}=activeEaters(),keys=[...selected];if(!eaters||!keys.length)return {adults,kids,eaters,rows:[],total:0};const mult=multiplier(keys.length,Number($("serving").value)),rows=[];keys.forEach(k=>{const m=meats[k],o=m.options[choices[k]],finished=eaters*portionPerPerson(k,mult),targetFinished=planningMode==="family"?finished*1.125:finished;let y=o.yield,bought=targetFinished/y;if(k==="hog"&&typeof wholeHogPlan==="function"){const p=wholeHogPlan(targetFinished);y=p.yield;bought=p.hangingWeight}let units=1,buyWeight=bought,excess=0,purchaseNote="",buyOverride=null;if(planningMode==="family"&&k!=="hog"&&typeof familyPurchase==="function"){const fp=familyPurchase(k,o,bought);if(fp){units=fp.units;buyWeight=fp.buyWeight;buyOverride=fp.buy;purchaseNote=fp.note;excess=Math.max(0,buyWeight-bought)}}else if(o.mode==="units"){const unit=effectiveUnit(k,o);units=Math.max(1,Math.ceil(bought/unit));buyWeight=units*unit;excess=Math.max(0,buyWeight-bought);purchaseNote=(typeof cutNote==="function"?cutNote(k,o):"")||((excess>.5)?`Purchase amount is rounded to practical units; approximately ${Math.round(excess*10)/10} lb becomes planned leftovers.`:"Purchase amount is rounded to a practical unit.")}else if(k==="hog"){purchaseNote="Buy one whole hog; target the calculated hanging-weight requirement."}const buy=buyOverride||purchaseText(k,units,buyWeight,o);rows.push({k,m,o,finished,targetFinished,y,bought,units,buyWeight,excess,purchaseNote,buyOverride,buy})});return {adults,kids,eaters,rows,total:rows.reduce((s,r)=>s+r.buyWeight,0)}}
+  function render(s){$("statAdults").textContent=s.adults;$("statKids").textContent=s.kids;$("statEaters").textContent=Math.round(s.eaters*10)/10;$("totalRaw").textContent=s.total?`${Math.ceil(s.total*10)/10} lb`:"0 lb";$("summary").textContent=s.rows.length?`${s.rows.length} protein${s.rows.length>1?"s":""} • ${Math.round(s.eaters*10)/10} adult-equivalent eaters${planningMode==="family"?" • 10–15% family cushion":""}`:"Select at least one protein.";$("results").innerHTML=s.rows.length?s.rows.map(r=>{const excess=r.excess>.5?` • Planned excess: <span class="excess">${Math.round(r.excess*10)/10} lb</span>`:"",cushion=planningMode==="family"?` • Family cushion target: <b>${Math.round((r.targetFinished-r.finished)*10)/10} lb finished</b>`:"";return `<div class="result"><div class="resultTop"><div><div class="resultTitle">${r.m.name}</div><span class="pill">${r.o.label}</span><span class="pill">${Math.round(r.y*100)}% yield</span></div><div class="buy">${r.buy}</div></div><div class="details">Finished meat needed: <b>${Math.round(r.finished*10)/10} lb</b>${cushion} • Raw requirement: <b>${Math.round(r.bought*10)/10} lb</b>${excess}</div>${r.purchaseNote?`<div class="purchaseNote">${r.purchaseNote}</div>`:""}${r.k==="hog"&&typeof wholeHogWarning==="function"?wholeHogWarning(r.buyWeight):""}</div>`}).join(""):"<p class='note'>Select at least one protein.</p>";calcSides()}
+  window.calc=function(){render(calculateRows())};window.buildSummary=function(){const s=calculateRows();return {adults:s.adults,kids:s.kids,eaters:s.eaters,rows:s.rows,total:s.total}};setTimeout(function(){if(typeof renderMeats==="function")renderMeats();if(typeof renderSideCards==="function")renderSideCards();calc()},0)
 })();
