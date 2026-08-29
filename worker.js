@@ -6,10 +6,9 @@ export default {
     if (type.includes("text/html")) {
       let html = await response.text();
 
-      // Keep the HTML shell deterministic. Older deployments accumulated
-      // several calculation/recommendation patches over time; remove any
-      // copies they may have embedded and inject exactly one copy of each
-      // required extension. The final calculation lock is authoritative.
+      // Deterministic extension loading. The calculation lock is the only
+      // production calculation override; obsolete calculation patches are
+      // deliberately excluded so they cannot overwrite it.
       const injected = [
         "meatfest-additions.js",
         "porkbelly-fix.js",
@@ -30,7 +29,7 @@ export default {
         '<script src="/protein-order-fix.js?v=3"></script>',
         '<script src="/side-order-fix.js?v=3"></script>',
         '<script src="/recommendation-fix.js?v=5"></script>',
-        '<script src="/meatfest-calculation-lock.js?v=3"></script>',
+        '<script src="/meatfest-calculation-lock.js?v=4"></script>',
       ].join("");
 
       html = html.replace("</body>", `${scripts}</body>`);
@@ -42,9 +41,6 @@ export default {
       return new Response(html, { status: response.status, headers });
     }
 
-    // Assets involved in application behavior must not be served from a
-    // stale browser/edge cache. This also keeps multiple simultaneous testers
-    // on the same deployed calculation code.
     if (type.includes("javascript") || new URL(request.url).pathname.endsWith(".js")) {
       const headers = new Headers(response.headers);
       headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
