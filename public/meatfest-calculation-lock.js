@@ -1,14 +1,28 @@
 /* Meatfest calculation lock — authoritative recommendation engine.
- * UI/configuration unchanged. Uses original Meatfest yield assumptions.
- * IMPORTANT: brat/Polish sausage = 0.5 lb/link per original measured spreadsheet data.
+ * UI/configuration unchanged. Uses the original Meatfest total-meat model:
+ * total finished meat = adult-equivalent eaters × serving target, then divide
+ * evenly across the selected proteins before applying each protein's yield and
+ * practical purchase unit. This matches the original Meatfest 4.0 control-panel
+ * approach; serving behavior is used as a sense-check, not as arbitrary protein
+ * percentages.
+ *
+ * Serving sense-checks established for Meatfest:
+ * PMBE ~2 chunks/person who takes it
+ * Pork belly ~2 chunks/person who takes it
+ * Ribs ~2–3 individual king-cut ribs/person who takes them
+ * Brats ~3–4 sliced bites/person who takes them
+ * Brisket ~2–3 lean slices, with a smaller fatty take-rate
+ * Pulled pork/chicken ~1 scoop, about 1/3 lb
+ *
+ * IMPORTANT: brat/Polish sausage = 0.5 lb/link, matching the original measured
+ * Meatfest spreadsheet data. Do not replace with 0.25 lb.
  */
 (function(){
-  const ROLE_WEIGHT=Object.freeze({brisket:.22,pork:.18,chicken:.15,ribs:.15,brats:.12,pmbe:.10,porkbelly:.08,prime:.10,turkey:.12,fish:.08,hog:1});
   const YIELD=Object.freeze({chicken:.62,fish:.76,pork:.60,brats:.90,brisket:.50,pmbe:.60,prime:.80,ribs:.70,porkbelly:.62,turkey:.55});
   const UNIT=Object.freeze({chicken:5,fish:.33,pork:8.5,brats:.50,brisket:14,pmbe:4,prime:5,ribs:2.25,porkbelly:10,turkey:14});
   function servingTarget(){const v=Number($("serving").value);return v===.25||v===.5?v:1/3}
   function activeEaters(){const [adults,kids]=activeTotals();return {adults,kids,eaters:adults+kids*.5}}
-  function normalizeWeights(keys){if(keys.includes("hog")){const o={};keys.forEach(k=>o[k]=k==="hog"?1:0);return o}const total=keys.reduce((s,k)=>s+(ROLE_WEIGHT[k]||0),0),o={};keys.forEach(k=>o[k]=total?(ROLE_WEIGHT[k]||0)/total:1/keys.length);return o}
+  function normalizeWeights(keys){if(keys.includes("hog")){const o={};keys.forEach(k=>o[k]=k==="hog"?1:0);return o}const share=1/keys.length,o={};keys.forEach(k=>o[k]=share);return o}
   function effectiveYield(k,o){return o&&typeof o.yield==="number"?o.yield:(YIELD[k]||1)}
   function effectiveUnit(k,o){if(k==="chicken"&&choices[k]==="whole")return 5;if(k==="brats")return .50;if(k==="ribs")return 2.25;if(k==="porkbelly")return 10;if(k==="brisket"&&choices[k]==="packer")return 14;if(k==="pmbe")return 4;if(o&&Number.isFinite(Number(o.unitWeight)))return Number(o.unitWeight);return UNIT[k]||1}
   function roundUnits(raw,unit){return Math.max(1,Math.ceil((raw-1e-9)/unit))}
