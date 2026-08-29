@@ -16,10 +16,9 @@ const MEATFEST_FLOOR = 0.60;
 const RIBS_PER_TAKER = 1.75;
 const SAUSAGE_SLICES_PER_TAKER = 3.5;
 
-// Meatfest buffet rule: each additional protein reduces the normal portion
-// by 15%, with a 60% floor. The overall portion selector remains the only
-// crowd-size adjustment; a uniform 60% take rate reflects how many guests
-// are expected to take any individual protein.
+// Meatfest buffet rule: each additional protein reduces the overall normal
+// portion by 15%, with a 60% floor. This is applied ONCE to the overall
+// portion size. It is NOT another reduction at the individual-protein level.
 export function multiplier(proteinCount) {
   if (proteinCount < 1) return 0;
   return Math.max(MEATFEST_FLOOR, 1 - 0.15 * (proteinCount - 1));
@@ -47,7 +46,10 @@ export function calculateFinishedProtein({ adults = 0, kids = 0, selected, servi
   }
 
   const mult = multiplier(proteins.length);
-  const finishedPerProtein = eaters * Number(serving) * mult * MEATFEST_TAKE_RATE;
+  // The multi-protein rule changes the overall portion size. Do not apply
+  // MEATFEST_TAKE_RATE here; that rate is reserved for count-based serving
+  // units such as ribs and sausage slices.
+  const finishedPerProtein = eaters * Number(serving) * mult;
   return bases.map(({ id }) => ({
     id,
     finishedLb: finishedPerProtein,
