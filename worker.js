@@ -12,6 +12,7 @@ export default {
         "side-order-fix.js",
         "recommendation-fix.js",
         "meatfest-calculation-lock.js",
+        "meatfest-calculation-fix.js",
       ];
       for (const name of injected) {
         const re = new RegExp(`<script\\s+src=[\"']\\/${name}(?:\\?[^\"']*)?[\"']\\s*><\\/script>`, "gi");
