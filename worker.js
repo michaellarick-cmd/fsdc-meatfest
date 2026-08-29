@@ -6,10 +6,10 @@ export default {
     if (type.includes("text/html")) {
       let html = await response.text();
 
-      // The HTML contains the stable base UI/calculation. Only these two
-      // runtime extensions are authoritative: additions adds supported
-      // proteins/sides; final owns the visible Meatfest calculation.
+      // One authoritative runtime calculation layer. Legacy patch scripts are
+      // stripped so an old override cannot silently take control again.
       const stale = [
+        "meatfest-additions.js",
         "family-fix.js",
         "porkbelly-fix.js",
         "protein-order-fix.js",
@@ -25,11 +25,7 @@ export default {
         html = html.replace(re, "");
       }
 
-      const scripts = [
-        '<script src="/meatfest-additions.js?v=clean1"></script>',
-        '<script src="/meatfest-final.js?v=clean1"></script>',
-      ].join("");
-      html = html.replace("</body>", `${scripts}</body>`);
+      html = html.replace("</body>", '<script src="/meatfest-final.js?v=2.2.7"></script></body>');
 
       const headers = new Headers(response.headers);
       headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
