@@ -1,48 +1,48 @@
-const MEATFEST_TAKE_RATE = 0.60;
-const MEATFEST_FLOOR = 0.60;
+const BASE_EATERS = 48;
+const STANDARD_SERVING = 1 / 3;
+const RIBS_TAKE_RATE = 0.60;
 const RIBS_PER_TAKER = 1.75;
-const SAUSAGE_SLICES_PER_TAKER = 3.5;
+const RIBS_PER_RACK = 11;
+const RIB_RACK_LB = 2.25;
+const BRATS_PER_EATER = 1 / 6;
+const BRAT_LINK_LB = 0.50;
 
-// One authoritative Meatfest rule: the 15% reduction applies to the
-// overall finished-meat portion once, with a 60% floor. The resulting total
-// is divided across the selected proteins. Ribs and sausage retain their
-// separate count-based serving rules because they are served as pieces.
+// Canonical Meatfest purchase anchors at 48 adult-equivalent eaters.
+export const MEATFEST_ANCHORS = Object.freeze({
+  brisketLb: 19.5,
+  pmbeLb: 16,
+  porkLb: 17,
+  chickenBirds: 4,
+});
+
 export function multiplier(proteinCount) {
-  if (proteinCount < 1) return 0;
-  return Math.max(MEATFEST_FLOOR, 1 - 0.15 * (proteinCount - 1));
+  // Kept for compatibility with older callers. Protein count no longer
+  // silently changes the portion target; each Meatfest protein has its own
+  // validated planning anchor.
+  return proteinCount > 0 ? 1 : 0;
 }
 
-export function calculateFinishedProtein({ adults = 0, kids = 0, selected, serving = 1 / 3, mode = 'meatfest' }) {
+export function calculateFinishedProtein({ adults = 0, kids = 0, selected, serving = STANDARD_SERVING, mode = 'meatfest' }) {
   const eaters = Number(adults) + Number(kids) * 0.5;
   const proteins = [...selected];
   if (!eaters || !proteins.length) return [];
+  const scale = (eaters / BASE_EATERS) * (Number(serving) / STANDARD_SERVING);
 
-  if (mode === 'family') {
-    // Family mode keeps the selected portion as the total finished-meat
-    // target and distributes that target across selected proteins.
-    const finishedTotal = eaters * Number(serving);
-    const perProtein = finishedTotal / proteins.length;
-    return proteins.map((id) => ({ id, finishedLb: perProtein, mode, servingLb: Number(serving) }));
-  }
-
-  const finishedTotal = eaters * Number(serving) * multiplier(proteins.length);
-  const finishedPerProtein = finishedTotal / proteins.length;
+  const finished = {
+    brisket: MEATFEST_ANCHORS.brisketLb * 0.50,
+    pmbe: MEATFEST_ANCHORS.pmbeLb * 0.60,
+    pork: MEATFEST_ANCHORS.porkLb * 0.60,
+    chicken: MEATFEST_ANCHORS.chickenBirds * 5 * 0.62,
+    ribs: Math.ceil((BASE_EATERS * RIBS_TAKE_RATE * RIBS_PER_TAKER) / RIBS_PER_RACK) * RIB_RACK_LB * 0.70,
+    brats: Math.ceil(BASE_EATERS * BRATS_PER_EATER) * BRAT_LINK_LB * 0.90,
+  };
 
   return proteins.map((id) => ({
     id,
-    finishedLb: finishedPerProtein,
+    finishedLb: (finished[id] || (eaters * Number(serving) / proteins.length)) * scale,
     mode,
     servingLb: Number(serving),
-    takeRate: MEATFEST_TAKE_RATE,
-    servingUnits: servingUnitsFor(id, eaters),
   }));
-}
-
-function servingUnitsFor(id, eaters) {
-  const takers = eaters * MEATFEST_TAKE_RATE;
-  if (id === 'ribs') return { takers, units: takers * RIBS_PER_TAKER, unit: 'ribs' };
-  if (id === 'brats') return { takers, units: takers * SAUSAGE_SLICES_PER_TAKER, unit: 'slices' };
-  return { takers };
 }
 
 export function calculateFamilyFinishedProtein(args) {
@@ -61,4 +61,4 @@ export function roundUpPurchase(requiredLb, unitWeightLb) {
   return { units, purchasedLb, leftoverLb: Math.max(0, purchasedLb - requiredLb) };
 }
 
-export { MEATFEST_TAKE_RATE, MEATFEST_FLOOR, RIBS_PER_TAKER, SAUSAGE_SLICES_PER_TAKER };
+export { RIBS_TAKE_RATE, RIBS_PER_TAKER, RIBS_PER_RACK, BRAT_LINK_LB, BRATS_PER_EATER };
