@@ -12,6 +12,7 @@ export default {
         "side-order-fix.js",
         "recommendation-fix.js",
         "meatfest-calculation-lock.js",
+        "prime-rib-fix.js",
         "meatfest-calculation-fix.js",
       ];
       for (const name of injected) {
@@ -25,6 +26,7 @@ export default {
         '<script src="/side-order-fix.js?v=3"></script>',
         '<script src="/recommendation-fix.js?v=5"></script>',
         '<script src="/meatfest-calculation-lock.js?v=4"></script>',
+        '<script src="/prime-rib-fix.js?v=1"></script>',
       ].join("");
       html = html.replace("</body>", `${scripts}</body>`);
       const headers = new Headers(response.headers);
