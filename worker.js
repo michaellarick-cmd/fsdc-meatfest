@@ -20,13 +20,12 @@ export default {
         html = html.replace(re, "");
       }
       const scripts = [
-        '<script src="/meatfest-additions.js?v=3"></script>',
+        '<script src="/meatfest-additions.js?v=4"></script>',
         '<script src="/porkbelly-fix.js?v=4"></script>',
         '<script src="/protein-order-fix.js?v=3"></script>',
         '<script src="/side-order-fix.js?v=3"></script>',
         '<script src="/recommendation-fix.js?v=5"></script>',
         '<script src="/meatfest-calculation-lock.js?v=4"></script>',
-        '<script src="/prime-rib-fix.js?v=1"></script>',
       ].join("");
       html = html.replace("</body>", `${scripts}</body>`);
       const headers = new Headers(response.headers);
