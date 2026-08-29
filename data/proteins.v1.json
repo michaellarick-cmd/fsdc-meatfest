@@ -5,7 +5,7 @@
     "multiProteinReductionPerAdditionalProtein": 0.15,
     "multiProteinFloor": 0.60,
     "defaultTakeRate": 0.60,
-    "notes": "Overall portion size remains the user-controlled crowd adjustment. Multi-protein reduction applies per protein, with a 60% floor. Purchase rounding supplies the natural leftover buffer; no separate leftover factor."
+    "notes": "Overall portion remains the user-controlled crowd adjustment. Multi-protein reduction applies once to the overall portion, with a 60% floor. Purchase rounding supplies the natural leftover buffer; no separate leftover factor."
   },
   "proteins": {
     "chicken": {"name":"Chicken / Poultry","variants":{"whole":{"label":"Whole Fryer — Pulled","yield":0.62,"unitWeightLb":5.0,"unit":"whole chicken"},"legq":{"label":"Leg Quarters","yield":0.42,"unitWeightLb":0.59375,"unit":"leg quarter"},"thigh":{"label":"Bone-In Thighs","yield":0.52,"unitWeightLb":0.25,"unit":"thigh"}}},
@@ -14,9 +14,9 @@
     "brats": {"name":"Polish / Brats","variants":{"links":{"label":"Links","yield":0.90,"unitWeightLb":0.5,"unit":"link","slicesPerLink":13,"sliceThicknessIn":0.5,"servingSlices":3.5}}},
     "brisket": {"name":"Brisket","variants":{"packer":{"label":"Whole Packer","yield":0.50,"unitWeightLb":null,"unit":"lb raw brisket","variablePurchaseWeight":true},"flat":{"label":"Brisket Flat","yield":0.55,"unitWeightLb":7.0,"unit":"flat"}}},
     "pmbe": {"name":"Poor Man's Burnt Ends","variants":{"chuck":{"label":"Chuck Roast — Burnt Ends","yield":0.60,"unitWeightLb":4.0,"unit":"chuck roast","servingPieces":2}}},
-    "prime": {"name":"Prime Rib","variants":{"whole":{"label":"Whole Roast","yield":0.80,"unitWeightLb":5.0,"unit":"roast"},"bone":{"label":"Bone-in Standing Rib Roast","yield":0.80,"unitWeightLb":5.0,"unit":"bone-in roast"}}},
+    "prime": {"name":"Prime Rib","variants":{"boneless":{"label":"Boneless Prime Rib — Recommended","yield":0.75,"unitWeightLb":5.0,"unit":"boneless roast","recommended":true},"bone":{"label":"Bone-in Standing Rib Roast","yield":0.60,"unitWeightLb":5.0,"unit":"bone-in roast"}}},
     "ribs": {"name":"Ribs","variants":{"loin":{"label":"Loin Back / Baby Back","yield":0.70,"unitWeightLb":2.25,"unit":"rack","familyUnitFraction":0.5,"typicalRibsPerRack":11,"servingRibs":1.75},"spare":{"label":"Spare / St. Louis","yield":0.70,"unitWeightLb":2.25,"unit":"rack","familyUnitFraction":0.5,"typicalRibsPerRack":11,"servingRibs":1.75}}},
     "hog": {"name":"Whole Hog","variants":{"hog":{"label":"Whole Hog","yield":"hog","unit":"whole hog","special":true,"combinedWithOtherProteins":false,"homeCookerWarningLb":100}}}
   },
-  "turkey": {"status":"research-defined-not-yet-production","whole":{"name":"Whole Turkey","yield":0.42,"purchaseUnit":"whole bird","typicalExampleLb":12,"source":"USDA Food Buying Guide; Butterball whole-turkey examples"},"breast":{"name":"Turkey Breast","yieldWithSkin":0.64,"yieldWithoutSkin":0.57,"purchaseUnit":"turkey breast","typicalRangeLb":[2.5,9],"familyExampleLb":[5,7],"source":"USDA Food Buying Guide; Butterball turkey breast product guidance"}}
+  "turkey": {"status":"research-defined-not-yet-production","whole":{"name":"Whole Turkey","yield":0.40,"purchaseUnit":"whole bird","typicalExampleLb":12,"source":"USDA Food Buying Guide and whole-turkey yield guidance"},"breast":{"name":"Turkey Breast","yieldWithSkin":0.64,"yieldWithoutSkin":0.57,"purchaseUnit":"turkey breast","typicalRangeLb":[2.5,9],"familyExampleLb":[5,7],"source":"USDA Food Buying Guide and turkey-breast yield guidance"}}
 }
