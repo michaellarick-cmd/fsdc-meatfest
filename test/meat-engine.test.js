@@ -11,13 +11,7 @@ const total = (rows) => rows.reduce((sum, row) => sum + row.finishedLb, 0);
 
 // The validated distribution must remain a shared total, not a per-protein allowance.
 test('Family: 5-person standard portion is about 1/3 lb total finished meat', () => {
-  const rows = calculateFamilyFinishedProtein({
-    adults: 4,
-    kids: 1,
-    selected: ['pork', 'ribs'],
-    serving: 1 / 3,
-  });
-
+  const rows = calculateFamilyFinishedProtein({ adults: 4, kids: 1, selected: ['pork', 'ribs'], serving: 1 / 3 });
   assert.equal(rows.length, 2);
   assert.ok(Math.abs(total(rows) - (4.5 / 3)) < 0.002);
   assert.ok(rows.every((row) => row.finishedLb > 0));
@@ -26,7 +20,6 @@ test('Family: 5-person standard portion is about 1/3 lb total finished meat', ()
 test('Family: changing the number of proteins does not increase total planned meat', () => {
   const two = calculateFamilyFinishedProtein({ adults: 5, kids: 0, selected: ['pork', 'ribs'], serving: 1 / 3 });
   const three = calculateFamilyFinishedProtein({ adults: 5, kids: 0, selected: ['pork', 'ribs', 'brisket'], serving: 1 / 3 });
-
   assert.ok(Math.abs(total(two) - 5 / 3) < 0.002);
   assert.ok(Math.abs(total(three) - 5 / 3) < 0.004);
 });
@@ -35,7 +28,6 @@ test('Family: portion choices are total finished meat per person', () => {
   const light = calculateFamilyFinishedProtein({ adults: 5, selected: ['pork', 'brisket'], serving: 0.25 });
   const standard = calculateFamilyFinishedProtein({ adults: 5, selected: ['pork', 'brisket'], serving: 1 / 3 });
   const hearty = calculateFamilyFinishedProtein({ adults: 5, selected: ['pork', 'brisket'], serving: 0.5 });
-
   assert.ok(total(light) < total(standard));
   assert.ok(total(standard) < total(hearty));
   assert.ok(Math.abs(total(light) - 1.25) < 0.002);
@@ -56,6 +48,17 @@ test('Meatfest: validated distribution remains unchanged', () => {
   const rows = calculateFinishedProtein({ adults: 50, selected: ['pork', 'brisket', 'ribs'], serving: 1 / 3 });
   assert.equal(rows.length, 3);
   assert.ok(Math.abs(total(rows) - (50 / 3)) < 0.01);
+});
+
+test('Meatfest: six proteins still share one event-wide target', () => {
+  const rows = calculateFinishedProtein({
+    adults: 48,
+    selected: ['chicken', 'pork', 'brats', 'brisket', 'pmbe', 'ribs'],
+    serving: 1 / 3,
+  });
+  assert.equal(rows.length, 6);
+  assert.ok(Math.abs(total(rows) - (48 * 0.37035)) < 0.01);
+  assert.ok(total(rows) < 25, 'six-protein event must not multiply the serving target by protein count');
 });
 
 test('Raw requirement converts finished meat using protein yield', () => {
