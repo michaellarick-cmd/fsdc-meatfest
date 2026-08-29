@@ -1,4 +1,4 @@
-const CACHE = "meatfest-2.2.4";
+const CACHE = "meatfest-2.2.7";
 const SHELL = ["/", "/index.html", "/manifest.json", "/fsdc-icon-192.png", "/fsdc-icon.png", "/fsdc-logo.png"];
 
 self.addEventListener("install", event => {
