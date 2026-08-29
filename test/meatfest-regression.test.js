@@ -1,40 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { calculateFinishedProtein, calculateRawRequirement, roundUpPurchase, multiplier } from '../src/meat-engine.js';
 
-// Canonical Meatfest planning assumptions. These tests intentionally protect
-// the values that have caused regressions during prior deployments.
-const ASSUMPTIONS = {
-  servingLb: 1 / 3,
-  bratLinkLb: 0.50,
-  chickenLb: 5,
-  pmbeRoastLb: 4,
-  ribsRackLb: 2.25,
-  pulledPorkUnitLb: 8.5,
-  brisketUnitLb: 14,
-};
+const A={bratLinkLb:.50,chickenLb:5,pmbeRoastLb:4,ribsRackLb:2.25,pulledPorkUnitLb:8.5,brisketUnitLb:14};
 
-test('canonical Meatfest purchase assumptions remain locked', () => {
-  assert.equal(ASSUMPTIONS.bratLinkLb, 0.50);
-  assert.equal(ASSUMPTIONS.chickenLb, 5);
-  assert.equal(ASSUMPTIONS.pmbeRoastLb, 4);
-  assert.equal(ASSUMPTIONS.ribsRackLb, 2.25);
-  assert.equal(ASSUMPTIONS.pulledPorkUnitLb, 8.5);
-  assert.equal(ASSUMPTIONS.brisketUnitLb, 14);
-});
-
-test('six-protein baseline uses the Meatfest serving target', () => {
-  const adultEquivalent = 48;
-  const selectedProteins = 6;
-  const finishedTarget = adultEquivalent * ASSUMPTIONS.servingLb;
-  const perProtein = finishedTarget / selectedProteins;
-  assert.equal(Math.round(finishedTarget * 100) / 100, 16);
-  assert.equal(Math.round(perProtein * 100) / 100, 2.67);
-});
-
-test('brats are measured at half a pound per link', () => {
-  assert.equal(6 * ASSUMPTIONS.bratLinkLb, 3);
-});
-
-test('PMBE uses four-pound chuck roasts', () => {
-  assert.equal(2 * ASSUMPTIONS.pmbeRoastLb, 8);
-});
+test('canonical purchase assumptions remain locked',()=>{assert.equal(A.bratLinkLb,.5);assert.equal(A.chickenLb,5);assert.equal(A.pmbeRoastLb,4);assert.equal(A.ribsRackLb,2.25);assert.equal(A.pulledPorkUnitLb,8.5);assert.equal(A.brisketUnitLb,14)});
+test('six-protein standard multiplier is the validated Meatfest model',()=>{assert.equal(multiplier(6,1/3),.14814)});
+test('48 adult-equivalent six-protein Meatfest allocation uses serving behavior',()=>{const ids=['chicken','pork','brats','brisket','pmbe','ribs'];const rows=calculateFinishedProtein({adults:48,kids:0,selected:ids,serving:1/3});const by=Object.fromEntries(rows.map(r=>[r.id,r.finishedLb]));assert.ok(Math.abs(by.pmbe-3.55536)<1e-6);assert.ok(Math.abs(by.brats-1.77768)<1e-6);assert.ok(Math.abs(by.ribs-3.55536)<1e-6);});
+test('raw yield and purchase-unit rounding are deterministic',()=>{assert.ok(Math.abs(calculateRawRequirement({finishedLb:3.55536,yieldRate:.6})-5.9256)<1e-6);const p=roundUpPurchase(5.9256,4);assert.equal(p.units,2);assert.equal(p.purchasedLb,8)});
