@@ -43,20 +43,33 @@ test('Family: no hidden 12.5% meat cushion', () => {
   assert.ok(Math.abs(total(rows) - (5 / 3)) < 0.002);
 });
 
-test('Meatfest: six proteins use the 60% floor and 60% take rate', () => {
+test('Meatfest: six-protein standard anchors are not equal-share math', () => {
   const rows = calculateFinishedProtein({ adults: 48, selected: ['chicken', 'pork', 'brats', 'brisket', 'pmbe', 'ribs'], serving: 1 / 3 });
   assert.equal(rows.length, 6);
-  assert.ok(Math.abs(total(rows) - 9.6) < 0.01);
-  assert.ok(rows.every((row) => row.takeRate === 0.60));
+  const byId = Object.fromEntries(rows.map((row) => [row.id, row.finishedLb]));
+  assert.equal(byId.brisket, 9.75);
+  assert.equal(byId.pmbe, 9.6);
+  assert.equal(byId.pork, 10.2);
+  assert.equal(byId.chicken, 12.4);
+  assert.ok(Math.abs(byId.ribs - 7.875) < 1e-12);
+  assert.equal(byId.brats, 3.6);
 });
 
-test('Meatfest: serving-unit conversions reflect the established taker rules', () => {
+test('Meatfest: serving-unit conversions retain the established taker rules', () => {
   const rows = calculateFinishedProtein({ adults: 48, selected: ['ribs', 'brats'], serving: 1 / 3 });
   const ribs = rows.find((row) => row.id === 'ribs');
   const brats = rows.find((row) => row.id === 'brats');
   assert.ok(Math.abs(ribs.servingUnits.takers - 28.8) < 0.001);
   assert.ok(Math.abs(ribs.servingUnits.units - 50.4) < 0.001);
   assert.ok(Math.abs(brats.servingUnits.units - 100.8) < 0.001);
+});
+
+test('Meatfest: portion selector scales anchors', () => {
+  const standard = calculateFinishedProtein({ adults: 48, selected: ['chicken'], serving: 1 / 3 });
+  const light = calculateFinishedProtein({ adults: 48, selected: ['chicken'], serving: 0.25 });
+  const generous = calculateFinishedProtein({ adults: 48, selected: ['chicken'], serving: 0.5 });
+  assert.ok(Math.abs(light[0].finishedLb - standard[0].finishedLb * 0.75) < 1e-9);
+  assert.ok(Math.abs(generous[0].finishedLb - standard[0].finishedLb * 1.5) < 1e-9);
 });
 
 test('Raw requirement converts finished meat using protein yield', () => {
