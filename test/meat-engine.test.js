@@ -44,21 +44,21 @@ test('Family: no hidden 12.5% meat cushion', () => {
   assert.ok(Math.abs(total(rows) - (5 / 3)) < 0.002);
 });
 
-test('Meatfest: validated distribution remains unchanged', () => {
-  const rows = calculateFinishedProtein({ adults: 50, selected: ['pork', 'brisket', 'ribs'], serving: 1 / 3 });
-  assert.equal(rows.length, 3);
-  assert.ok(Math.abs(total(rows) - (50 / 3)) < 0.01);
+test('Meatfest: six proteins use the 60% floor and 60% take rate', () => {
+  const rows = calculateFinishedProtein({ adults: 48, selected: ['chicken', 'pork', 'brats', 'brisket', 'pmbe', 'ribs'], serving: 1 / 3 });
+  assert.equal(rows.length, 6);
+  assert.ok(rows.every((row) => Math.abs(row.finishedLb - 5.76) < 0.002));
+  assert.ok(Math.abs(total(rows) - 34.56) < 0.01);
+  assert.ok(rows.every((row) => row.takeRate === 0.60));
 });
 
-test('Meatfest: six proteins still share one event-wide target', () => {
-  const rows = calculateFinishedProtein({
-    adults: 48,
-    selected: ['chicken', 'pork', 'brats', 'brisket', 'pmbe', 'ribs'],
-    serving: 1 / 3,
-  });
-  assert.equal(rows.length, 6);
-  assert.ok(Math.abs(total(rows) - (48 * 0.37035)) < 0.01);
-  assert.ok(total(rows) < 25, 'six-protein event must not multiply the serving target by protein count');
+test('Meatfest: serving-unit conversions reflect the established taker rules', () => {
+  const rows = calculateFinishedProtein({ adults: 48, selected: ['ribs', 'brats'], serving: 1 / 3 });
+  const ribs = rows.find((row) => row.id === 'ribs');
+  const brats = rows.find((row) => row.id === 'brats');
+  assert.ok(Math.abs(ribs.servingUnits.takers - 28.8) < 0.001);
+  assert.ok(Math.abs(ribs.servingUnits.units - 50.4) < 0.001);
+  assert.ok(Math.abs(brats.servingUnits.units - 100.8) < 0.001);
 });
 
 test('Raw requirement converts finished meat using protein yield', () => {
