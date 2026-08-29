@@ -11,23 +11,13 @@ const DISTRIBUTION_BASE = Object.freeze({
   porkbelly: (1 / 3) * 0.75,
 });
 
-const MULTIPLIERS = Object.freeze({
-  '0.5': [1, 0.6, 0.376455, 0.2857, 0.25, 0.22221, 0.19442, 0.1782092],
-  '0.333333': [1, 0.4, 0.25, 0.1904667, 0.1666667, 0.14814, 0.1296133, 0.1188061],
-  '0.25': [0.75, 0.3333, 0.2, 0.1667, 0.125, 0.111105, 0.0909, 0.0817429],
-});
-
-function servingKey(serving) {
-  const value = Number(serving);
-  if (Math.abs(value - 0.5) < 1e-6) return '0.5';
-  if (Math.abs(value - 0.25) < 1e-6) return '0.25';
-  return '0.333333';
-}
-
-export function multiplier(proteinCount, serving) {
+// Meatfest buffet rule: each additional protein reduces the normal portion
+// by 15%, with a 60% floor. The overall portion selector remains the only
+// crowd-size adjustment; proteins are then converted through their own yields
+// and practical purchase units.
+export function multiplier(proteinCount) {
   if (proteinCount < 1) return 0;
-  const table = MULTIPLIERS[servingKey(serving)];
-  return table[Math.max(1, Math.min(8, proteinCount)) - 1];
+  return Math.max(0.60, 1 - 0.15 * (proteinCount - 1));
 }
 
 export function calculateFinishedProtein({ adults = 0, kids = 0, selected, serving = 1 / 3, mode = 'meatfest' }) {
@@ -42,8 +32,6 @@ export function calculateFinishedProtein({ adults = 0, kids = 0, selected, servi
   });
 
   if (mode === 'family') {
-    // Family preserves the validated relative mix, but normalizes the shares
-    // so the chosen portion is exactly the total finished meat per person.
     const baseTotal = bases.reduce((sum, row) => sum + row.base, 0);
     return bases.map(({ id, base }) => ({
       id,
@@ -53,11 +41,13 @@ export function calculateFinishedProtein({ adults = 0, kids = 0, selected, servi
     }));
   }
 
-  // Meatfest keeps the legacy multiplier coefficients unchanged for parity.
-  const mult = multiplier(proteins.length, serving);
-  return bases.map(({ id, base }) => ({
+  // Meatfest: total portion × buffet sampling factor. Serving format and
+  // purchase-unit conversion happen downstream; do not reapply protein-specific
+  // portion weights here.
+  const mult = multiplier(proteins.length);
+  return bases.map(({ id }) => ({
     id,
-    finishedLb: eaters * base * mult,
+    finishedLb: eaters * Number(serving) * mult,
     mode,
     servingLb: Number(serving),
   }));
