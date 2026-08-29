@@ -1,12 +1,12 @@
 /*
- * Meatfest calculation correction v1.1
+ * Meatfest calculation correction v2.0
  *
- * The portion choice is the TOTAL finished-meat target per adult-equivalent,
- * not a separate portion for every selected protein.
+ * IMPORTANT: the serving selection is the TOTAL finished-meat target per
+ * adult-equivalent for the entire Meatfest. It is NOT a target for each
+ * selected protein.
  *
- * Protein weights are normalized across the proteins actually selected. They
- * describe each protein's role in a multi-protein Meatfest rather than giving
- * every protein an equal share.
+ * This file intentionally replaces the previous layered calculation patch.
+ * There must be exactly one calculation path for the displayed total.
  */
 (function(){
   const ROLE_WEIGHT={
@@ -27,11 +27,12 @@
   function allocationMap(keys){
     const total=keys.reduce((s,k)=>s+proteinRoleWeight(k),0);
     const out={};
-    keys.forEach(k=>out[k]=proteinRoleWeight(k)/total);
+    keys.forEach(k=>out[k]=total?proteinRoleWeight(k)/total:0);
     return out;
   }
 
   function meatPerEater(){
+    // Serving is the TOTAL finished meat target per adult-equivalent.
     return Number($("serving").value)||1/3;
   }
 
@@ -40,12 +41,14 @@
     const eaters=adults+kids*.5;
     const keys=[...selected];
     const allocations=allocationMap(keys);
+
+    // ONE total target for the whole event.
     const totalFinishedTarget=eaters*meatPerEater();
     const rows=[];
 
     keys.forEach(k=>{
       const m=meats[k],o=m.options[choices[k]];
-      const finished=eaters?totalFinishedTarget*allocations[k]:0;
+      const finished=totalFinishedTarget*allocations[k];
       const targetFinished=planningMode==="family"?finished*1.125:finished;
       const hogPlan=o.yield==="hog"?wholeHogPlan(targetFinished):null;
       const y=hogPlan?hogPlan.yield:o.yield;
@@ -61,7 +64,10 @@
       }else if(planningMode==="family"&&k!=="hog"){
         const fp=familyPurchase(k,o,bought);
         if(fp){
-          units=fp.units;buyWeight=fp.buyWeight;buyOverride=fp.buy;purchaseNote=fp.note;
+          units=fp.units;
+          buyWeight=fp.buyWeight;
+          buyOverride=fp.buy;
+          purchaseNote=fp.note;
           excess=Math.max(0,buyWeight-bought);
         }
       }else if(o.mode==="units"){
@@ -81,7 +87,17 @@
 
       rows.push({k,m,o,finished,targetFinished,y,bought,units,buyWeight,excess,purchaseNote,buyOverride});
     });
-    return {adults,kids,eaters,totalFinishedTarget,rows,total:rows.reduce((s,r)=>s+r.buyWeight,0)};
+
+    // Sum PURCHASE weights only after every protein has been allocated a
+    // fraction of the single event-wide finished target.
+    return {
+      adults,
+      kids,
+      eaters,
+      totalFinishedTarget,
+      rows,
+      total:rows.reduce((s,r)=>s+r.buyWeight,0)
+    };
   }
 
   function rowBuy(r){
@@ -94,13 +110,17 @@
     return `BUY ${r.units} ${r.o.unit}${r.units>1?"s":""} (~${Math.ceil(r.buyWeight*10)/10} lb total)`;
   }
 
-  // The base family helper historically treated a brat "unit" as ½ lb.
-  // Meatfest links are ~¼ lb each, so correct the family purchase helper too.
+  // Meatfest sausage links are approximately ¼ lb each.
   const originalFamilyPurchase=window.familyPurchase;
   window.familyPurchase=function(k,o,bought){
     if(k==="brats"){
       const units=Math.max(1,Math.ceil(bought/.25));
-      return {units,buyWeight:units*.25,buy:`BUY ${units} link${units===1?"":"s"}`,note:"Individual-link buying at approximately ¼ lb per link; no large package-size inflation."};
+      return {
+        units,
+        buyWeight:units*.25,
+        buy:`BUY ${units} link${units===1?"":"s"}`,
+        note:"Individual-link buying at approximately ¼ lb per link; no large package-size inflation."
+      };
     }
     return originalFamilyPurchase(k,o,bought);
   };
@@ -111,7 +131,9 @@
     $("statKids").textContent=s.kids;
     $("statEaters").textContent=Math.round(s.eaters*10)/10;
     $("totalRaw").textContent=s.total?`${Math.ceil(s.total*10)/10} lb`:"0 lb";
-    $("summary").textContent=s.rows.length?`${s.rows.length} protein${s.rows.length>1?"s":""} • ${Math.round(s.eaters*10)/10} adult-equivalent eaters${planningMode==="family"?" • 10–15% family cushion":""}`:"Select at least one protein.";
+    $("summary").textContent=s.rows.length
+      ?`${s.rows.length} protein${s.rows.length>1?"s":""} • ${Math.round(s.eaters*10)/10} adult-equivalent eaters${planningMode==="family"?" • 10–15% family cushion":""}`
+      :"Select at least one protein.";
 
     $("results").innerHTML=s.rows.length?s.rows.map(r=>{
       const buy=rowBuy(r);
@@ -125,15 +147,21 @@
 
   window.buildSummary=function(){
     const s=calculateRows();
-    return {adults:s.adults,kids:s.kids,eaters:s.eaters,rows:s.rows.map(r=>({...r,buy:rowBuy(r)})),total:s.total};
+    return {
+      adults:s.adults,
+      kids:s.kids,
+      eaters:s.eaters,
+      rows:s.rows.map(r=>({...r,buy:rowBuy(r)}),
+      total:s.total
+    };
   };
 
-  // Keep the user's stated Meatfest sausage planning unit: each link is ~¼ lb.
   if(meats.brats&&meats.brats.options&&meats.brats.options.links){
     meats.brats.options.links.unitWeight=.25;
   }
 
-  // The original app calls these during initialization; run once after this
-  // final override is installed so the visible result immediately matches it.
-  setTimeout(function(){ if(typeof renderMeats==="function")renderMeats(); calc(); },0);
+  setTimeout(function(){
+    if(typeof renderMeats==="function")renderMeats();
+    calc();
+  },0);
 })();
