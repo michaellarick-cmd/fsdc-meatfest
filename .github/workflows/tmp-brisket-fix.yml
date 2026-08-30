@@ -37,7 +37,7 @@ jobs:
           rm -f .github/workflows/tmp-brisket-fix.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add public/meatfest-final.js .github/workflows/tmp-brisket-fix.yml
+          git add -A
           git commit -m 'Fix dynamic brisket purchase guidance'
           git push
           gh workflow run deploy.yml --ref main
