@@ -77,11 +77,7 @@ body>*{display:none!important}
     return tags;
   }
 
-  /*
-   * Recommendation matrix supplied by Meatfest.
-   * An X means RECOMMENDED only; it never changes side quantities or prevents selection.
-   * With multiple proteins, a side is recommended when any selected protein has an X.
-   */
+  /* Recommendation matrix supplied by Meatfest. */
   sideRecommendation = function(id){
     const active=proteinTagsForRecommendations();
     const any=tags=>tags.some(tag=>active.has(tag));
@@ -151,8 +147,10 @@ body>*{display:none!important}
     return{key,m,option,row,buy,note};
   }
 
+  const orderedSelectedRows = eaters => order.map(key=>selected.includes(key)?rowFor(key,eaters):null).filter(Boolean);
+
   window.calc=function(){
-    const t=activeEaters();const rows=[...selected].map(key=>rowFor(key,t.eaters)).filter(Boolean);const total=rows.reduce((sum,item)=>sum+item.row.buyWeight,0);
+    const t=activeEaters();const rows=orderedSelectedRows(t.eaters);const total=rows.reduce((sum,item)=>sum+item.row.buyWeight,0);
     $("statAdults").textContent=t.adults;$("statKids").textContent=t.kids;$("statEaters").textContent=MeatEngine.round1(t.eaters);$("totalRaw").textContent=total?`${MeatEngine.round1(total)} lb`:"0 lb";
     $("summary").textContent=rows.length?`${rows.length} protein${rows.length>1?"s":""} • ${MeatEngine.round1(t.eaters)} adult-equivalent eaters${planningMode==="family"?" • 12.5% family cushion":""}`:"Select at least one protein.";
     const resultsBox = $("results");
@@ -160,7 +158,7 @@ body>*{display:none!important}
     calcSides();
   };
 
-  window.buildSummary=function(){const t=activeEaters();const rows=[...selected].map(key=>rowFor(key,t.eaters)).filter(Boolean);return{adults:t.adults,kids:t.kids,eaters:t.eaters,rows,total:rows.reduce((s,r)=>s+r.row.buyWeight,0)}};
+  window.buildSummary=function(){const t=activeEaters();const rows=orderedSelectedRows(t.eaters);return{adults:t.adults,kids:t.kids,eaters:t.eaters,rows,total:rows.reduce((s,r)=>s+r.row.buyWeight,0)}};
 
   window.populatePrint=function(){
     const s=window.buildSummary(),ev=eventDetails();
