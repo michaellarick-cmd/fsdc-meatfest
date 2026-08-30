@@ -9,6 +9,8 @@ const { MeatEngine } = globalThis;
 const standard = 1 / 3;
 const row = (key, eaters, serving = standard, choice = {}) =>
   MeatEngine.canonicalRow({ key, eaters, serving, choice });
+const familyRow = (key, eaters, serving = standard, choice = {}) =>
+  MeatEngine.familyRow({ key, eaters, serving, choice });
 
 const close = (actual, expected, tolerance = 1e-9) =>
   assert.ok(Math.abs(actual - expected) < tolerance, `${actual} != ${expected}`);
@@ -159,6 +161,32 @@ test('fish, poultry cuts, brisket flat, and boneless pork have production shoppi
   }
 });
 
+test('Family mode is a separate path with a fixed 12.5% finished-meat cushion', () => {
+  const meatfest = row('prime', 8, standard, { id: 'whole', unit: 'roast' });
+  const family = familyRow('prime', 8, standard, { id: 'whole', unit: 'roast' });
+  close(family.finished, meatfest.finished * MeatEngine.FAMILY_CUSHION);
+  assert.ok(family.buyWeight >= 3);
+  assert.notEqual(family.buyWeight, meatfest.buyWeight);
+});
+
+test('Family mode uses practical small-batch units for shoulder and brisket', () => {
+  const pork = familyRow('pork', 8, standard, { id: 'bone', unit: 'bone-in butt' });
+  const brisket = familyRow('brisket', 8, standard, { id: 'flat', unit: 'flat' });
+  assert.equal(pork.units, 1);
+  assert.equal(brisket.units, 1);
+  assert.ok(pork.buyWeight >= 4);
+  assert.ok(brisket.buyWeight >= 4);
+});
+
+test('Family mode does not alter Meatfest canonical anchors', () => {
+  const standardChicken = row('chicken', 48, standard, { unit: 'whole fryer' });
+  const standardAgain = row('chicken', 48, standard, { unit: 'whole fryer' });
+  close(standardChicken.raw, 20);
+  close(standardAgain.raw, 20);
+  close(standardChicken.buyWeight, 20);
+});
+
 test('unsupported selections return no calculation row', () => {
   assert.equal(row('not-a-protein', 48), null);
+  assert.equal(familyRow('not-a-protein', 48), null);
 });
