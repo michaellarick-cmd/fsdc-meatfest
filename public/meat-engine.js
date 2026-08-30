@@ -20,7 +20,7 @@
     else if(key==='brisket'&&choice.id==='packer'){raw=ANCHORS.brisketLb*scale;units=1;buyWeight=Math.max(14,raw);finished=raw*PORTIONS.brisketYield}
     else if(key==='brisket'&&choice.id==='flat')return unitProteinRow(eaters*Number(serving),ANCHORS.brisketFlatLb,PORTIONS.brisketFlatYield)
     else if(key==='pmbe'){raw=ANCHORS.pmbeLb*scale;units=roundUp(raw,4);buyWeight=units*4;finished=raw*PORTIONS.pmbeYield}
-    else if (key === 'pbbe'){raw=ANCHORS.pbbeLb*scale;units=roundUp(raw,ANCHORS.pbbeLb);buyWeight=units*ANCHORS.pbbeLb;finished=raw*PORTIONS.pbbeYield}
+    else if(key==='pbbe'){raw=ANCHORS.pbbeLb*scale;units=roundUp(raw,ANCHORS.pbbeLb);buyWeight=units*ANCHORS.pbbeLb;finished=raw*PORTIONS.pbbeYield}
     else if(key==='pork'&&choice.id==='boneless')return unitProteinRow(eaters*Number(serving),ANCHORS.porkBonelessLb,PORTIONS.porkYield)
     else if(key==='pork'){raw=ANCHORS.porkLb*scale;units=roundUp(raw,8.5);buyWeight=units*8.5;finished=raw*PORTIONS.porkYield}
     else if(key==='chicken'&&choice.unit==='whole fryer'){const birdsNeeded=ANCHORS.chickenBirds*scale;units=roundUp(birdsNeeded,1);buyWeight=units*ANCHORS.chickenLb;raw=birdsNeeded*ANCHORS.chickenLb;finished=raw*PORTIONS.chickenYield}
@@ -32,6 +32,25 @@
     else return null;
     return{raw,finished,units,buyWeight,excess:Math.max(0,buyWeight-raw)};
   }
+  function multiProteinRows({keys,eaters,serving=STANDARD_SERVING,choices={}}){
+    if(!Array.isArray(keys)||!keys.length)return [];
+    if(keys.includes('hog'))return keys.length===1?[{key:'hog',row:canonicalRow({key:'hog',eaters,serving,choice:choices.hog||{headFeet:'on'}})}]:[];
+    const roleRows=keys.map(key=>{const choice=choices[key]||{};return{key,choice,row:canonicalRow({key,eaters:BASE_EATERS,serving:STANDARD_SERVING,choice})}}).filter(x=>x.row);
+    const roleFinished=roleRows.reduce((s,x)=>s+x.row.finished,0);
+    if(!(roleFinished>0))return [];
+    const targetFinished=eaters*Number(serving);
+    return roleRows.map(({key,choice,row:role})=>{
+      const finished=targetFinished*(role.finished/roleFinished);
+      const yieldRate=role.raw>0?role.finished/role.raw:0;
+      let raw=yieldRate>0?finished/yieldRate:0,units,buyWeight;
+      if(key==='brisket'&&choice.id!=='flat'){units=1;buyWeight=Math.max(14,raw)}
+      else if(key==='ribs'){units=roundUp(raw,ANCHORS.ribRackLb);buyWeight=units*ANCHORS.ribRackLb}
+      else if(key==='brats'){units=roundUp(raw,ANCHORS.bratLinkLb);buyWeight=units*ANCHORS.bratLinkLb}
+      else {const unitWeight=choice.id==='boneless'?ANCHORS.porkBonelessLb:choice.id==='flat'?ANCHORS.brisketFlatLb:choice.id==='chuck'?4:choice.id==='belly'?ANCHORS.pbbeLb:choice.id==='breast'?ANCHORS.turkeyBreastLb:choice.id==='legs'?ANCHORS.turkeyLegLb:choice.id==='legq'?ANCHORS.chickenLegQuarterLb:choice.id==='thigh'?ANCHORS.chickenThighLb:choice.unit==='whole fryer'?ANCHORS.chickenLb:choice.unit==='filet'?ANCHORS.fishFiletLb:ANCHORS.primeRibRoastLb;
+        units=roundUp(raw,unitWeight);buyWeight=units*unitWeight}
+      return{key,raw,finished,units,buyWeight,excess:Math.max(0,buyWeight-raw),roleShare:role.finished/roleFinished};
+    });
+  }
   function familyRow({key,eaters,serving=STANDARD_SERVING,choice={}}){const familyEaters=eaters*FAMILY_CUSHION,canonical=canonicalRow({key,eaters:familyEaters,serving,choice});if(!canonical)return null;const raw=canonical.raw;let units=canonical.units,buyWeight=canonical.buyWeight;if(key==='pork'||key==='brisket'||key==='prime'||key==='pmbe'){buyWeight=Math.max(key==='prime'?3:key==='pmbe'?3:4,halfUp(raw));units=1}else if(key==='ribs'){const halfRack=ANCHORS.ribRackLb/2,halves=Math.max(1,Math.ceil((raw-1e-9)/halfRack));units=halves/2;buyWeight=units*ANCHORS.ribRackLb}else if(key==='brats'){units=Math.max(1,Math.ceil((raw-1e-9)/ANCHORS.bratLinkLb));buyWeight=units*ANCHORS.bratLinkLb}else if(key==='fish'){units=Math.max(1,Math.ceil((raw-1e-9)/ANCHORS.fishFiletLb));buyWeight=units*ANCHORS.fishFiletLb}else if(key==='chicken'){const unitWeight=choice.unit==='whole fryer'?ANCHORS.chickenLb:choice.id==='legq'?ANCHORS.chickenLegQuarterLb:ANCHORS.chickenThighLb;units=Math.max(1,Math.ceil((raw-1e-9)/unitWeight));buyWeight=units*unitWeight}return{raw,finished:canonical.finished,units,buyWeight,excess:Math.max(0,buyWeight-raw),familyCushion:FAMILY_CUSHION}}
-  globalThis.MeatEngine=Object.freeze({BASE_EATERS,STANDARD_SERVING,FAMILY_CUSHION,ANCHORS,PORTIONS,round1,roundUp,wholeHogYield,wholeHogPlan,canonicalRow,familyRow});
+  globalThis.MeatEngine=Object.freeze({BASE_EATERS,STANDARD_SERVING,FAMILY_CUSHION,ANCHORS,PORTIONS,round1,roundUp,wholeHogYield,wholeHogPlan,canonicalRow,multiProteinRows,familyRow});
 })();
