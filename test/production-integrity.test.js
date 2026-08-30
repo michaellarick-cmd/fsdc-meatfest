@@ -20,6 +20,14 @@ test('production presentation contains restored sides and turkey', () => {
   assert.match(presentation, /prime_rib/);
 });
 
+test('production presentation renders the meat shopping list', () => {
+  assert.match(presentation, /const resultsBox = \$\("results"\)/);
+  assert.match(presentation, /resultsBox\.innerHTML = rows\.length/);
+  assert.match(presentation, /row\.buyWeight/);
+  assert.match(presentation, /row\.raw/);
+  assert.match(presentation, /row\.finished/);
+});
+
 test('no runtime patch markers remain in production presentation code', () => {
   assert.doesNotMatch(presentation, /FSDC-NEW-SIDES-INTEGRATED/);
   assert.doesNotMatch(presentation, /FSDC-TURKEY-INTEGRATED/);
