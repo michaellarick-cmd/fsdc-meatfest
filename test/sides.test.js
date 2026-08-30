@@ -5,11 +5,11 @@ import fs from 'node:fs';
 
 const app=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
 const final=fs.readFileSync(new URL('../public/meatfest-final.js',import.meta.url),'utf8');
-const appStart=app.indexOf('function chickenPrep');
-const appEnd=app.indexOf('function renderSideCards');
+const appStart=app.indexOf('const sides={');
+const appEnd=app.indexOf('const order=');
 assert.ok(appStart>=0&&appEnd>appStart,'production side planner not found in app.js');
 const finalStart=final.indexOf('Object.assign(sides, {');
-const finalEnd=final.indexOf('  // Whole-hog preparation is a presentation choice');
+const finalEnd=final.indexOf('  meats.hog.options =');
 assert.ok(finalStart>=0&&finalEnd>finalStart,'production side integration not found in meatfest-final.js');
 
 const context={choices:{chicken:'whole'},selected:new Set(),selectedSides:new Set(),planningMode:'meatfest',activeTotals:()=>[48,0],meats:{},order:[]};
