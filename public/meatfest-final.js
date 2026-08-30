@@ -65,14 +65,14 @@ body>*{display:none!important}
       else if(key==="fish")tags.add("fish");else if(key==="pork")tags.add("pulled_pork");else if(key==="brisket")tags.add("brisket");else if(key==="pmbe")tags.add("pmbe");else if(key==="brats")tags.add("brats");else if(key==="ribs")tags.add("ribs");else if(key==="prime")tags.add("prime_rib");else if(key==="hog")tags.add("whole_hog");
     });return tags;
   }
-  sideRecommendation=function(id){
+  sideRecommendation = function(id){
     const active=proteinTagsForRecommendations(),any=tags=>tags.some(tag=>active.has(tag));
     switch(id){
       case "mac":return active.size>0;case "cauli":return any(["chicken_pulled","chicken_quarters","chicken_thighs","fish"]);case "slaw":return any(["pulled_pork","brisket","pmbe","ribs","brats","chicken_pulled","chicken_quarters","chicken_thighs","fish"]);case "collards":return any(["pulled_pork","brisket","pmbe","ribs"]);case "broccoli":return any(["fish","chicken_pulled","chicken_quarters","chicken_thighs","pulled_pork","brisket","pmbe","ribs"]);case "cucumber":return any(["fish","chicken_pulled","chicken_quarters","chicken_thighs"]);case "kraut":return active.has("brats");case "beans":return false;case "corn":return any(["chicken_pulled","chicken_quarters","chicken_thighs","fish","pulled_pork","brisket","pmbe","ribs"]);case "cornbread":return active.size>0;case "rolls":return any(["pulled_pork","chicken_pulled","brisket"]);case "greenbeans":return active.has("prime_rib");case "asparagus":return active.has("prime_rib");case "potatosalad":return active.size>0;case "pastasalad":return active.size>0;default:return false;
     }
   };
 
-  meats.hog.options={
+  meats.hog.options = {
     headfeet:{label:"Head & Feet On",yield:"hog",unitWeight:null,unit:"whole hog",mode:"hog",headFeet:"on",note:"Original Meatfest whole-hog model: hanging weight with head + feet on."},
     headoff:{label:"Head & Feet Off",yield:"hog",unitWeight:null,unit:"whole hog",mode:"hog",headFeet:"off",note:"Hanging-weight target adjusted 7% lower for head + feet removed."}
   };
