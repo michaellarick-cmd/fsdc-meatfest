@@ -1,4 +1,4 @@
-// DOM-free side planning engine. The browser UI imports these exact production rules.
+// DOM-free side planning engine. These rules mirror the side planner's production data/calculation path.
 export const sides={
  mac:{name:"Mac & Cheese",group:"main",unit:"tin",base:0.75,min:0.25,sensitivity:.45,round:.25,fill:"nearly full",note:"Anchor favorite; planned leftover is useful."},
  cauli:{name:"Cauliflower Mac & Cheese",group:"main",unit:"tin",base:0.75,min:0.25,sensitivity:.70,round:.25,fill:"nearly full",note:"Perennial favorite; historically less total demand than regular Mac."},
@@ -8,11 +8,15 @@ export const sides={
  cucumber:{name:"Cucumber Salad",group:"main",unit:"recipe",base:1.0,min:0.5,sensitivity:.70,round:.25,fill:"recipe",note:"One recipe has historically been about right."},
  kraut:{name:"Sauerkraut",group:"main",unit:"tin",base:0.50,min:0.25,sensitivity:.90,round:.25,fill:"thumb clearance",note:"Strongly paired with Polish Brats; keep leftovers tight because it does not reheat well."},
  beans:{name:"Baked Beans",group:"main",unit:"tin",base:0.50,min:0.25,sensitivity:.90,round:.25,fill:"thumb clearance",note:"Deliberately restrained; Meatfest history shows chronic overproduction."},
+ greenbeans:{name:"Green Beans",group:"main",unit:"recipe",base:1.0,min:0.5,sensitivity:.70,round:.25,fill:"recipe",note:"Grilled or smoked BBQ vegetable side."},
+ potatosalad:{name:"Potato Salad",group:"main",unit:"recipe",base:1.5,min:0.5,sensitivity:.55,round:.5,fill:"recipe",note:"Classic BBQ side."},
+ asparagus:{name:"Asparagus",group:"main",unit:"recipe",base:1.0,min:0.5,sensitivity:.70,round:.25,fill:"recipe",note:"Grilled or smoked BBQ vegetable side."},
+ pastasalad:{name:"Pasta Salad",group:"main",unit:"recipe",base:1.5,min:0.5,sensitivity:.55,round:.5,fill:"recipe",note:"Classic cold BBQ side; practical make-ahead option."},
  corn:{name:"Corn on the Cob",group:"unit",unit:"ear",base:7,min:4,sensitivity:.60,round:2,fill:"half-ear portions",note:"Served as half ears. Historical target is deliberately modest."},
  cornbread:{name:"Cornbread",group:"accomp",unit:"piece",base:24,min:12,sensitivity:.20,round:6,fill:"mini cupcake",recipePieces:24,note:"BBQ accompaniment; traditional + gluten-free pieces can be mixed as needed."},
  rolls:{name:"Hawaiian Rolls",group:"accomp",unit:"piece",base:16,min:8,sensitivity:.10,round:8,fill:"piece",packagePieces:32,note:"Sandwich vehicle for pulled pork, pulled chicken and sliced brisket. Costco twin pack is 32 rolls."}
 };
-export const sideOrder=["mac","cauli","slaw","collards","broccoli","cucumber","kraut","beans","corn","cornbread","rolls"];
+export const sideOrder=["asparagus","beans","broccoli","cauli","collards","corn","cucumber","greenbeans","kraut","mac","pastasalad","potatosalad","slaw","cornbread","rolls"];
 export function sideProteinFactor(n){return ({1:1.20,2:1.15,3:1.10,4:1.05,5:1.00,6:.95,7:.92,8:.90})[Math.max(1,Math.min(8,n))]||.90}
 export function sideVarietyFactor(n){return ({1:1.35,2:1.18,3:1.08,4:1.00,5:.97,6:.94,7:.92,8:.90})[Math.max(1,Math.min(8,n))]||.90}
 export function roundUpTo(x,step){return Math.ceil((x-1e-9)/step)*step}
