@@ -1,5 +1,31 @@
 /* FSDC Meatfest — browser presentation layer for the shared MeatEngine. */
 (() => {
+  // Whole-hog preparation is a presentation choice, but the calculation
+  // itself remains entirely inside MeatEngine. Default preserves the original
+  // Meatfest model: hanging weight with head + feet on.
+  meats.hog.options = {
+    headfeet: {
+      label: "Head & Feet On",
+      yield: "hog",
+      unitWeight: null,
+      unit: "whole hog",
+      mode: "hog",
+      headFeet: "on",
+      note: "Original Meatfest whole-hog model: hanging weight with head + feet on."
+    },
+    headoff: {
+      label: "Head & Feet Off",
+      yield: "hog",
+      unitWeight: null,
+      unit: "whole hog",
+      mode: "hog",
+      headFeet: "off",
+      note: "Hanging-weight target adjusted 7% lower for head + feet removed."
+    }
+  };
+  if (!meats.hog.options[choices.hog]) choices.hog = "headfeet";
+  if (typeof renderMeats === "function") renderMeats();
+
   function activeEaters() {
     const [adults, kids] = activeTotals();
     return { adults, kids, eaters: adults + kids * 0.5 };
@@ -17,13 +43,19 @@
       key,
       eaters,
       serving: portion(),
-      choice: { id: choiceId, unit: option?.unit }
+      choice: { id: choiceId, unit: option?.unit, headFeet: option?.headFeet }
     });
     if (!row) return null;
 
     let buy;
     let note = option?.note || "";
-    if (key === "ribs") {
+    if (key === "hog") {
+      const prep = option.headFeet === "off" ? "head & feet off" : "head & feet on";
+      buy = `TARGET ~${Math.ceil(row.buyWeight)} lb hanging weight (${prep})`;
+      note = option.headFeet === "off"
+        ? "Whole-hog target uses the validated Meatfest hanging-weight curve with a 7% adjustment for head + feet removed. No live-weight conversion is used."
+        : "Whole-hog target uses the validated Meatfest hanging-weight curve. No live-weight conversion is used. This preserves the original head + feet-on model.";
+    } else if (key === "ribs") {
       buy = `BUY ${row.units} rack${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
       note = `Count-based planning: ${MeatEngine.round1(eaters * MeatEngine.ANCHORS.ribsTakeRate * (portion() / MeatEngine.STANDARD_SERVING))} takers × ${MeatEngine.ANCHORS.ribsPerTaker} ribs ÷ ${MeatEngine.ANCHORS.ribsPerRack} ribs/rack.`;
     } else if (key === "brats") {
@@ -61,11 +93,13 @@
 
     $("results").innerHTML = rows.length ? rows.map(({ key, m, option, row, buy, note }) => {
       const excess = row.excess > 0.5 ? ` • Planned excess: <span class="excess">${MeatEngine.round1(row.excess)} lb</span>` : "";
-      const unit = (key !== "ribs" && key !== "brats" && option.mode === "units")
-        ? ` • Planning unit: ${key === "chicken" ? MeatEngine.ANCHORS.chickenLb : key === "pmbe" ? 4 : key === "pork" ? 8.5 : option.unitWeight} lb`
-        : "";
-      const yieldRate = typeof option.yield === "number" ? option.yield : 1;
-      return `<div class="result"><div class="resultTop"><div><div class="resultTitle">${m.name}</div><span class="pill">${option.label}</span><span class="pill">${Math.round(yieldRate * 100)}% yield</span></div><div class="buy">${buy}</div></div><div class="details">Finished meat needed: <b>${MeatEngine.round1(row.finished)} lb</b> • Raw requirement: <b>${MeatEngine.round1(row.raw)} lb</b>${unit}${excess}</div>${note ? `<div class="purchaseNote">${note}</div>` : ""}</div>`;
+      const unit = key === "hog"
+        ? " • Purchase basis: hanging weight"
+        : (key !== "ribs" && key !== "brats" && option.mode === "units")
+          ? ` • Planning unit: ${key === "chicken" ? MeatEngine.ANCHORS.chickenLb : key === "pmbe" ? 4 : key === "pork" ? 8.5 : option.unitWeight} lb`
+          : "";
+      const yieldRate = key === "hog" ? row.finished / row.raw : (typeof option.yield === "number" ? option.yield : 1);
+      return `<div class="result"><div class="resultTop"><div><div class="resultTitle">${m.name}</div><span class="pill">${option.label}</span><span class="pill">${Math.round(yieldRate * 100)}% yield</span></div><div class="buy">${buy}</div></div><div class="details">Finished meat needed: <b>${MeatEngine.round1(row.finished)} lb</b> • Raw/hanging requirement: <b>${MeatEngine.round1(row.raw)} lb</b>${unit}${excess}</div>${note ? `<div class="purchaseNote">${note}</div>` : ""}</div>`;
     }).join("") : "<p class='note'>Select at least one protein.</p>";
 
     calcSides();
@@ -77,7 +111,5 @@
     return { adults: t.adults, kids: t.kids, eaters: t.eaters, rows, total: rows.reduce((s, r) => s + r.row.buyWeight, 0) };
   };
 
-  // app.js wires the UI and restores saved state before this presentation layer loads.
-  // Initial calculation belongs here, after the calculation engine exists.
   window.calc();
 })();
