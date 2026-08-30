@@ -61,11 +61,22 @@ test('UI metadata agrees with the canonical whole-chicken purchase anchor', () =
   assert.doesNotMatch(app, /unitWeight:4\.5/);
 });
 
-test('duplicate production calculation helpers are absent from the UI layer', () => {
+test('presentation layer does not override shared protein or side metadata', () => {
+  assert.doesNotMatch(presentation, /Object\.assign\(sides/);
+  assert.doesNotMatch(presentation, /meats\.turkey\s*=/);
+  assert.doesNotMatch(presentation, /meats\.pbbe\s*=/);
+  assert.doesNotMatch(presentation, /sideRecommendation\s*=.*switch/);
+  assert.doesNotMatch(presentation, /sideOrder\.splice/);
+  assert.doesNotMatch(presentation, /order\.splice/);
+});
+
+test('calculation engine remains the only source of canonical protein math', () => {
   assert.doesNotMatch(app, /function wholeHogYield\(/);
   assert.doesNotMatch(app, /function wholeHogPlan\(/);
   assert.doesNotMatch(app, /function familyPurchase\(/);
   assert.doesNotMatch(app, /function purchaseDisplay\(/);
+  assert.match(presentation, /MeatEngine\.canonicalRow/);
+  assert.match(presentation, /MeatEngine\.familyRow/);
 });
 
 test('reset fields use placeholders instead of real zero/default values', () => {
