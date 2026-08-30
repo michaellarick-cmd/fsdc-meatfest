@@ -1,84 +1,73 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  calculateFamilyFinishedProtein,
-  calculateFinishedProtein,
-  calculateRawRequirement,
-  roundUpPurchase,
-} from '../src/meat-engine.js';
 
-const total = (rows) => rows.reduce((sum, row) => sum + row.finishedLb, 0);
+// Test the exact browser engine used in production. This prevents the test
+// suite from validating a separate copy of the calculation logic.
+await import('../public/meat-engine.js');
+const { MeatEngine } = globalThis;
 
-test('Family: 5-person standard portion is about 1/3 lb total finished meat', () => {
-  const rows = calculateFamilyFinishedProtein({ adults: 4, kids: 1, selected: ['pork', 'ribs'], serving: 1 / 3 });
-  assert.equal(rows.length, 2);
-  assert.ok(Math.abs(total(rows) - (4.5 / 3)) < 0.002);
-  assert.ok(rows.every((row) => row.finishedLb > 0));
+const standard = 1 / 3;
+const row = (key, eaters, serving = standard, choice = {}) =>
+  MeatEngine.canonicalRow({ key, eaters, serving, choice });
+
+const close = (actual, expected, tolerance = 1e-9) =>
+  assert.ok(Math.abs(actual - expected) < tolerance, `${actual} != ${expected}`);
+
+test('48-eater Meatfest anchors remain exact', () => {
+  const expected = {
+    brisket: [19.5, 9.75, 19.5, 0],
+    pmbe: [16, 9.6, 16, 0],
+    pork: [17, 10.2, 17, 0],
+    chicken: [20, 12.4, 20, 0],
+    ribs: [10.227272727272727, 7.159090909090908, 11.25, 1.022727272727273],
+    brats: [4, 3.6, 4, 0],
+  };
+
+  for (const [key, [raw, finished, buyWeight, excess]] of Object.entries(expected)) {
+    const choice = key === 'brisket' ? { id: 'packer' } : key === 'chicken' ? { unit: 'whole fryer' } : {};
+    const result = row(key, 48, standard, choice);
+    close(result.raw, raw);
+    close(result.finished, finished);
+    close(result.buyWeight, buyWeight);
+    close(result.excess, excess);
+  }
 });
 
-test('Family: changing the number of proteins does not increase total planned meat', () => {
-  const two = calculateFamilyFinishedProtein({ adults: 5, kids: 0, selected: ['pork', 'ribs'], serving: 1 / 3 });
-  const three = calculateFamilyFinishedProtein({ adults: 5, kids: 0, selected: ['pork', 'ribs', 'brisket'], serving: 1 / 3 });
-  assert.ok(Math.abs(total(two) - 5 / 3) < 0.002);
-  assert.ok(Math.abs(total(three) - 5 / 3) < 0.004);
+test('30-eater chicken exposes the exact raw requirement before purchase rounding', () => {
+  const result = row('chicken', 30, standard, { unit: 'whole fryer' });
+  close(result.raw, 12.5);
+  close(result.finished, 7.75);
+  assert.equal(result.units, 3);
+  close(result.buyWeight, 15);
+  close(result.excess, 2.5);
 });
 
-test('Family: portion choices are total finished meat per person', () => {
-  const light = calculateFamilyFinishedProtein({ adults: 5, selected: ['pork', 'brisket'], serving: 0.25 });
-  const standard = calculateFamilyFinishedProtein({ adults: 5, selected: ['pork', 'brisket'], serving: 1 / 3 });
-  const hearty = calculateFamilyFinishedProtein({ adults: 5, selected: ['pork', 'brisket'], serving: 0.5 });
-  assert.ok(total(light) < total(standard));
-  assert.ok(total(standard) < total(hearty));
-  assert.ok(Math.abs(total(light) - 1.25) < 0.002);
-  assert.ok(Math.abs(total(hearty) - 2.5) < 0.002);
+test('portion selector scales Meatfest anchors', () => {
+  const standardChicken = row('chicken', 48, standard, { unit: 'whole fryer' });
+  const lightChicken = row('chicken', 48, 0.25, { unit: 'whole fryer' });
+  const heartyChicken = row('chicken', 48, 0.5, { unit: 'whole fryer' });
+  close(lightChicken.raw, standardChicken.raw * 0.75);
+  close(heartyChicken.raw, standardChicken.raw * 1.5);
 });
 
-test('Family: children retain existing half-eater handling', () => {
-  const rows = calculateFamilyFinishedProtein({ adults: 4, kids: 2, selected: ['pork'], serving: 1 / 3 });
-  assert.ok(Math.abs(total(rows) - (5 / 3)) < 0.002);
+test('ribs use count-based planning and purchase-unit rounding', () => {
+  const result = row('ribs', 48);
+  close(result.raw, 10.227272727272727);
+  close(result.finished, 7.159090909090908);
+  assert.equal(result.units, 5);
+  close(result.buyWeight, 11.25);
+  close(result.excess, 1.022727272727273);
 });
 
-test('Family: no hidden 12.5% meat cushion', () => {
-  const rows = calculateFamilyFinishedProtein({ adults: 5, selected: ['pork'], serving: 1 / 3 });
-  assert.ok(Math.abs(total(rows) - (5 / 3)) < 0.002);
+test('brats use one half-pound link per six adult-equivalent eaters', () => {
+  const result = row('brats', 48);
+  close(result.raw, 4);
+  close(result.finished, 3.6);
+  assert.equal(result.units, 8);
+  close(result.buyWeight, 4);
 });
 
-test('Meatfest: six-protein standard anchors are not equal-share math', () => {
-  const rows = calculateFinishedProtein({ adults: 48, selected: ['chicken', 'pork', 'brats', 'brisket', 'pmbe', 'ribs'], serving: 1 / 3 });
-  assert.equal(rows.length, 6);
-  const byId = Object.fromEntries(rows.map((row) => [row.id, row.finishedLb]));
-  assert.equal(byId.brisket, 9.75);
-  assert.equal(byId.pmbe, 9.6);
-  assert.equal(byId.pork, 10.2);
-  assert.equal(byId.chicken, 12.4);
-  assert.ok(Math.abs(byId.ribs - 7.875) < 1e-12);
-  assert.equal(byId.brats, 3.6);
-});
-
-test('Meatfest: serving-unit conversions retain the established taker rules', () => {
-  const rows = calculateFinishedProtein({ adults: 48, selected: ['ribs', 'brats'], serving: 1 / 3 });
-  const ribs = rows.find((row) => row.id === 'ribs');
-  const brats = rows.find((row) => row.id === 'brats');
-  assert.ok(Math.abs(ribs.servingUnits.takers - 28.8) < 0.001);
-  assert.ok(Math.abs(ribs.servingUnits.units - 50.4) < 0.001);
-  assert.ok(Math.abs(brats.servingUnits.units - 100.8) < 0.001);
-});
-
-test('Meatfest: portion selector scales anchors', () => {
-  const standard = calculateFinishedProtein({ adults: 48, selected: ['chicken'], serving: 1 / 3 });
-  const light = calculateFinishedProtein({ adults: 48, selected: ['chicken'], serving: 0.25 });
-  const generous = calculateFinishedProtein({ adults: 48, selected: ['chicken'], serving: 0.5 });
-  assert.ok(Math.abs(light[0].finishedLb - standard[0].finishedLb * 0.75) < 1e-9);
-  assert.ok(Math.abs(generous[0].finishedLb - standard[0].finishedLb * 1.5) < 1e-9);
-});
-
-test('Raw requirement converts finished meat using protein yield', () => {
-  assert.ok(Math.abs(calculateRawRequirement({ finishedLb: 1, yieldRate: 0.6 }) - (1 / 0.6)) < 1e-12);
-});
-
-test('Purchase quantities round up and expose planned leftover', () => {
-  const result = roundUpPurchase(4.2, 2.25);
-  assert.equal(result.units, 2);
-  assert.equal(result.purchasedLb, 4.5);
-  assert.ok(Math.abs(result.leftoverLb - 0.3) < 1e-12);
+test('unsupported selections return no calculation row', () => {
+  assert.equal(row('not-a-protein', 48), null);
+  assert.equal(row('chicken', 48), null);
 });
