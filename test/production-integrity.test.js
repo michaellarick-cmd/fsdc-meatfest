@@ -26,18 +26,19 @@ test('production UI contains the canonical side catalog and restored proteins', 
 test('protein order is canonical for both selection and shopping-list output', () => {
   assert.match(app, /const order=\["brisket","pmbe","ribs","pork","pbbe","brats","chicken","turkey","fish","prime","hog"\]/);
   assert.match(app, /const visibleOrder=planningMode==="family"\?order\.filter/);
-  assert.match(presentation, /const orderedSelectedRows = eaters => order\.map\(key=>selected\.includes\(key\)\?rowFor\(key,eaters\):null\)\.filter\(Boolean\)/);
+  assert.match(presentation, /const orderedSelectedRows=eaters=>order\.map\(key=>selected\.has\(key\)\?rowFor\(key,eaters\):null\)\.filter\(Boolean\)/);
   assert.match(presentation, /const rows=orderedSelectedRows\(t\.eaters\)/);
 });
 
 test('shopping-list ordering only includes selected proteins', () => {
-  assert.match(presentation, /selected\.includes\(key\)\?rowFor\(key,eaters\):null/);
+  assert.match(presentation, /selected\.has\(key\)\?rowFor\(key,eaters\):null/);
   assert.doesNotMatch(presentation, /order\.map\(key=>rowFor\(key,eaters\)/);
+  assert.match(app, /selected=new Set\(x\.selected\|\|\[\]\)/);
 });
 
 test('production presentation renders the meat shopping list', () => {
-  assert.match(presentation, /const resultsBox = \$\("results"\)/);
-  assert.match(presentation, /resultsBox\.innerHTML = rows\.length/);
+  assert.match(presentation, /const resultsBox=\$\("results"\)/);
+  assert.match(presentation, /resultsBox\.innerHTML=rows\.length/);
   assert.match(presentation, /row\.buyWeight/);
   assert.match(presentation, /row\.raw/);
   assert.match(presentation, /row\.finished/);
@@ -46,7 +47,7 @@ test('production presentation renders the meat shopping list', () => {
 test('Family mode uses the isolated engine path', () => {
   assert.match(engine, /function familyRow\(/);
   assert.match(engine, /FAMILY_CUSHION/);
-  assert.match(presentation, /planningMode === "family" \? MeatEngine\.familyRow : MeatEngine\.canonicalRow/);
+  assert.match(presentation, /planningMode==="family"\?MeatEngine\.familyRow:MeatEngine\.canonicalRow/);
 });
 
 test('Pork Belly Burnt Ends has a canonical engine path', () => {
