@@ -8,7 +8,7 @@
     const keys=order.filter(key=>selected.has(key));
     if(!keys.length)return [];
     if(planningMode==="family")return keys.map(key=>{const m=proteinMeta(key),choiceId=choices[key]&&m.options[choices[key]]?choices[key]:m.default,option=m.options[choiceId];if(key==="hog")return{key,m,choiceId,option,row:MeatEngine.familyRow({key,eaters,serving:portion(),choice:{id:choiceId,unit:option?.unit,headFeet:option?.headFeet}})};return{key,m,choiceId,option,row:MeatEngine.familyRow({key,eaters,serving:portion(),choice:{id:choiceId,unit:option?.unit,headFeet:option?.headFeet}})}}).filter(x=>x.row);
-    const choiceMap={};for(const key of keys){const m=proteinMeta(key),choiceId=choices[key]&&m.options[choices[key]]?choices[key]:m.default,option=m.options[choiceId];choiceMap[key]={id:choiceId,unit:option?.unit,headFeet:option?.headFeet}}
+    const choiceMap={};for(const key of keys){const m=proteinMeta(key),choiceId=key==="brisket"?"packer":(choices[key]&&m.options[choices[key]]?choices[key]:m.default),option=m.options[choiceId];choiceMap[key]={id:choiceId,unit:option?.unit,headFeet:option?.headFeet}}
     const planned=MeatEngine.multiProteinRows({keys,eaters,serving:portion(),choices:choiceMap});
     return planned.map(item=>{const m=proteinMeta(item.key),choiceId=choiceMap[item.key].id,option=m.options[choiceId];return{key:item.key,m,choiceId,option,row:item}});
   }
