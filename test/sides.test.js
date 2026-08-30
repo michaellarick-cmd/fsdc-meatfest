@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import fs from 'node:fs';
 
 const app=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
-const appStart=app.indexOf('const sides={');
+const appStart=app.indexOf('function selectedProteinTags()');
 const appEnd=app.indexOf('const order=');
 assert.ok(appStart>=0&&appEnd>appStart,'production side planner not found in app.js');
 
@@ -39,11 +39,12 @@ const matrix={
  turkey:['cauli','greenbeans','mac','potatosalad','rolls'],
  pork_belly_burnt_ends:['beans','cauli','cucumber','mac','potatosalad','slaw','cornbread']
 };
+const keyToSelection={chicken:'chicken',pulled_pork:'pork',whole_hog:'hog',prime_rib:'prime',pork_belly_burnt_ends:'pbbe'};
 
 test('recommendation matrix exactly matches the approved grid',()=>{
   for(const [protein,ids] of Object.entries(matrix)){
     assert.deepEqual(Array.from(sideRecommendationMatrix[protein]).sort(),ids.slice().sort(),`${protein} matrix mismatch`);
-    context.selected=new Set([protein==='chicken'?'chicken':protein==='pulled_pork'?'pork':protein==='whole_hog'?'hog':protein==='prime_rib'?'prime':protein==='pork_belly_burnt_ends'?'pbbe':protein]);
+    context.selected=new Set([keyToSelection[protein]||protein]);
     for(const id of expectedOrder)assert.equal(sideRecommendation(id),ids.includes(id),`${protein} / ${id}`);
   }
 });
