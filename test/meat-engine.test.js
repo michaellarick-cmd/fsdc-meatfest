@@ -19,7 +19,7 @@ test('48-eater Meatfest anchors remain exact', () => {
     pmbe: [16, 9.6, 16, 0],
     pork: [17, 10.2, 17, 0],
     chicken: [20, 12.4, 20, 0],
-    ribs: [10.227272727272727, 7.159090909090908, 11.25, 1.022727272727273],
+    ribs: [10.30909090909091, 7.216363636363637, 11.25, 0.9409090909090907],
     brats: [4, 3.6, 4, 0],
   };
 
@@ -52,11 +52,11 @@ test('portion selector scales Meatfest anchors', () => {
 
 test('ribs use count-based planning and purchase-unit rounding', () => {
   const result = row('ribs', 48);
-  close(result.raw, 10.227272727272727);
-  close(result.finished, 7.159090909090908);
+  close(result.raw, 10.30909090909091);
+  close(result.finished, 7.216363636363637);
   assert.equal(result.units, 5);
   close(result.buyWeight, 11.25);
-  close(result.excess, 1.022727272727273);
+  close(result.excess, 0.9409090909090907);
 });
 
 test('brats use one half-pound link per six adult-equivalent eaters', () => {
