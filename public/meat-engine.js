@@ -20,7 +20,7 @@
     else if(key==='brisket'&&choice.id==='packer'){raw=ANCHORS.brisketLb*scale;units=1;buyWeight=Math.max(14,raw);finished=raw*PORTIONS.brisketYield}
     else if(key==='brisket'&&choice.id==='flat')return unitProteinRow(eaters*Number(serving),ANCHORS.brisketFlatLb,PORTIONS.brisketFlatYield)
     else if(key==='pmbe'){raw=ANCHORS.pmbeLb*scale;units=roundUp(raw,4);buyWeight=units*4;finished=raw*PORTIONS.pmbeYield}
-    else if(key==='pbbe'){raw=ANCHORS.pbbeLb*scale;units=roundUp(raw,ANCHORS.pbbeLb);buyWeight=units*ANCHORS.pbbeLb;finished=raw*PORTIONS.pbbeYield}
+    else if (key === 'pbbe'){raw=ANCHORS.pbbeLb*scale;units=roundUp(raw,ANCHORS.pbbeLb);buyWeight=units*ANCHORS.pbbeLb;finished=raw*PORTIONS.pbbeYield}
     else if(key==='pork'&&choice.id==='boneless')return unitProteinRow(eaters*Number(serving),ANCHORS.porkBonelessLb,PORTIONS.porkYield)
     else if(key==='pork'){raw=ANCHORS.porkLb*scale;units=roundUp(raw,8.5);buyWeight=units*8.5;finished=raw*PORTIONS.porkYield}
     else if(key==='chicken'&&choice.unit==='whole fryer'){const birdsNeeded=ANCHORS.chickenBirds*scale;units=roundUp(birdsNeeded,1);buyWeight=units*ANCHORS.chickenLb;raw=birdsNeeded*ANCHORS.chickenLb;finished=raw*PORTIONS.chickenYield}
