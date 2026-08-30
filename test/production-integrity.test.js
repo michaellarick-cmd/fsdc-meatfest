@@ -4,7 +4,6 @@ import { readFile } from 'node:fs/promises';
 
 const worker = await readFile(new URL('../worker.js', import.meta.url), 'utf8');
 const presentation = await readFile(new URL('../public/meatfest-final.js', import.meta.url), 'utf8');
-const tree = JSON.parse(await readFile(new URL('../.github/workflows/test.yml', import.meta.url), 'utf8').catch(() => 'null'));
 
 test('worker only forwards static assets', () => {
   assert.doesNotMatch(worker, /replace\(/);
@@ -15,7 +14,7 @@ test('worker only forwards static assets', () => {
 
 test('production presentation contains restored sides and turkey', () => {
   for (const term of ['Green Beans', 'Potato Salad', 'Asparagus', 'Pasta Salad', 'Turkey']) {
-    assert.match(presentation, new RegExp(term.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')));
+    assert.ok(presentation.includes(term), `${term} is missing from production presentation code`);
   }
   assert.match(presentation, /sideRecommendation = function/);
   assert.match(presentation, /prime_rib/);
