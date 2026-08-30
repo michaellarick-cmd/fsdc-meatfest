@@ -95,6 +95,25 @@ test('portion selector scales Meatfest anchors', () => {
   close(heartyChicken.raw, standardChicken.raw * 1.5);
 });
 
+test('turkey uses explicit yield and purchase units', () => {
+  const whole = row('turkey', 48, standard, { id: 'whole', unit: 'whole turkey' });
+  const breast = row('turkey', 48, standard, { id: 'breast', unit: 'turkey breast' });
+  const legs = row('turkey', 48, standard, { id: 'legs', unit: 'turkey leg' });
+
+  close(whole.raw, 29.09090909090909);
+  close(whole.finished, 16);
+  assert.equal(whole.units, 3);
+  close(whole.buyWeight, 42);
+
+  close(breast.raw, 24.615384615384617);
+  assert.equal(breast.units, 4);
+  close(breast.buyWeight, 28);
+
+  close(legs.raw, 35.55555555555556);
+  assert.equal(legs.units, 48);
+  close(legs.buyWeight, 36);
+});
+
 test('ribs use count-based planning and purchase-unit rounding', () => {
   const result = row('ribs', 48);
   close(result.raw, 10.30909090909091);
