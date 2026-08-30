@@ -40,7 +40,7 @@ test('print builder handles an empty plan without throwing',()=>{
 });
 
 test('hero total is labeled as purchase weight, not raw requirement',()=>{
-  assert.match(source,/querySelector\(\\"\.hero \.small\\"\)/);
-  assert.match(source,/textContent=\\"TOTAL PURCHASE WEIGHT\\"/);
-  assert.doesNotMatch(source,/textContent=\\"TOTAL RAW MEAT TO BUY\\"/);
+  assert.ok(source.includes('querySelector(".hero .small")'));
+  assert.ok(source.includes('textContent="TOTAL PURCHASE WEIGHT"'));
+  assert.ok(!source.includes('textContent="TOTAL RAW MEAT TO BUY"'));
 });
