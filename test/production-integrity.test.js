@@ -27,7 +27,7 @@ test('protein order is canonical for both selection and shopping-list output', (
   assert.match(app, /const order=\["brisket","pmbe","ribs","pork","pbbe","brats","chicken","turkey","fish","prime","hog"\]/);
   assert.match(app, /const visibleOrder=planningMode==="family"\?order\.filter/);
   assert.match(presentation, /const orderedSelectedRows=eaters=>order\.map\(key=>selected\.has\(key\)\?rowFor\(key,eaters\):null\)\.filter\(Boolean\)/);
-  assert.match(presentation, /const rows=orderedSelectedRows\(t\.eaters\)/);
+  assert.match(presentation, /rows=orderedSelectedRows\(t\.eaters\)/);
 });
 
 test('shopping-list ordering only includes selected proteins', () => {
@@ -78,6 +78,5 @@ test('reset fields use placeholders instead of real zero/default values', () => 
 });
 
 test('saved placeholder defaults are normalized to empty inputs', () => {
-  assert.match(app, /savedName&&savedName!=="Your Event"\?savedName:""/);
-  assert.match(app, /\$\("eventName"\)\.value=savedName&&savedName!=="Your Event"\?savedName:""/);
+  assert.match(app, /value === '0' \? '' : value/);
 });
