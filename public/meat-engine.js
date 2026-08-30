@@ -7,6 +7,7 @@
     brisketYield: .50,
     brisketFlatYield: .55,
     pmbeYield: .60,
+    pbbeYield: .65,
     porkYield: .60,
     chickenYield: .62,
     chickenLegQuarterYield: .42,
@@ -22,6 +23,7 @@
   const ANCHORS = Object.freeze({
     brisketLb: 19.5,
     pmbeLb: 16,
+    pbbeLb: 5,
     porkLb: 17,
     chickenBirds: 4,
     chickenLb: 5,
@@ -61,10 +63,6 @@
   }
 
   function wholeHogPlan(finishedMeat, headFeet = 'on') {
-    // The production Meatfest curve is defined from hanging weight, never
-    // live weight. It preserves the original head + feet-on model. For head
-    // + feet off, the validated planning adjustment reduces the required
-    // hanging weight by 7%.
     let onWeight = Math.max(0.1, finishedMeat / .50);
     for (let i = 0; i < 40; i++) {
       const next = finishedMeat / wholeHogYield(onWeight);
@@ -111,6 +109,8 @@
       return unitProteinRow(eaters * Number(serving), ANCHORS.brisketFlatLb, PORTIONS.brisketFlatYield);
     } else if (key === 'pmbe') {
       raw = ANCHORS.pmbeLb * scale; units = roundUp(raw, 4); buyWeight = units * 4; finished = raw * PORTIONS.pmbeYield;
+    } else if (key === 'pbbe') {
+      raw = ANCHORS.pbbeLb * scale; units = roundUp(raw, ANCHORS.pbbeLb); buyWeight = units * ANCHORS.pbbeLb; finished = raw * PORTIONS.pbbeYield;
     } else if (key === 'pork' && choice.id === 'boneless') {
       return unitProteinRow(eaters * Number(serving), ANCHORS.porkBonelessLb, PORTIONS.porkYield);
     } else if (key === 'pork') {
@@ -135,9 +135,6 @@
   }
 
   function familyRow({ key, eaters, serving = STANDARD_SERVING, choice = {} }) {
-    // Family mode is deliberately separate from Meatfest anchors. It uses
-    // the same validated yield physics, adds a fixed 12.5% finished-meat
-    // cushion, and then applies small-batch purchase rules.
     const familyEaters = eaters * FAMILY_CUSHION;
     const canonical = canonicalRow({ key, eaters: familyEaters, serving, choice });
     if (!canonical) return null;
