@@ -70,9 +70,6 @@
     }
   };
 
-  // Whole-hog preparation is a presentation choice, but the calculation
-  // itself remains entirely inside MeatEngine. Default preserves the original
-  // Meatfest model: hanging weight with head + feet on.
   meats.hog.options = {
     headfeet: {
       label: "Head & Feet On", yield: "hog", unitWeight: null, unit: "whole hog", mode: "hog", headFeet: "on",
@@ -98,7 +95,8 @@
     const m = meats[key];
     const choiceId = choices[key] || m.default;
     const option = m.options[choiceId];
-    const row = MeatEngine.canonicalRow({
+    const engine = planningMode === "family" ? MeatEngine.familyRow : MeatEngine.canonicalRow;
+    const row = engine({
       key,
       eaters,
       serving: portion(),
@@ -108,6 +106,7 @@
 
     let buy;
     let note = option?.note || "";
+    const family = planningMode === "family";
     if (key === "hog") {
       const prep = option.headFeet === "off" ? "head & feet off" : "head & feet on";
       buy = `TARGET ~${Math.ceil(row.buyWeight)} lb hanging weight (${prep})`;
@@ -115,13 +114,26 @@
         ? "Whole-hog target uses the validated Meatfest hanging-weight curve with a 7% adjustment for head + feet removed. No live-weight conversion is used."
         : "Whole-hog target uses the validated Meatfest hanging-weight curve. No live-weight conversion is used. This preserves the original head + feet-on model.";
     } else if (key === "ribs") {
-      buy = `BUY ${row.units} rack${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
-      note = `Count-based planning: ${MeatEngine.round1(eaters * MeatEngine.ANCHORS.ribsTakeRate * (portion() / MeatEngine.STANDARD_SERVING))} takers × ${MeatEngine.ANCHORS.ribsPerTaker} ribs ÷ ${MeatEngine.ANCHORS.ribsPerRack} ribs/rack.`;
+      if (family && row.units < 1) {
+        buy = "BUY 1 half-rack";
+      } else if (family && row.units % 1 !== 0) {
+        buy = `BUY ${row.units * 2} half-racks (${row.units} full racks total)`;
+      } else {
+        buy = `BUY ${row.units} rack${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
+      }
+      note = family
+        ? "Family mode supports half-rack increments and applies a modest meat cushion before purchase rounding."
+        : `Count-based planning: ${MeatEngine.round1(eaters * MeatEngine.ANCHORS.ribsTakeRate * (portion() / MeatEngine.STANDARD_SERVING))} takers × ${MeatEngine.ANCHORS.ribsPerTaker} ribs ÷ ${MeatEngine.ANCHORS.ribsPerRack} ribs/rack.`;
     } else if (key === "brats") {
       buy = `BUY ${row.units} half-lb link${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
-      note = "Established Meatfest sausage planning unit: about one ½-lb link per six adult-equivalent eaters.";
+      note = family
+        ? "Family mode uses individual half-pound links after applying the family meat cushion."
+        : "Established Meatfest sausage planning unit: about one ½-lb link per six adult-equivalent eaters.";
     } else if (key === "brisket") {
-      if (choiceId === "packer") {
+      if (family) {
+        buy = `ASK FOR ~${MeatEngine.round1(row.buyWeight)} lb brisket flat`;
+        note = "Family mode uses a small brisket-flat purchase rather than forcing a whole packer.";
+      } else if (choiceId === "packer") {
         buy = `BUY 1 packer (~${MeatEngine.round1(row.buyWeight)} lb; ask for a 19–20 lb packer)`;
         note = "Meatfest anchor: one practical whole packer; do not split a 19–20 lb requirement into multiple small packers.";
       } else {
@@ -129,24 +141,40 @@
         note = "Brisket-flat planning uses the established 55% cooked-yield assumption and 7-lb purchase unit.";
       }
     } else if (key === "pmbe") {
-      buy = `BUY ${row.units} chuck roast${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
-      note = "Meatfest PMBE anchor: four 4-lb chuck roasts at 48 adult-equivalent eaters.";
+      buy = family
+        ? `ASK FOR ~${MeatEngine.round1(row.buyWeight)} lb chuck roast`
+        : `BUY ${row.units} chuck roast${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
+      note = family
+        ? "Family mode uses a small chuck roast and applies the family meat cushion before purchase rounding."
+        : "Meatfest PMBE anchor: four 4-lb chuck roasts at 48 adult-equivalent eaters.";
     } else if (key === "pork") {
-      buy = `BUY ${row.units} ${choiceId === "boneless" ? "boneless pork shoulder" : "bone-in butt"}${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
-      note = choiceId === "boneless"
-        ? "Boneless pork shoulder uses the established 60% cooked-yield assumption and 8-lb purchase unit."
-        : "Meatfest pulled-pork anchor: two 8.5-lb bone-in butts at 48 adult-equivalent eaters.";
+      buy = family
+        ? `ASK FOR ~${MeatEngine.round1(row.buyWeight)} lb ${choiceId === "boneless" ? "boneless pork shoulder" : "pork butt"}`
+        : `BUY ${row.units} ${choiceId === "boneless" ? "boneless pork shoulder" : "bone-in butt"}${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
+      note = family
+        ? "Family mode uses a butcher-friendly small shoulder after applying the family meat cushion."
+        : choiceId === "boneless"
+          ? "Boneless pork shoulder uses the established 60% cooked-yield assumption and 8-lb purchase unit."
+          : "Meatfest pulled-pork anchor: two 8.5-lb bone-in butts at 48 adult-equivalent eaters.";
     } else if (key === "chicken") {
       buy = `BUY ${row.units} ${option.unit}${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
-      note = choiceId === "whole"
-        ? "Meatfest whole-chicken anchor: four 5-lb fryers at 48 adult-equivalent eaters."
-        : "Poultry planning uses the selected cut's established cooked-yield and purchase unit.";
+      note = family
+        ? "Family mode uses the selected poultry purchase unit after applying the family meat cushion."
+        : choiceId === "whole"
+          ? "Meatfest whole-chicken anchor: four 5-lb fryers at 48 adult-equivalent eaters."
+          : "Poultry planning uses the selected cut's established cooked-yield and purchase unit.";
     } else if (key === "fish") {
       buy = `BUY ${row.units} filet${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
-      note = "Fish planning uses individual fillets at about ⅓ lb each and a 76% planning yield.";
+      note = family
+        ? "Family mode uses individual fillets after applying the family meat cushion."
+        : "Fish planning uses individual fillets at about ⅓ lb each and a 76% planning yield.";
     } else if (key === "prime") {
-      buy = `BUY ${row.units} ${choiceId === "bone" ? "bone-in roast" : "roast"}${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
-      note = "Prime rib planning uses an 80% cooked-yield assumption and a 5-lb roast purchase unit.";
+      buy = family
+        ? `ASK FOR ~${MeatEngine.round1(row.buyWeight)} lb ${choiceId === "bone" ? "bone-in standing rib roast" : "prime rib roast"}`
+        : `BUY ${row.units} ${choiceId === "bone" ? "bone-in roast" : "roast"}${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
+      note = family
+        ? "Family mode uses a butcher-friendly small roast after applying the family meat cushion."
+        : "Prime rib planning uses an 80% cooked-yield assumption and a 5-lb roast purchase unit.";
     } else if (key === "turkey") {
       buy = `BUY ${row.units} ${option.unit}${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
       note = "Turkey uses a dedicated yield and purchase-unit model; side recommendations follow the chicken/poultry pairing set.";
@@ -163,7 +191,7 @@
     $("statEaters").textContent = MeatEngine.round1(t.eaters);
     $("totalRaw").textContent = total ? `${MeatEngine.round1(total)} lb` : "0 lb";
     $("summary").textContent = rows.length
-      ? `${rows.length} protein${rows.length > 1 ? "s" : ""} • ${MeatEngine.round1(t.eaters)} adult-equivalent eaters${planningMode === "family" ? " • 10–15% family cushion" : ""}`
+      ? `${rows.length} protein${rows.length > 1 ? "s" : ""} • ${MeatEngine.round1(t.eaters)} adult-equivalent eaters${planningMode === "family" ? " • 12.5% family cushion" : ""}`
       : "Select at least one protein.";
 
     const resultsBox = $("results");
@@ -176,7 +204,7 @@
             ? ` • Planning unit: ${option.unitWeight} lb`
             : "";
         const yieldRate = key === "hog" ? row.finished / row.raw : (typeof option.yield === "number" ? option.yield : 1);
-        return `<div class="result"><div class="resultTop"><div><div class="resultTitle">${m.name}</div><span class="pill">${option.label}</span><span class="pill">${Math.round(yieldRate * 100)}% yield</span></div><div class="buy">${buy || ""}</div></div><div class="details">Finished meat needed: <b>${MeatEngine.round1(row.finished)} lb</b> • Raw/hanging requirement: <b>${MeatEngine.round1(row.raw)} lb</b>${unit}${excess}</div>${note ? `<div class="purchaseNote">${note}</div>` : ""}</div>`;
+        return `<div class="result"><div class="resultTop"><div><div class="resultTitle">${m.name}</div><span class="pill">${option.label}</span><span class="pill">${Math.round(yieldRate * 100)}% yield</span></div><div class="buy">${buy || ""}</div></div><div class="details">Finished meat needed: <b>${MeatEngine.round1(row.finished)} lb</b> • Raw/hanging requirement: <b>${MeatEngine.round1(row.raw)} lb</b>${unit}${planningMode === "family" ? " • Family purchase model" : ""}${excess}</div>${note ? `<div class="purchaseNote">${note}</div>` : ""}</div>`;
       }).join("") : "<p class='note'>Select at least one protein.</p>";
     }
 

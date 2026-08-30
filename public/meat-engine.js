@@ -1,7 +1,8 @@
-/* FSDC Meatfest — single source of truth for canonical Meatfest protein math. */
+/* FSDC Meatfest — single source of truth for canonical Meatfest and Family protein math. */
 (() => {
   const BASE_EATERS = 48;
   const STANDARD_SERVING = 1 / 3;
+  const FAMILY_CUSHION = 1.125;
   const PORTIONS = Object.freeze({
     brisketYield: .50,
     brisketFlatYield: .55,
@@ -47,6 +48,7 @@
   const round1 = x => Math.round((x + Number.EPSILON) * 10) / 10;
   const roundUp = (x, unit) => Math.max(1, Math.ceil((x - 1e-9) / unit));
   const scaleFor = (eaters, serving) => (eaters / BASE_EATERS) * (Number(serving) / STANDARD_SERVING);
+  const halfUp = x => Math.ceil((x - 1e-9) * 2) / 2;
 
   function wholeHogYield(hangingWeight) {
     const p = ANCHORS.wholeHogYieldCurve;
@@ -127,11 +129,45 @@
     } else if (key === 'turkey') {
       const unitWeight = choice.id === 'breast' ? ANCHORS.turkeyBreastLb : choice.id === 'legs' ? ANCHORS.turkeyLegLb : ANCHORS.turkeyLb;
       const yieldRate = choice.id === 'breast' ? PORTIONS.turkeyBreastYield : choice.id === 'legs' ? PORTIONS.turkeyLegYield : PORTIONS.turkeyYield;
-      const result = unitProteinRow(eaters * Number(serving), unitWeight, yieldRate);
-      return result;
+      return unitProteinRow(eaters * Number(serving), unitWeight, yieldRate);
     } else return null;
     return { raw, finished, units, buyWeight, excess: Math.max(0, buyWeight - raw) };
   }
 
-  globalThis.MeatEngine = Object.freeze({ BASE_EATERS, STANDARD_SERVING, ANCHORS, PORTIONS, round1, roundUp, wholeHogYield, wholeHogPlan, canonicalRow });
+  function familyRow({ key, eaters, serving = STANDARD_SERVING, choice = {} }) {
+    // Family mode is deliberately separate from Meatfest anchors. It uses
+    // the same validated yield physics, adds a fixed 12.5% finished-meat
+    // cushion, and then applies small-batch purchase rules.
+    const familyEaters = eaters * FAMILY_CUSHION;
+    const canonical = canonicalRow({ key, eaters: familyEaters, serving, choice });
+    if (!canonical) return null;
+
+    const raw = canonical.raw;
+    let units = canonical.units;
+    let buyWeight = canonical.buyWeight;
+
+    if (key === 'pork' || key === 'brisket' || key === 'prime' || key === 'pmbe') {
+      buyWeight = Math.max(key === 'prime' ? 3 : key === 'pmbe' ? 3 : 4, halfUp(raw));
+      units = 1;
+    } else if (key === 'ribs') {
+      const halfRack = ANCHORS.ribRackLb / 2;
+      const halves = Math.max(1, Math.ceil((raw - 1e-9) / halfRack));
+      units = halves / 2;
+      buyWeight = units * ANCHORS.ribRackLb;
+    } else if (key === 'brats') {
+      units = Math.max(1, Math.ceil((raw - 1e-9) / ANCHORS.bratLinkLb));
+      buyWeight = units * ANCHORS.bratLinkLb;
+    } else if (key === 'fish') {
+      units = Math.max(1, Math.ceil((raw - 1e-9) / ANCHORS.fishFiletLb));
+      buyWeight = units * ANCHORS.fishFiletLb;
+    } else if (key === 'chicken') {
+      const unitWeight = choice.unit === 'whole fryer' ? ANCHORS.chickenLb : choice.id === 'legq' ? ANCHORS.chickenLegQuarterLb : ANCHORS.chickenThighLb;
+      units = Math.max(1, Math.ceil((raw - 1e-9) / unitWeight));
+      buyWeight = units * unitWeight;
+    }
+
+    return { raw, finished: canonical.finished, units, buyWeight, excess: Math.max(0, buyWeight - raw), familyCushion: FAMILY_CUSHION };
+  }
+
+  globalThis.MeatEngine = Object.freeze({ BASE_EATERS, STANDARD_SERVING, FAMILY_CUSHION, ANCHORS, PORTIONS, round1, roundUp, wholeHogYield, wholeHogPlan, canonicalRow, familyRow });
 })();
