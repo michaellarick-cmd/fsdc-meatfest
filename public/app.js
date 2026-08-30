@@ -1,7 +1,7 @@
 /* FSDC Meatfest — UI state, presentation metadata, and side planning. */
 
 const meats={
- chicken:{name:"Chicken / Poultry",default:"whole",options:{whole:{label:"Whole Fryer — Pulled",yield:.62,unitWeight:5,unit:"whole fryer",mode:"units",note:"Meatfest planning unit: 5 lb whole fryer."},legq:{label:"Leg Quarters",yield:.42,unitWeight:.59375,unit:"leg quarter",mode:"units",note:"USDA planning yield for bone-in, skin-on leg quarters; about 9.5 oz each."},thigh:{label:"Bone-In Thighs",yield:.52,unitWeight:.25,unit:"thigh",mode:"units",note:"USDA planning yield for bone-in, skin-on thighs; about 4 oz each."}}},
+ chicken:{name:"Chicken",default:"whole",options:{whole:{label:"Whole Fryer — Pulled",yield:.62,unitWeight:5,unit:"whole fryer",mode:"units",note:"Meatfest planning unit: 5 lb whole fryer."},legq:{label:"Leg Quarters",yield:.42,unitWeight:.59375,unit:"leg quarter",mode:"units",note:"USDA planning yield for bone-in, skin-on leg quarters; about 9.5 oz each."},thigh:{label:"Bone-In Thighs",yield:.52,unitWeight:.25,unit:"thigh",mode:"units",note:"USDA planning yield for bone-in, skin-on thighs; about 4 oz each."}}},
  fish:{name:"Fish",default:"filet",options:{filet:{label:"Fillets (perch/fish-fry style)",yield:.76,unitWeight:.33,unit:"filet",mode:"units",note:"Planning unit: about ⅓ lb per filet."}}},
  pork:{name:"Pulled Pork",default:"bone",options:{bone:{label:"Bone-in Boston Butt",yield:.60,unitWeight:8.5,unit:"bone-in butt",mode:"units"},boneless:{label:"Boneless Pork Shoulder",yield:.60,unitWeight:8,unit:"boneless shoulder",mode:"units"}}},
  hog:{name:"Whole Hog",default:"hog",options:{hog:{label:"Whole Hog",yield:"hog",unitWeight:null,unit:"whole hog",mode:"hog",note:"Feature protein only — not combined with other proteins."}}},
