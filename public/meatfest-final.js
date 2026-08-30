@@ -1,25 +1,85 @@
 /* FSDC Meatfest — browser presentation layer for the shared MeatEngine. */
 (() => {
+  // Meatfest-specific presentation metadata belongs here as committed source.
+  // The Worker serves these assets unchanged; no request-time patching occurs.
+  Object.assign(sides, {
+    greenbeans:{name:"Green Beans",group:"main",unit:"recipe",base:1.0,min:0.5,sensitivity:.70,round:.25,fill:"recipe",note:"Grilled or smoked BBQ vegetable side."},
+    potatosalad:{name:"Potato Salad",group:"main",unit:"recipe",base:1.5,min:0.5,sensitivity:.55,round:.5,fill:"recipe",note:"Classic BBQ side."},
+    asparagus:{name:"Asparagus",group:"main",unit:"recipe",base:1.0,min:0.5,sensitivity:.70,round:.25,fill:"recipe",note:"Grilled or smoked BBQ vegetable side."},
+    pastasalad:{name:"Pasta Salad",group:"main",unit:"recipe",base:1.5,min:0.5,sensitivity:.55,round:.5,fill:"recipe",note:"Classic cold BBQ side; practical make-ahead option."}
+  });
+  sideOrder.splice(0, sideOrder.length, "asparagus","beans","broccoli","cauli","collards","corn","cucumber","greenbeans","kraut","mac","pastasalad","potatosalad","slaw","cornbread","rolls");
+
+  meats.turkey = {
+    name: "Turkey",
+    default: "whole",
+    options: {
+      whole: {label:"Whole Turkey",yield:.55,unitWeight:14,unit:"whole turkey",mode:"units"},
+      breast: {label:"Turkey Breast",yield:.65,unitWeight:7,unit:"turkey breast",mode:"units"},
+      legs: {label:"Turkey Legs",yield:.45,unitWeight:.75,unit:"turkey leg",mode:"units"}
+    }
+  };
+  if (!order.includes("turkey")) order.push("turkey");
+  if (!choices.turkey) choices.turkey = meats.turkey.default;
+
+  // Turkey intentionally follows the chicken/poultry recommendation set.
+  function proteinTagsForRecommendations() {
+    const tags = new Set();
+    selected.forEach(key => {
+      if (key === "chicken") {
+        const prep = choices.chicken || meats.chicken.default;
+        if (prep === "whole") tags.add("chicken_pulled");
+        else if (prep === "legq") tags.add("chicken_quarters");
+        else if (prep === "thigh") tags.add("chicken_thighs");
+      } else if (key === "turkey") {
+        tags.add("chicken_pulled");
+        tags.add("chicken_quarters");
+        tags.add("chicken_thighs");
+      } else if (key === "fish") tags.add("fish");
+      else if (key === "pork") tags.add("pulled_pork");
+      else if (key === "brisket") tags.add("brisket");
+      else if (key === "pmbe") tags.add("pmbe");
+      else if (key === "brats") tags.add("brats");
+      else if (key === "ribs") tags.add("ribs");
+      else if (key === "prime") tags.add("prime_rib");
+      else if (key === "hog") tags.add("whole_hog");
+    });
+    return tags;
+  }
+
+  sideRecommendation = function (id) {
+    const active = proteinTagsForRecommendations();
+    const any = tags => tags.some(tag => active.has(tag));
+    switch (id) {
+      case "mac": return active.size > 0;
+      case "cauli": return any(["chicken_pulled","chicken_quarters","chicken_thighs","fish"]);
+      case "slaw": return any(["pulled_pork","brisket","pmbe","ribs","brats","chicken_pulled","chicken_quarters","chicken_thighs","fish"]);
+      case "collards": return any(["pulled_pork","brisket","pmbe","ribs"]);
+      case "broccoli": return any(["fish","chicken_pulled","chicken_quarters","chicken_thighs","pulled_pork","brisket","pmbe","ribs"]);
+      case "cucumber": return any(["fish","chicken_pulled","chicken_quarters","chicken_thighs"]);
+      case "kraut": return active.has("brats");
+      case "beans": return false;
+      case "corn": return any(["chicken_pulled","chicken_quarters","chicken_thighs","fish","pulled_pork","brisket","pmbe","ribs"]);
+      case "cornbread": return active.size > 0;
+      case "rolls": return any(["pulled_pork","chicken_pulled","brisket"]);
+      case "greenbeans": return active.has("prime_rib");
+      case "asparagus": return active.has("prime_rib");
+      case "potatosalad": return active.size > 0;
+      case "pastasalad": return active.size > 0;
+      default: return false;
+    }
+  };
+
   // Whole-hog preparation is a presentation choice, but the calculation
   // itself remains entirely inside MeatEngine. Default preserves the original
   // Meatfest model: hanging weight with head + feet on.
   meats.hog.options = {
     headfeet: {
-      label: "Head & Feet On",
-      yield: "hog",
-      unitWeight: null,
-      unit: "whole hog",
-      mode: "hog",
-      headFeet: "on",
+      label: "Head & Feet On", yield: "hog", unitWeight: null, unit: "whole hog", mode: "hog", headFeet: "on",
       note: "Original Meatfest whole-hog model: hanging weight with head + feet on."
     },
     headoff: {
-      label: "Head & Feet Off",
-      yield: "hog",
-      unitWeight: null,
-      unit: "whole hog",
-      mode: "hog",
-      headFeet: "off",
+      label: "Head & Feet Off", yield: "hog", unitWeight: null, unit: "whole hog", mode: "hog", headFeet: "off",
       note: "Hanging-weight target adjusted 7% lower for head + feet removed."
     }
   };
@@ -76,7 +136,6 @@
       buy = `BUY ${row.units} ${option.unit}${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
       note = "Turkey uses a dedicated yield and purchase-unit model; side recommendations follow the chicken/poultry pairing set.";
     }
-
     return { key, m, option, row, buy, note };
   }
 
@@ -84,7 +143,6 @@
     const t = activeEaters();
     const rows = [...selected].map(key => rowFor(key, t.eaters)).filter(Boolean);
     const total = rows.reduce((sum, item) => sum + item.row.buyWeight, 0);
-
     $("statAdults").textContent = t.adults;
     $("statKids").textContent = t.kids;
     $("statEaters").textContent = MeatEngine.round1(t.eaters);
@@ -92,7 +150,6 @@
     $("summary").textContent = rows.length
       ? `${rows.length} protein${rows.length > 1 ? "s" : ""} • ${MeatEngine.round1(t.eaters)} adult-equivalent eaters${planningMode === "family" ? " • 10–15% family cushion" : ""}`
       : "Select at least one protein.";
-
     calcSides();
   };
 
