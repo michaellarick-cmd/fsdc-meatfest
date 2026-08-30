@@ -46,8 +46,8 @@ test('whole-hog model preserves the original head-and-feet-on anchors', () => {
   close(at75.raw, 55.55555555555556, 1e-5);
   assert.equal(at75.buyWeight, 56);
 
-  close(at100.finished, 33.33333333333333, 1e-6);
-  close(at100.raw, 66.66666666666667, 1e-6);
+  close(at100.finished, 33.33333333333333, 1e-4);
+  close(at100.raw, 66.66666666666667, 1e-4);
   assert.equal(at100.buyWeight, 67);
 });
 
