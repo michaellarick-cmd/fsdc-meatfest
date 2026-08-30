@@ -13,7 +13,7 @@
 <link rel="icon" type="image/png" sizes="512x512" href="/fsdc-icon.png">
 <link rel="apple-touch-icon" href="/fsdc-icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/fsdc-icon-192.png">
-<title>FSDC Meatfest Calculator 2.2.8</title>
+<title>FSDC Meatfest Calculator 2.2.9</title>
 <style>
 :root{--bg:#0e1012;--card:#191c20;--card2:#22262b;--text:#f5f2e9;--muted:#aeb3b9;--accent:#f39a32;--line:#30353b;--good:#75d39b;--warn:#f4c76b;--danger:#ff8585}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% -10%,#322719 0,#0e1012 38%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding-bottom:60px}.wrap{max-width:920px;margin:auto;padding:18px 14px 40px}
@@ -27,221 +27,22 @@ header{padding:8px 4px 20px}.eyebrow{font-size:11px;font-weight:900;letter-spaci
 .brandBar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0 0 10px}.brandLogo{flex:1;min-width:0}.brandLogo img{display:block;width:min(100%,210px);height:auto;margin:0}.modeWrap{flex:0 0 auto;text-align:center}.modeLabel{font-size:9px;font-weight:900;letter-spacing:.12em;color:#8f959c;margin-bottom:6px}.modeSwitch{position:relative;display:grid;grid-template-columns:1fr 1fr;width:252px;height:44px;padding:4px;border:1px solid #3b4046;border-radius:999px;background:#121518;box-shadow:inset 0 1px 2px #0008}.modeThumb{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:999px;background:var(--accent);transition:transform .2s ease;box-shadow:0 3px 10px #0006}.modeSwitch.family .modeThumb{transform:translateX(100%)}.modeBtn{position:relative;z-index:1;border:0;background:transparent;color:#9da3aa;font:inherit;font-size:12px;font-weight:950;cursor:pointer;border-radius:999px}.modeBtn.active{color:#151515}.modeHint{font-size:9px;color:#777e86;margin-top:5px}@media(max-width:600px){.brandBar{gap:10px}.brandLogo img{width:180px}.modeSwitch{width:225px;height:42px}.modeBtn{font-size:11px}}.hero{background:linear-gradient(135deg,#3a2715,#17191c);border-color:#80511f}.hero .small{font-size:11px;color:#d6c5ae}.hero .big{font-size:40px;font-weight:950;line-height:1;margin:4px 0}.hero .subbig{font-size:13px;color:#dfcdb7}
 .result{border:1px solid var(--line);background:#121518;border-radius:15px;padding:13px;margin:8px 0}.resultTop{display:flex;justify-content:space-between;gap:10px}.resultTitle{font-weight:900}.buy{font-size:16px;font-weight:950;text-align:right}.details{color:var(--muted);font-size:11px;margin-top:5px;line-height:1.45}.pill{display:inline-block;border:1px solid #4a5057;border-radius:999px;padding:3px 7px;font-size:10px;color:#cbd0d5;margin:2px 4px 0 0}.footer{text-align:center;color:#666c73;font-size:10px;margin-top:18px}
 @media(max-width:600px){.title{font-size:34px}.grid{grid-template-columns:1fr 1fr}.meats{grid-template-columns:1fr}.guest,.guestHead{grid-template-columns:1fr 52px 52px 52px 32px}.buy{font-size:14px}}
-
-
-/* V2.0 side planner */
-.sideGroups{display:grid;grid-template-columns:1fr;gap:14px}
-.sideGroupTitle{font-size:11px;font-weight:900;letter-spacing:.12em;color:#c9cdd2;margin:2px 0 7px}
-.sideCards{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
-.sideCard{background:#14171a;border:1px solid var(--line);border-radius:15px;padding:12px;cursor:pointer;position:relative;min-height:92px}
-.sideCard.on{border-color:var(--accent);background:linear-gradient(145deg,#2b2116,#17191b)}
-.sideCard.recommended:not(.on){border-color:#755020}
-.sideTop{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
-.sideCheck{width:20px;height:20px;border:2px solid #5a6068;border-radius:50%;position:relative;flex:0 0 auto}
-.sideCard.on .sideCheck{background:var(--accent);border-color:var(--accent)}
-.sideCard.on .sideCheck:after{content:"✓";position:absolute;left:3px;top:-2px;color:#151515;font-weight:950}
-.sideCard b{font-size:14px}.sideCard small{display:block;color:var(--muted);font-size:10px;line-height:1.35;margin-top:6px}
-.sideRec{display:inline-block;margin-top:7px;font-size:8px;font-weight:900;letter-spacing:.07em;color:#111;background:#f59b2b;border-radius:3px;padding:2px 5px}
-.sideModelNote{margin-top:11px;padding:9px 10px;border-left:3px solid var(--accent);background:#1d1914;color:#d9c7ae;font-size:10px;line-height:1.4;border-radius:0 7px 7px 0}
-.sideResult{border:1px solid var(--line);background:#121518;border-radius:15px;padding:13px;margin:8px 0}
-.sideResult .buy{font-size:16px}
-.sideResult .sideReason{font-size:10px;color:#c7b18f;margin-top:5px}
-.sideDivider{margin:14px 0 8px;border-top:1px solid var(--line);padding-top:12px}
-@media(max-width:600px){.sideCards{grid-template-columns:1fr}}
-
-/* Print / Notes summary */
-#printSheet{display:none}
-@media print{
-  @page{size:letter landscape;margin:.35in}
-  body{background:#fff!important;color:#111!important;padding:0!important}
-  body>*{display:none!important}
-  #printSheet{display:block!important;width:10.3in;height:7.8in;margin:0 auto;padding:.25in;border:1px solid #777;position:relative;background:#fff;color:#111;font-family:Arial,sans-serif}
-  #printSheet .ps-title{font-size:22px;font-weight:900;margin:0 0 3px}
-  #printSheet .ps-sub{font-size:11px;color:#444;margin-bottom:10px}
-  #printSheet .ps-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-  #printSheet .ps-box{border:1px solid #aaa;border-radius:6px;padding:8px;margin-bottom:8px}
-  #printSheet h3{font-size:11px;letter-spacing:.08em;margin:0 0 5px}
-  #printSheet .ps-headcount{display:flex;gap:16px;font-size:11px}
-  #printSheet .ps-big{font-size:17px;font-weight:900}
-  #printSheet .ps-row{display:grid;grid-template-columns:1fr auto;gap:8px;border-bottom:1px solid #ddd;padding:6px 0}
-  #printSheet .ps-row:last-child{border-bottom:0}
-  #printSheet .ps-name{font-size:11px;font-weight:800}
-  #printSheet .ps-buy{font-size:12px;font-weight:900;text-align:right}
-  #printSheet .ps-detail{font-size:9px;color:#555;margin-top:2px}
-  #printSheet .ps-note{font-size:9px;color:#555;line-height:1.25}
-  #printSheet .fold{position:absolute;left:0;right:0;top:50%;border-top:1px dashed #aaa}
-  #printSheet .foldlabel{position:absolute;right:8px;top:calc(50% - 7px);font-size:8px;color:#777;background:#fff;padding:0 3px}
-  #printSheet .ps-footer{position:absolute;bottom:6px;left:.25in;right:.25in;display:flex;justify-content:space-between;font-size:8px;color:#666}
-}
-
-.familyOnlyNote{margin-top:10px;padding:9px 10px;border-left:3px solid var(--good);background:#16221b;color:#ccebd8;font-size:10px;line-height:1.4;border-radius:0 7px 7px 0}.purchaseNote{margin-top:6px;padding:7px 8px;border-left:3px solid var(--accent);background:#1d1914;color:#d9c7ae;font-size:10px;line-height:1.35;border-radius:0 6px 6px 0}
-.excess{color:#f4c76b;font-weight:800}
-
-.eventPanel{margin:12px 0 14px;padding:13px 15px;border:1px solid #3b3b3b;border-radius:12px;background:#17191b}
-.eventTitle{font-size:11px;font-weight:900;letter-spacing:.12em;margin-bottom:8px}
-.eventGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.62fr);gap:10px}
-.eventGrid label{font-size:11px;font-weight:700}
-.eventGrid input{display:block;width:100%;box-sizing:border-box;margin-top:5px;padding:10px;border:1px solid #555;border-radius:7px;background:#0f1113;color:inherit;font:inherit}
-.servingChoices{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.servingChoice{display:flex;align-items:flex-start;gap:10px;text-align:left;padding:13px;border:1px solid #3f4346;border-radius:10px;background:#121518;color:#eee;cursor:pointer;min-height:92px}
-.servingChoice.recommended{border-color:#f59b2b}
-.servingChoice.active{border-color:#f59b2b;box-shadow:inset 0 0 0 1px #f59b2b;background:#1c1b18}
-.radioDot{width:20px;height:20px;border:2px solid #777;border-radius:50%;flex:0 0 auto;margin-top:2px;box-sizing:border-box}
-.servingChoice.active .radioDot{border:6px solid #f59b2b}
-.servingCopy{display:flex;flex-direction:column;gap:4px}
-.servingCopy b{font-size:14px}
-.servingCopy small{font-size:10px;color:#b7b7b7;line-height:1.3}
-.servingCopy em{font-style:normal;font-size:8px;font-weight:900;letter-spacing:.08em;color:#111;background:#f59b2b;border-radius:3px;padding:2px 5px;width:max-content}
-.servingNote{text-align:center;color:#aaa;font-size:11px;margin-top:10px}
-.hiddenServing{display:none!important}
-@media(max-width:700px){.servingChoices{grid-template-columns:1fr}.servingChoice{min-height:auto}.eventGrid{grid-template-columns:1fr}}
-
-/* V1.7.1: prevent Event Date from overflowing its grid column */
-.eventGrid > label{min-width:0}
-.eventGrid input{min-width:0;max-width:100%}
-.eventGrid input[type="date"]{width:100%;min-width:0;max-width:260px;justify-self:end}
-
-/* V1.8.1: unmistakable selected-state dot */
-.servingChoice .radioDot{position:relative}
-.servingChoice.active .radioDot{
-  border:2px solid #f59b2b;
-}
-.servingChoice.active .radioDot::after{
-  content:"";
-  position:absolute;
-  width:8px;height:8px;border-radius:50%;
-  background:#f59b2b;
-  left:50%;top:50%;transform:translate(-50%,-50%);
-}
-
-.choice .fixedChoice{font-size:12px;padding:8px 0 2px;color:#cfd3d7}
+.sideGroups{display:grid;grid-template-columns:1fr;gap:14px}.sideGroupTitle{font-size:11px;font-weight:900;letter-spacing:.12em;color:#c9cdd2;margin:2px 0 7px}.sideCards{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.sideCard{background:#14171a;border:1px solid var(--line);border-radius:15px;padding:12px;cursor:pointer;position:relative;min-height:92px}.sideCard.on{border-color:var(--accent);background:linear-gradient(145deg,#2b2116,#17191b)}.sideCard.recommended:not(.on){border-color:#755020}.sideTop{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.sideCheck{width:20px;height:20px;border:2px solid #5a6068;border-radius:50%;position:relative;flex:0 0 auto}.sideCard.on .sideCheck{background:var(--accent);border-color:var(--accent)}.sideCard.on .sideCheck:after{content:"✓";position:absolute;left:3px;top:-2px;color:#151515;font-weight:950}.sideCard b{font-size:14px}.sideCard small{display:block;color:var(--muted);font-size:10px;line-height:1.35;margin-top:6px}.sideRec{display:inline-block;margin-top:7px;font-size:8px;font-weight:900;letter-spacing:.07em;color:#111;background:#f59b2b;border-radius:3px;padding:2px 5px}.sideModelNote{margin-top:11px;padding:9px 10px;border-left:3px solid var(--accent);background:#1d1914;color:#d9c7ae;font-size:10px;line-height:1.4;border-radius:0 7px 7px 0}.sideResult{border:1px solid var(--line);background:#121518;border-radius:15px;padding:13px;margin:8px 0}.sideResult .buy{font-size:16px}.sideResult .sideReason{font-size:10px;color:#c7b18f;margin-top:5px}.sideDivider{margin:14px 0 8px;border-top:1px solid var(--line);padding-top:12px}@media(max-width:600px){.sideCards{grid-template-columns:1fr}}#printSheet{display:none}@media print{@page{size:letter landscape;margin:.35in}body{background:#fff!important;color:#111!important;padding:0!important}body>*{display:none!important}#printSheet{display:block!important;width:10.3in;height:7.8in;margin:0 auto;padding:.25in;border:1px solid #777;position:relative;background:#fff;color:#111;font-family:Arial,sans-serif}#printSheet .ps-title{font-size:22px;font-weight:900;margin:0 0 3px}#printSheet .ps-sub{font-size:11px;color:#444;margin-bottom:10px}#printSheet .ps-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}#printSheet .ps-box{border:1px solid #aaa;border-radius:6px;padding:8px;margin-bottom:8px}#printSheet h3{font-size:11px;letter-spacing:.08em;margin:0 0 5px}#printSheet .ps-headcount{display:flex;gap:16px;font-size:11px}#printSheet .ps-big{font-size:17px;font-weight:900}#printSheet .ps-row{display:grid;grid-template-columns:1fr auto;gap:8px;border-bottom:1px solid #ddd;padding:6px 0}#printSheet .ps-row:last-child{border-bottom:0}#printSheet .ps-name{font-size:11px;font-weight:800}#printSheet .ps-buy{font-size:12px;font-weight:900;text-align:right}#printSheet .ps-detail{font-size:9px;color:#555;margin-top:2px}#printSheet .ps-note{font-size:9px;color:#555;line-height:1.25}#printSheet .fold{position:absolute;left:0;right:0;top:50%;border-top:1px dashed #aaa}#printSheet .foldlabel{position:absolute;right:8px;top:calc(50% - 7px);font-size:8px;color:#777;background:#fff;padding:0 3px}#printSheet .ps-footer{position:absolute;bottom:6px;left:.25in;right:.25in;display:flex;justify-content:space-between;font-size:8px;color:#666}}.familyOnlyNote{margin-top:10px;padding:9px 10px;border-left:3px solid var(--good);background:#16221b;color:#ccebd8;font-size:10px;line-height:1.4;border-radius:0 7px 7px 0}.purchaseNote{margin-top:6px;padding:7px 8px;border-left:3px solid var(--accent);background:#1d1914;color:#d9c7ae;font-size:10px;line-height:1.35;border-radius:0 6px 6px 0}.excess{color:#f4c76b;font-weight:800}.eventPanel{margin:12px 0 14px;padding:13px 15px;border:1px solid #3b3b3b;border-radius:12px;background:#17191b}.eventTitle{font-size:11px;font-weight:900;letter-spacing:.12em;margin-bottom:8px}.eventGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.62fr);gap:10px}.eventGrid label{font-size:11px;font-weight:700}.eventGrid input{display:block;width:100%;box-sizing:border-box;margin-top:5px;padding:10px;border:1px solid #555;border-radius:7px;background:#0f1113;color:inherit;font:inherit}.servingChoices{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.servingChoice{display:flex;align-items:flex-start;gap:10px;text-align:left;padding:13px;border:1px solid #3f4346;border-radius:10px;background:#121518;color:#eee;cursor:pointer;min-height:92px}.servingChoice.recommended{border-color:#f59b2b}.servingChoice.active{border-color:#f59b2b;box-shadow:inset 0 0 0 1px #f59b2b;background:#1c1b18}.radioDot{width:20px;height:20px;border:2px solid #777;border-radius:50%;flex:0 0 auto;margin-top:2px;box-sizing:border-box}.servingChoice.active .radioDot{border:2px solid #f59b2b}.servingChoice.active .radioDot::after{content:"";position:absolute;width:8px;height:8px;border-radius:50%;background:#f59b2b;left:50%;top:50%;transform:translate(-50%,-50%)}.servingCopy{display:flex;flex-direction:column;gap:4px}.servingCopy b{font-size:14px}.servingCopy small{font-size:10px;color:#b7b7b7;line-height:1.3}.servingCopy em{font-style:normal;font-size:8px;font-weight:900;letter-spacing:.08em;color:#111;background:#f59b2b;border-radius:3px;padding:2px 5px;width:max-content}.servingNote{text-align:center;color:#aaa;font-size:11px;margin-top:10px}.hiddenServing{display:none!important}@media(max-width:700px){.servingChoices{grid-template-columns:1fr}.servingChoice{min-height:auto}.eventGrid{grid-template-columns:1fr}}.eventGrid > label{min-width:0}.eventGrid input{min-width:0;max-width:100%}.eventGrid input[type="date"]{width:100%;min-width:0;max-width:260px;justify-self:end}.choice .fixedChoice{font-size:12px;padding:8px 0 2px;color:#cfd3d7}
 </style>
-<!-- Meatfest Calculator V2.2.8 -->
 <link rel="manifest" href="/manifest.json">
 </head>
 <body><div class="wrap">
-<header><div class="brandBar"><div class="brandLogo"><img src="fsdc-logo.png" alt="FSDC Brews &amp; BBQ Catering"></div><div class="modeWrap"><div class="modeLabel">PLANNING MODE</div><div class="modeSwitch" id="planningSwitch"><span class="modeThumb"></span><button class="modeBtn active" data-plan-mode="meatfest" type="button">MEATFEST</button><button class="modeBtn" data-plan-mode="family" type="button">FAMILY</button></div><div class="modeHint" id="modeHint">Large-group model • default</div></div></div><div class="eyebrow">MEATFEST • VERSION 2.2.8</div><div class="title" id="pageTitle">How much food?</div><div class="sub" id="pageSub">Your Meatfest model, turned into a practical shopping list.</div></header>
-<div class="eventPanel" id="globalEventPanel">
-  <div class="eventTitle">EVENT</div>
-  <div class="eventGrid">
-    <label>Event Name
-      <input id="eventName" type="text" value="Your Event" maxlength="80" autocomplete="off">
-    </label>
-    <label>Event Date
-      <input id="eventDate" type="date">
-    </label>
-  </div>
-</div>
-
-
+<header><div class="brandBar"><div class="brandLogo"><img src="fsdc-logo.png" alt="FSDC Brews &amp; BBQ Catering"></div><div class="modeWrap"><div class="modeLabel">PLANNING MODE</div><div class="modeSwitch" id="planningSwitch"><span class="modeThumb"></span><button class="modeBtn active" data-plan-mode="meatfest" type="button">MEATFEST</button><button class="modeBtn" data-plan-mode="family" type="button">FAMILY</button></div><div class="modeHint" id="modeHint">Large-group model • default</div></div></div><div class="eyebrow">MEATFEST • VERSION 2.2.9</div><div class="title" id="pageTitle">How much food?</div><div class="sub" id="pageSub">Your Meatfest model, turned into a practical shopping list.</div></header>
+<div class="eventPanel" id="globalEventPanel"><div class="eventTitle">EVENT</div><div class="eventGrid"><label>Event Name<input id="eventName" type="text" value="Your Event" maxlength="80" autocomplete="off"></label><label>Event Date<input id="eventDate" type="date"></label></div></div>
 <div class="eventPanel" id="planningNote"><div class="eventTitle">PLANNING MODE</div><div class="note" id="planningNoteText">Meatfest mode uses the established large-group purchase units and historical planning model.</div></div>
-
-<section class="card">
-<h2>1. Headcount</h2>
-<div class="tabs"><button class="btn tab active" id="manualTab">Quick Count</button><button class="btn tab" id="guestTab">Guest List</button></div>
-<div id="manualPane"><div class="grid">
-<div class="field"><label>Adults</label><input id="adults" type="number" min="0" value="0"></div>
-<div class="field"><label>Kids</label><input id="kids" type="number" min="0" value="0"></div>
-</div><p class="note">Kids are automatically counted as ½ adult-equivalent. This is a Meatfest model assumption, not a user setting.</p></div>
-<div id="guestPane" class="hidden">
-<div class="row" style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:9px"><label class="btn secondary" style="cursor:pointer">Upload CSV<input id="file" type="file" accept=".csv,.txt" hidden></label><button class="btn secondary" id="pasteBtn">Paste from Excel</button><button class="btn danger" id="clearGuests">Clear</button></div>
-<div id="pasteArea" class="hidden"><textarea class="paste" id="paste" placeholder="Last Name&#9;Count&#9;Adults&#9;Kids&#10;Larick&#9;4&#10;Stilwill&#9;4&#9;2&#9;2"></textarea><button class="btn primary" id="importPaste" style="margin-top:7px">Import pasted list</button></div>
-<div class="guestHead"><span>Last Name</span><span>Count</span><span>Adults</span><span>Kids</span><span></span></div>
-<div id="guestList"></div>
-<p class="note">Columns: Last Name, Count, Adults, Kids. If Adults/Kids are blank, Count is treated as adults. Uploading a list becomes the active headcount.</p>
-</div>
-</section>
-
+<section class="card"><h2>1. Headcount</h2><div class="tabs"><button class="btn tab active" id="manualTab">Quick Count</button><button class="btn tab" id="guestTab">Guest List</button></div><div id="manualPane"><div class="grid"><div class="field"><label>Adults</label><input id="adults" type="number" min="0" value="0"></div><div class="field"><label>Kids</label><input id="kids" type="number" min="0" value="0"></div></div><p class="note">Kids are automatically counted as ½ adult-equivalent. This is a Meatfest model assumption, not a user setting.</p></div><div id="guestPane" class="hidden"><div class="row" style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:9px"><label class="btn secondary" style="cursor:pointer">Upload CSV<input id="file" type="file" accept=".csv,.txt" hidden></label><button class="btn secondary" id="pasteBtn">Paste from Excel</button><button class="btn danger" id="clearGuests">Clear</button></div><div id="pasteArea" class="hidden"><textarea class="paste" id="paste" placeholder="Last Name&#9;Count&#9;Adults&#9;Kids&#10;Larick&#9;4&#10;Stilwill&#9;4&#9;2&#9;2"></textarea><button class="btn primary" id="importPaste" style="margin-top:7px">Import pasted list</button></div><div class="guestHead"><span>Last Name</span><span>Count</span><span>Adults</span><span>Kids</span><span></span></div><div id="guestList"></div><p class="note">Columns: Last Name, Count, Adults, Kids. If Adults/Kids are blank, Count is treated as adults. Uploading a list becomes the active headcount.</p></div></section>
 <section class="card"><h2>Headcount</h2><div class="stats"><div class="stat"><div class="n" id="statAdults">33</div><div class="l">Adults</div></div><div class="stat"><div class="n" id="statKids">12</div><div class="l">Kids</div></div><div class="stat"><div class="n" id="statEaters">39</div><div class="l">Adult-equivalent</div></div></div></section>
-
-
-<section class="card">
-  <h2>2. How Much Meat Should We Plan For?</h2>
-  <div class="servingChoices" id="servingChoices">
-    <button type="button" class="servingChoice" data-serving-choice=".25">
-      <span class="radioDot"></span>
-      <span class="servingCopy"><b>Light — ¼ lb/person</b><small>Good when there are lots of other foods.</small></span>
-    </button>
-    <button type="button" class="servingChoice recommended active" data-serving-choice=".333333">
-      <span class="radioDot"></span>
-      <span class="servingCopy"><b>Standard — ⅓ lb/person</b><em>RECOMMENDED</em><small>The recommended starting point.</small></span>
-    </button>
-    <button type="button" class="servingChoice" data-serving-choice=".5">
-      <span class="radioDot"></span>
-      <span class="servingCopy"><b>Generous — ½ lb/person</b><small>Good for meat-heavy events or big eaters.</small></span>
-    </button>
-  </div>
-  <select id="serving" class="hiddenServing">
-    <option value=".5">Generous</option>
-    <option value=".333333" selected>Standard</option>
-    <option value=".25">Light</option>
-  </select>
-  <div class="servingNote">Portions automatically adjust based on the number of proteins you select.</div>
-</section>
-
-
+<section class="card"><h2>2. How Much Meat Should We Plan For?</h2><div class="servingChoices" id="servingChoices"><button type="button" class="servingChoice" data-serving-choice=".25"><span class="radioDot"></span><span class="servingCopy"><b>Light — ¼ lb/person</b><small>Good when there are lots of other foods.</small></span></button><button type="button" class="servingChoice recommended active" data-serving-choice=".333333"><span class="radioDot"></span><span class="servingCopy"><b>Standard — ⅓ lb/person</b><em>RECOMMENDED</em><small>The recommended starting point.</small></span></button><button type="button" class="servingChoice" data-serving-choice=".5"><span class="radioDot"></span><span class="servingCopy"><b>Generous — ½ lb/person</b><small>Good for meat-heavy events or big eaters.</small></span></button></div><select id="serving" class="hiddenServing"><option value=".5">Generous</option><option value=".333333" selected>Standard</option><option value=".25">Light</option></select><div class="servingNote">Each protein keeps its own established Meatfest planning role; the portion setting scales the overall plan.</div></section>
 <section class="card"><h2>3. Pick Your Meats</h2><div class="meats" id="meats"></div><p class="note">Choose the form you will actually buy and serve. The calculator changes the yield and practical purchase quantity when the cut or preparation materially changes.</p><p class="note"><b>Whole Hog is a feature-protein scenario:</b> it is not combined with another protein. Selecting Whole Hog clears other proteins; selecting another protein switches away from Whole Hog.</p></section>
-
-<section class="card">
-  <h2>4. Pick Your Sides</h2>
-  <div class="sideGroups">
-    <div>
-      <div class="sideGroupTitle">MAIN SIDES</div>
-      <div class="sideCards" id="mainSideCards"></div>
-    </div>
-    <div>
-      <div class="sideGroupTitle">ACCOMPANIMENTS</div>
-      <div class="sideCards" id="accompSideCards"></div>
-    </div>
-  </div>
-  <div class="sideModelNote" id="sideModelNote">V2 plans for a Meatfest feast: enough to avoid running out, with modest useful leftovers. Recommendations are highlighted; you choose the sides.</div>
-</section>
-
+<section class="card"><h2>4. Pick Your Sides</h2><div class="sideGroups"><div><div class="sideGroupTitle">MAIN SIDES</div><div class="sideCards" id="mainSideCards"></div></div><div><div class="sideGroupTitle">ACCOMPANIMENTS</div><div class="sideCards" id="accompSideCards"></div></div></div><div class="sideModelNote" id="sideModelNote">V2 plans for a Meatfest feast: enough to avoid running out, with modest useful leftovers. Recommendations are highlighted; you choose the sides.</div></section>
 <section class="card hero"><div class="small">TOTAL RAW MEAT TO BUY</div><div class="big" id="totalRaw">0 lb</div><div class="subbig" id="summary">Select at least one protein.</div></section>
-
 <section class="card"><h2>5. Shopping List</h2><div id="results"></div><div class="sideDivider"><h2 style="margin-bottom:8px">Side Shopping List</h2><div id="sideResults"></div></div><div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:12px"><button class="btn primary" id="save">Save / Share</button><button class="btn secondary" id="print">Print Pocket Sheet</button><button class="btn secondary" id="reset">Reset</button></div></section>
-<div class="footer">FSDC Meatfest Calculator • v2.2.8 • Original Meatfest yields preserved</div>
-</div>
-
-<script src="/app.js?v=2.2.8"></script>
-<script src="/meatfest-final.js?v=2.2.8"></script>
-
-<div id="printSheet">
-  <div class="ps-title" id="psTitle">MEATFEST SHOPPING LIST</div>
-  <div class="ps-sub" id="psSub"></div>
-  <div class="ps-grid">
-    <div>
-      <div class="ps-box">
-        <h3>HEADCOUNT</h3>
-        <div class="ps-headcount">
-          <span><b id="psAdults">0</b> adults</span>
-          <span><b id="psKids">0</b> kids</span>
-          <span><b id="psEaters">0</b> adult-equiv.</span>
-        </div>
-      </div>
-      <div class="ps-box">
-        <h3>PROTEINS</h3>
-        <div id="psProteins" class="ps-note"></div>
-      </div>
-      <div class="ps-box">
-        <h3>SIDES</h3>
-        <div id="psSides" class="ps-note"></div>
-      </div>
-    </div>
-    <div>
-      <div class="ps-box">
-        <h3>WHAT TO BUY</h3>
-        <div id="psBuyRows"></div>
-      </div>
-      <div class="ps-box">
-        <h3>TOTAL RAW MEAT</h3>
-        <div class="ps-big" id="psTotal">0 lb</div>
-        <div class="ps-note">Purchase amounts are rounded to practical units where applicable.</div>
-      </div>
-    </div>
-  </div>
-  <div class="fold"></div><div class="foldlabel">FOLD</div>
-  <div class="ps-footer"><span>Meatfest Calculator</span><span>Keep this sheet with the shopping list.</span></div>
-</div>
-</body>
-</html>
+<div class="footer">FSDC Meatfest Calculator • v2.2.9 • Original Meatfest yields preserved</div></div>
+<script src="/app.js?v=2.2.9"></script><script src="/meat-engine.js?v=2.2.9"></script><script src="/meatfest-final.js?v=2.2.9"></script>
+<div id="printSheet"><div class="ps-title" id="psTitle">MEATFEST SHOPPING LIST</div><div class="ps-sub" id="psSub"></div><div class="ps-grid"><div><div class="ps-box"><h3>HEADCOUNT</h3><div class="ps-headcount"><span><b id="psAdults">0</b> adults</span><span><b id="psKids">0</b> kids</span><span><b id="psEaters">0</b> adult-equiv.</span></div></div><div class="ps-box"><h3>PROTEINS</h3><div id="psProteins" class="ps-note"></div></div><div class="ps-box"><h3>SIDES</h3><div id="psSides" class="ps-note"></div></div></div><div><div class="ps-box"><h3>WHAT TO BUY</h3><div id="psBuyRows"></div></div><div class="ps-box"><h3>TOTAL RAW MEAT</h3><div class="ps-big" id="psTotal">0 lb</div><div class="ps-note">Purchase amounts are rounded to practical units where applicable.</div></div></div></div><div class="fold"></div><div class="foldlabel">FOLD</div><div class="ps-footer"><span>Meatfest Calculator</span><span>Keep this sheet with the shopping list.</span></div></div>
+</body></html>
