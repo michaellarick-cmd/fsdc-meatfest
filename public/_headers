@@ -1,3 +1,7 @@
-# Keep the HTML shell and client-side application assets fresh.
-/*
+# Client JavaScript must always revalidate so the deployed UI matches the HTML shell.
+/app.js
+  Cache-Control: no-store
+/meat-engine.js
+  Cache-Control: no-store
+/meatfest-final.js
   Cache-Control: no-store
