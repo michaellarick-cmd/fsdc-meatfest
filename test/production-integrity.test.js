@@ -77,6 +77,6 @@ test('reset fields use placeholders instead of real zero/default values', () => 
   assert.doesNotMatch(index, /id="kids"[^>]*value="0"/);
 });
 
-test('saved placeholder defaults are normalized to empty inputs', () => {
-  assert.match(app, /value === '0' \? '' : value/);
+test('saved zero defaults are normalized without depending on quote style or formatting', () => {
+  assert.match(app, /value\s*===\s*["']0["']\s*\?\s*["']["']\s*:\s*value/);
 });
