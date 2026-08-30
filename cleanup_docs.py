@@ -1,0 +1,6 @@
+from pathlib import Path
+p=Path('docs/ARCHITECTURE_V1.md'); s=p.read_text()
+s=s.replace('Production architecture is the v2.2.x Meatfest calculator now deployed from `main`.','Production architecture is the v2.3.x Meatfest calculator now deployed from `main`.')
+s=s.replace('UI state and interaction layer. It owns guest-list handling, protein/side presentation metadata, side recommendations, and side quantity planning.','UI state and interaction layer. It owns guest-list handling, protein/side presentation metadata, side recommendations, and side quantity planning. All production side definitions live here and are never injected or rewritten at runtime.')
+s=s.replace('The repository should contain one production calculation implementation. Old engines, duplicate regression suites, research-only runtime code, and unused development catalogs should be removed rather than retained as compatibility layers.','The repository should contain one production calculation implementation and one production side-planning implementation. Static assets are served as committed source files; the Cloudflare Worker must not rewrite JavaScript or HTML at request time. Old engines, duplicate regression suites, runtime patchers, and unused development catalogs should be removed rather than retained as compatibility layers.')
+p.write_text(s)
