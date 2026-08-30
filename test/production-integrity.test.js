@@ -14,12 +14,56 @@ test('worker only forwards static assets', () => {
   assert.match(worker, /env\.ASSETS\.fetch\(request\)/);
 });
 
-test('production presentation contains restored sides and turkey', () => {
-  for (const term of ['Green Beans', 'Potato Salad', 'Asparagus', 'Pasta Salad', 'Turkey']) {
+test('production presentation contains the canonical side list and selectable proteins', () => {
+  for (const term of ['Green Beans', 'Potato Salad', 'Asparagus', 'Pasta Salad', 'Turkey', 'Pork Belly Burnt Ends']) {
     assert.ok(presentation.includes(term), `${term} is missing from production presentation code`);
   }
   assert.match(presentation, /sideRecommendation = function/);
-  assert.match(presentation, /prime_rib/);
+  assert.match(presentation, /pork_belly_burnt_ends/);
+});
+
+test('main sides are alphabetized and accompaniments remain separate', () => {
+  assert.match(presentation, /sideOrder\.splice\(0,sideOrder\.length,"asparagus","beans","broccoli","cauli","slaw","collards","corn","cucumber","greenbeans","mac","pastasalad","potatosalad","kraut","cornbread","rolls"\)/);
+  assert.match(presentation, /cornbread:\{name:"Cornbread"/);
+  assert.match(presentation, /rolls:\{name:"Hawaiian Rolls"/);
+});
+
+test('side recommendation matrix matches the supplied Meatfest grid', () => {
+  const expected = [
+    ['asparagus', 'fish', 'prime_rib'],
+    ['beans', 'chicken_pulled', 'chicken_quarters', 'chicken_thighs', 'fish', 'pulled_pork', 'whole_hog', 'brisket', 'pmbe', 'ribs', 'pork_belly_burnt_ends'],
+    ['broccoli'],
+    ['cauli', 'chicken_pulled', 'chicken_quarters', 'chicken_thighs', 'pulled_pork', 'brisket', 'pmbe', 'turkey', 'pork_belly_burnt_ends'],
+    ['slaw', 'chicken_pulled', 'chicken_quarters', 'chicken_thighs', 'fish', 'pulled_pork', 'whole_hog', 'pmbe', 'ribs', 'turkey', 'pork_belly_burnt_ends'],
+    ['collards', 'whole_hog'],
+    ['corn', 'chicken_pulled', 'chicken_quarters', 'chicken_thighs', 'pmbe', 'ribs'],
+    ['cucumber', 'chicken_pulled', 'chicken_quarters', 'chicken_thighs', 'fish', 'brisket', 'pmbe', 'ribs', 'pork_belly_burnt_ends'],
+    ['greenbeans', 'chicken_pulled', 'chicken_quarters', 'chicken_thighs', 'fish', 'brisket', 'prime_rib', 'ribs', 'turkey'],
+    ['kraut', 'brats'],
+    ['mac', 'chicken_pulled', 'chicken_quarters', 'chicken_thighs', 'pulled_pork', 'brisket', 'pmbe', 'turkey', 'pork_belly_burnt_ends'],
+    ['pastasalad', 'prime_rib'],
+    ['potatosalad', 'chicken_pulled', 'chicken_quarters', 'chicken_thighs', 'whole_hog', 'brisket', 'pmbe', 'ribs', 'turkey', 'pork_belly_burnt_ends'],
+    ['cornbread', 'chicken_pulled', 'chicken_quarters', 'chicken_thighs', 'brisket', 'pmbe', 'ribs', 'turkey'],
+    ['rolls', 'pulled_pork', 'whole_hog', 'prime_rib', 'ribs', 'turkey']
+  ];
+  for (const [side, ...tags] of expected) {
+    const body = presentation.match(new RegExp(`case "${side}":return ([^;]+);`))?.[1] || '';
+    for (const tag of tags) assert.match(body, new RegExp(`"${tag}"`), `${side} is missing ${tag}`);
+    if (!tags.length) assert.equal(body, 'false', `${side} should have no recommendations`);
+  }
+});
+
+test('Pork Belly Burnt Ends has canonical yield and purchase-unit math', () => {
+  assert.match(engine, /pbbeYield:\.65/);
+  assert.match(engine, /pbbeLb:5/);
+  assert.match(engine, /key === 'pbbe'/);
+  assert.match(presentation, /pbbe:\{name:"Pork Belly Burnt Ends"/);
+  assert.match(presentation, /key==="pbbe"/);
+});
+
+test('multiple proteins use OR recommendation semantics', () => {
+  assert.match(presentation, /selected\.forEach\(key=>/);
+  assert.match(presentation, /const any=tags=>tags\.some\(tag=>active\.has\(tag\))/);
 });
 
 test('production presentation renders the meat shopping list', () => {
