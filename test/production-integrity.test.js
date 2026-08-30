@@ -26,7 +26,13 @@ test('production UI contains the canonical side catalog and restored proteins', 
 test('protein order is canonical for both selection and shopping-list output', () => {
   assert.match(app, /const order=\["brisket","pmbe","ribs","pork","pbbe","brats","chicken","turkey","fish","prime","hog"\]/);
   assert.match(app, /const visibleOrder=planningMode==="family"\?order\.filter/);
-  assert.match(presentation, /s\.rows\.map\(r=>/);
+  assert.match(presentation, /const orderedSelectedRows = eaters => order\.map\(key=>selected\.includes\(key\)\?rowFor\(key,eaters\):null\)\.filter\(Boolean\)/);
+  assert.match(presentation, /const rows=orderedSelectedRows\(t\.eaters\)/);
+});
+
+test('shopping-list ordering only includes selected proteins', () => {
+  assert.match(presentation, /selected\.includes\(key\)\?rowFor\(key,eaters\):null/);
+  assert.doesNotMatch(presentation, /order\.map\(key=>rowFor\(key,eaters\)/);
 });
 
 test('production presentation renders the meat shopping list', () => {
