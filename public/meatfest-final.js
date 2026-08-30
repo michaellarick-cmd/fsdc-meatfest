@@ -134,8 +134,9 @@
         buy = `ASK FOR ~${MeatEngine.round1(row.buyWeight)} lb brisket flat`;
         note = "Family mode uses a small brisket-flat purchase rather than forcing a whole packer.";
       } else if (choiceId === "packer") {
-        buy = `BUY 1 packer (~${MeatEngine.round1(row.buyWeight)} lb; ask for a 19–20 lb packer)`;
-        note = "Meatfest anchor: one practical whole packer; do not split a 19–20 lb requirement into multiple small packers.";
+        const askLb = Math.max(14, Math.round(row.buyWeight));
+        buy = `BUY 1 whole packer (~${MeatEngine.round1(row.buyWeight)} lb; ask for a packer around ${askLb} lb)`;
+        note = "Meatfest anchor: one practical whole packer sized to the calculated requirement; do not split the requirement into multiple small packers.";
       } else {
         buy = `BUY ${row.units} brisket flat${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
         note = "Brisket-flat planning uses the established 55% cooked-yield assumption and 7-lb purchase unit.";
