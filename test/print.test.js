@@ -18,8 +18,9 @@ const eventDetails=()=>({name:'Labor Day Meatfest',display:'9/5/2026'});
 const sides={slaw:{name:'Coleslaw'},rolls:{name:'Hawaiian Rolls'}};
 const sideDetails=(id)=>id==='slaw'?'Anchor favorite.':'Sandwich vehicle.';
 const sideBuyText=(id,q)=>id==='slaw'?`${q} recipes`:`${q} pieces`;
+const buyText=(item)=>item.buy||`BUY 1 ${item.option?.label||'item'}`;
 const MeatEngine={round1:(x)=>Math.round((x+Number.EPSILON)*10)/10};
-const context={window:{buildSummary,eventDetails},buildSummary,eventDetails,sides,sideDetails,sideBuyText,MeatEngine,$:(id)=>elements[id],Math};
+const context={window:{buildSummary,eventDetails},buildSummary,eventDetails,sides,sideDetails,sideBuyText,buyText,MeatEngine,$:(id)=>elements[id],Math};
 vm.createContext(context);
 vm.runInContext(fnSource,context);
 
