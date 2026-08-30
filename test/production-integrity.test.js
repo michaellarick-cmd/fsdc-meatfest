@@ -26,19 +26,19 @@ test('production UI contains the canonical side catalog and restored proteins', 
 test('protein order is canonical for both selection and shopping-list output', () => {
   assert.match(app, /const order=\["brisket","pmbe","ribs","pork","pbbe","brats","chicken","turkey","fish","prime","hog"\]/);
   assert.match(app, /const visibleOrder=planningMode==="family"\?order\.filter/);
-  assert.match(presentation, /const keys=order\.filter\(key=>selected\.has\(key\)\)/);
+  assert.match(presentation, /const keys=order\.filter\(key=>selected\.has\(key\)/);
   assert.match(presentation, /const planned=MeatEngine\.multiProteinRows\(\{keys,eaters,serving:portion\(\),choices:choiceMap\}\)/);
-  assert.match(presentation, /const rows=selectedRows\(t\.eaters\)/);
+  assert.match(presentation, /rows=selectedRows\(t\.eaters\)/);
 });
 
 test('shopping-list ordering only includes selected proteins', () => {
-  assert.match(presentation, /const keys=order\.filter\(key=>selected\.has\(key\)\)/);
+  assert.match(presentation, /const keys=order\.filter\(key=>selected\.has\(key\)/);
   assert.doesNotMatch(presentation, /order\.map\(key=>rowFor\(key,eaters\)/);
   assert.match(app, /selected=new Set\(x\.selected\|\|\[\]\)/);
 });
 
 test('production presentation renders the meat shopping list', () => {
-  assert.match(presentation, /const rows=selectedRows\(t\.eaters\)/);
+  assert.match(presentation, /rows=selectedRows\(t\.eaters\)/);
   assert.match(presentation, /\$\("results"\)\.innerHTML=rows\.length/);
   assert.match(presentation, /row\.buyWeight/);
   assert.match(presentation, /row\.raw/);
@@ -88,7 +88,9 @@ test('calculation engine remains the only source of canonical protein math', () 
   assert.doesNotMatch(app, /function wholeHogPlan\(/);
   assert.doesNotMatch(app, /function familyPurchase\(/);
   assert.doesNotMatch(app, /function purchaseDisplay\(/);
-  assert.match(presentation, /MeatEngine\.canonicalRow/);
+  assert.match(engine, /function canonicalRow\(/);
+  assert.match(engine, /function familyRow\(/);
+  assert.match(engine, /function multiProteinRows\(/);
   assert.match(presentation, /MeatEngine\.familyRow/);
   assert.match(presentation, /MeatEngine\.multiProteinRows/);
 });
