@@ -76,4 +76,8 @@
     const rows = [...selected].map(key => rowFor(key, t.eaters)).filter(Boolean);
     return { adults: t.adults, kids: t.kids, eaters: t.eaters, rows, total: rows.reduce((s, r) => s + r.row.buyWeight, 0) };
   };
+
+  // app.js wires the UI and restores saved state before this presentation layer loads.
+  // Initial calculation belongs here, after the calculation engine exists.
+  window.calc();
 })();
