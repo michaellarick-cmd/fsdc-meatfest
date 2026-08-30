@@ -2,6 +2,40 @@
 (() => {
   // Meatfest-specific presentation metadata belongs here as committed source.
   // The Worker serves these assets unchanged; no request-time patching occurs.
+  const printStyle = document.createElement("style");
+  printStyle.media = "print";
+  printStyle.textContent = `
+@page{size:letter portrait;margin:.35in}
+html,body{background:#fff!important;color:#000!important}
+body{padding:0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body>*{display:none!important}
+#printSheet{display:block!important;width:4in;height:10.3in;margin:0 auto 0 0;padding:.16in;position:relative;border:1px solid #000;background:#fff;color:#000;font-family:Arial,sans-serif}
+#printSheet .ps-title{font-size:18px;font-weight:900;margin:0 0 3px;color:#000}
+#printSheet .ps-sub{font-size:9px;color:#000;margin-bottom:6px}
+#printSheet .ps-grid{display:grid;grid-template-columns:1fr;gap:6px}
+#printSheet .ps-grid>div{display:contents}
+#printSheet .ps-box{border:1px solid #000;border-radius:0;padding:6px;margin-bottom:6px;break-inside:avoid}
+#printSheet h3{font-size:10px;letter-spacing:.08em;margin:0 0 4px;color:#000}
+#printSheet .ps-headcount{display:flex;gap:10px;font-size:9px;color:#000;order:1}
+#printSheet .ps-big{font-size:15px;font-weight:900;color:#000}
+#printSheet .ps-row{display:grid;grid-template-columns:1fr auto;gap:6px;border-bottom:1px solid #000;padding:4px 0;break-inside:avoid}
+#printSheet .ps-row:last-child{border-bottom:0}
+#printSheet .ps-name{font-size:9px;font-weight:800;color:#000}
+#printSheet .ps-buy{font-size:9px;font-weight:900;text-align:right;color:#000}
+#printSheet .ps-detail{font-size:7.5px;color:#000;margin-top:1px}
+#printSheet .ps-note{font-size:8px;color:#000;line-height:1.2}
+#printSheet .pill{display:inline-block;border:1px solid #000;border-radius:0;padding:2px 4px;font-size:7.5px;color:#000;margin:1px 3px 1px 0}
+#printSheet .fold{position:absolute;left:0;right:0;top:50%;border-top:1px dashed #000}
+#printSheet .foldlabel{position:absolute;right:5px;top:calc(50% - 6px);font-size:7px;color:#000;background:#fff;padding:0 2px}
+#printSheet .ps-footer{position:absolute;bottom:4px;left:.16in;right:.16in;display:flex;justify-content:space-between;font-size:7px;color:#000}
+#printSheet .ps-grid>.ps-box:nth-child(1){order:1}
+#printSheet .ps-grid>.ps-box:nth-child(2){order:2}
+#printSheet .ps-grid>.ps-box:nth-child(3){order:3}
+#printSheet .ps-grid>.ps-box:nth-child(4){order:4}
+#printSheet .ps-grid>.ps-box:nth-child(5){order:5}
+  `;
+  document.head.appendChild(printStyle);
+
   Object.assign(sides, {
     greenbeans:{name:"Green Beans",group:"main",unit:"recipe",base:1.0,min:0.5,sensitivity:.70,round:.25,fill:"recipe",note:"Grilled or smoked BBQ vegetable side."},
     potatosalad:{name:"Potato Salad",group:"main",unit:"recipe",base:1.5,min:0.5,sensitivity:.55,round:.5,fill:"recipe",note:"Classic BBQ side."},
