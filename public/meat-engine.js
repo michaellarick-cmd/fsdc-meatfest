@@ -4,6 +4,7 @@
   const STANDARD_SERVING = 1 / 3;
   const PORTIONS = Object.freeze({
     brisketYield: .50,
+    brisketFlatYield: .55,
     pmbeYield: .60,
     porkYield: .60,
     chickenYield: .62,
@@ -105,13 +106,11 @@
     } else if (key === 'brisket' && choice.id === 'packer') {
       raw = ANCHORS.brisketLb * scale; units = 1; buyWeight = Math.max(14, raw); finished = raw * PORTIONS.brisketYield;
     } else if (key === 'brisket' && choice.id === 'flat') {
-      const result = unitProteinRow(eaters * Number(serving), ANCHORS.brisketFlatLb, PORTIONS.brisketYield + .05);
-      return result;
+      return unitProteinRow(eaters * Number(serving), ANCHORS.brisketFlatLb, PORTIONS.brisketFlatYield);
     } else if (key === 'pmbe') {
       raw = ANCHORS.pmbeLb * scale; units = roundUp(raw, 4); buyWeight = units * 4; finished = raw * PORTIONS.pmbeYield;
     } else if (key === 'pork' && choice.id === 'boneless') {
-      const result = unitProteinRow(eaters * Number(serving), ANCHORS.porkBonelessLb, PORTIONS.porkYield);
-      return result;
+      return unitProteinRow(eaters * Number(serving), ANCHORS.porkBonelessLb, PORTIONS.porkYield);
     } else if (key === 'pork') {
       raw = ANCHORS.porkLb * scale; units = roundUp(raw, 8.5); buyWeight = units * 8.5; finished = raw * PORTIONS.porkYield;
     } else if (key === 'chicken' && choice.unit === 'whole fryer') {
