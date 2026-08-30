@@ -1,0 +1,41 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import fs from 'node:fs';
+
+const source=fs.readFileSync(new URL('../public/meatfest-final.js',import.meta.url),'utf8');
+const start=source.indexOf('window.populatePrint=function(){');
+assert.ok(start>=0,'populatePrint is missing');
+const bodyStart=source.indexOf('{',start);
+let depth=0,end=-1;
+for(let i=bodyStart;i<source.length;i++){if(source[i]==='{')depth++;else if(source[i]==='}'&&--depth===0){end=i+1;break}}
+assert.ok(end>bodyStart,'populatePrint body could not be isolated');
+const fnSource=source.slice(start,end).replace(/^window\.populatePrint=/,'globalThis.populatePrint=');
+
+const values={};
+const elements=new Proxy({}, {get:(target,id)=>target[id]||(target[id]={textContent:'',innerHTML:''})});
+const context={window:{buildSummary:()=>({adults:33,kids:12,eaters:39,rows:[{key:'brisket',m:{name:'Brisket'},option:{label:'Whole Packer',yield:.5},row:{raw:28,finished:14},buy:'BUY 1 whole packer (~28 lb)'}],sideRows:[{id:'slaw',q:3},{id:'rolls',q:16}],total:28})},eventDetails:()=>({name:'Labor Day Meatfest',display:'9/5/2026'}),$:(id)=>elements[id],sides:{slaw:{name:'Coleslaw'},rolls:{name:'Hawaiian Rolls'}},sideDetails:(id)=>id==='slaw'?'Anchor favorite.':'Sandwich vehicle.',sideBuyText:(id,q)=>id==='slaw'?`${q} recipes`:`${q} pieces`,Math};
+vm.createContext(context);
+vm.runInContext(fnSource,context);
+
+test('print builder populates event, attendee, protein, meat, sides, and total sections',()=>{
+  context.populatePrint();
+  assert.equal(elements.psTitle.textContent,'LABOR DAY MEATFEST');
+  assert.equal(elements.psAdults.textContent,33);
+  assert.equal(elements.psKids.textContent,12);
+  assert.equal(elements.psEaters.textContent,39);
+  assert.match(elements.psProteins.textContent,/Brisket/);
+  assert.match(elements.psBuyRows.innerHTML,/whole packer/);
+  assert.match(elements.psSides.innerHTML,/Coleslaw/);
+  assert.match(elements.psSides.innerHTML,/Hawaiian Rolls/);
+  assert.equal(elements.psTotal.textContent,'28 lb');
+});
+
+test('print builder handles an empty plan without throwing',()=>{
+  context.window.buildSummary=()=>({adults:0,kids:0,eaters:0,rows:[],sideRows:[],total:0});
+  context.populatePrint();
+  assert.match(elements.psProteins.textContent,/No proteins selected/);
+  assert.match(elements.psBuyRows.innerHTML,/No proteins selected/);
+  assert.match(elements.psSides.innerHTML,/No sides selected/);
+  assert.equal(elements.psTotal.textContent,'0 lb');
+});
