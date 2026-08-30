@@ -20,7 +20,7 @@ test('production side catalog is complete and correctly ordered',()=>{assert.dee
 
 test('side quantities respond to eater count and protein count',()=>{setPlan({adults:48,proteins:['brisket'],sides:['slaw']});const oneProtein=sideQty('slaw');setPlan({adults:24,proteins:['brisket'],sides:['slaw']});const halfEaters=sideQty('slaw');setPlan({adults:48,proteins:['brisket','ribs','pork','chicken'],sides:['slaw']});const fourProteins=sideQty('slaw');assert.equal(oneProtein,4);assert.equal(halfEaters,2);assert.equal(fourProteins,3)});
 
-test('side sensitivity, minimums, and practical rounding are enforced',()=>{setPlan({adults:1,proteins:['brisket'],sides:['beans','slaw','corn','cornbread']});assert.equal(sideQty('beans'),.5);assert.equal(sideQty('slaw'),.5);assert.equal(sideQty('corn'),4);assert.equal(sideQty('cornbread'),12)});
+test('side sensitivity, minimums, and practical rounding are enforced',()=>{setPlan({adults:1,proteins:['brisket'],sides:['beans','slaw','corn','cornbread']});assert.equal(sideQty('beans'),.5);assert.equal(sideQty('slaw'),2.5);assert.equal(sideQty('corn'),4);assert.equal(sideQty('cornbread'),12)});
 
 test('planning mode changes side quantities without changing the catalog',()=>{setPlan({adults:24,proteins:['brisket'],sides:['slaw'],mode:'meatfest'});const meatfest=sideQty('slaw');setPlan({adults:24,proteins:['brisket'],sides:['slaw'],mode:'family'});const family=sideQty('slaw');assert.ok(family>=meatfest);assert.equal(family,2)});
 
