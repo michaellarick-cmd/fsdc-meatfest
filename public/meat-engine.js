@@ -108,7 +108,7 @@
       units = roundUp(raw, 4);
       buyWeight = units * 4;
       finished = raw * PORTIONS.pmbeYield;
-    } else if (key === 'pbbe') {
+    } else if(key==='pbbe') {
       raw = ANCHORS.pbbeLb * scale;
       units = roundUp(raw, ANCHORS.pbbeLb);
       buyWeight = units * ANCHORS.pbbeLb;
