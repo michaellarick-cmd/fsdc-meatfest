@@ -1,153 +1,71 @@
 /* FSDC Meatfest — UI state, presentation metadata, and side planning. */
 
 const meats={
- chicken:{name:"Chicken / Poultry",default:"whole",options:{
-  whole:{label:"Whole Fryer — Pulled",yield:.62,unitWeight:5,unit:"whole fryer",mode:"units",note:"Meatfest planning unit: 5 lb whole fryer."},
-  legq:{label:"Leg Quarters",yield:.42,unitWeight:.59375,unit:"leg quarter",mode:"units",note:"USDA planning yield for bone-in, skin-on leg quarters; about 9.5 oz each."},
-  thigh:{label:"Bone-In Thighs",yield:.52,unitWeight:.25,unit:"thigh",mode:"units",note:"USDA planning yield for bone-in, skin-on thighs; about 4 oz each."}
- }},
+ chicken:{name:"Chicken / Poultry",default:"whole",options:{whole:{label:"Whole Fryer — Pulled",yield:.62,unitWeight:5,unit:"whole fryer",mode:"units",note:"Meatfest planning unit: 5 lb whole fryer."},legq:{label:"Leg Quarters",yield:.42,unitWeight:.59375,unit:"leg quarter",mode:"units",note:"USDA planning yield for bone-in, skin-on leg quarters; about 9.5 oz each."},thigh:{label:"Bone-In Thighs",yield:.52,unitWeight:.25,unit:"thigh",mode:"units",note:"USDA planning yield for bone-in, skin-on thighs; about 4 oz each."}}},
  fish:{name:"Fish",default:"filet",options:{filet:{label:"Fillets (perch/fish-fry style)",yield:.76,unitWeight:.33,unit:"filet",mode:"units",note:"Planning unit: about ⅓ lb per filet."}}},
- pork:{name:"Pulled Pork",default:"bone",options:{
-  bone:{label:"Bone-in Boston Butt",yield:.60,unitWeight:8.5,unit:"bone-in butt",mode:"units"},
-  boneless:{label:"Boneless Pork Shoulder",yield:.60,unitWeight:8,unit:"boneless shoulder",mode:"units"}
- }},
+ pork:{name:"Pulled Pork",default:"bone",options:{bone:{label:"Bone-in Boston Butt",yield:.60,unitWeight:8.5,unit:"bone-in butt",mode:"units"},boneless:{label:"Boneless Pork Shoulder",yield:.60,unitWeight:8,unit:"boneless shoulder",mode:"units"}}},
  hog:{name:"Whole Hog",default:"hog",options:{hog:{label:"Whole Hog",yield:"hog",unitWeight:null,unit:"whole hog",mode:"hog",note:"Feature protein only — not combined with other proteins."}}},
  brats:{name:"Polish / Brats",default:"links",options:{links:{label:"Links",yield:.90,unitWeight:.5,unit:"links",mode:"units"}}},
- brisket:{name:"Brisket",default:"packer",options:{
-  packer:{label:"Whole Packer",yield:.50,unitWeight:14,unit:"packer",mode:"units"},
-  flat:{label:"Brisket Flat",yield:.55,unitWeight:7,unit:"flat",mode:"units"}
- }},
- pmbe:{name:"Poor Man's Burnt Ends",default:"chuck",options:{
-  chuck:{label:"Chuck Roast — Burnt Ends",yield:.60,unitWeight:4,unit:"chuck roast",mode:"units",note:"Planning yield set at 60% to account for chuck's normal cooked yield plus the additional cubing/caramelizing step."}
- }},
- prime:{name:"Prime Rib",default:"whole",options:{
-  whole:{label:"Whole Roast",yield:.80,unitWeight:5,unit:"roast",mode:"units"},
-  bone:{label:"Bone-in Standing Rib Roast",yield:.80,unitWeight:5,unit:"bone-in roast",mode:"units"}
- }},
- ribs:{name:"Ribs",default:"loin",options:{
-  loin:{label:"Loin Back / Baby Back",yield:.70,unitWeight:2.25,unit:"rack",mode:"units"},
-  spare:{label:"Spare / St. Louis",yield:.70,unitWeight:2.25,unit:"rack",mode:"units"}
- }}
+ brisket:{name:"Brisket",default:"packer",options:{packer:{label:"Whole Packer",yield:.50,unitWeight:14,unit:"packer",mode:"units"},flat:{label:"Brisket Flat",yield:.55,unitWeight:7,unit:"flat",mode:"units"}}},
+ pmbe:{name:"Poor Man's Burnt Ends",default:"chuck",options:{chuck:{label:"Chuck Roast — Burnt Ends",yield:.60,unitWeight:4,unit:"chuck roast",mode:"units",note:"Planning yield set at 60% to account for chuck's normal cooked yield plus the additional cubing/caramelizing step."}}},
+ pbbe:{name:"Pork Belly Burnt Ends",default:"belly",options:{belly:{label:"Pork Belly Burnt Ends",yield:.65,unitWeight:5,unit:"pork belly",mode:"units",note:"Planning unit: 5 lb pork belly; yield accounts for rendering and the final burnt-end finish."}}},
+ prime:{name:"Prime Rib",default:"whole",options:{whole:{label:"Whole Roast",yield:.80,unitWeight:5,unit:"roast",mode:"units"},bone:{label:"Bone-in Standing Rib Roast",yield:.80,unitWeight:5,unit:"bone-in roast",mode:"units"}}},
+ ribs:{name:"Ribs",default:"loin",options:{loin:{label:"Loin Back / Baby Back",yield:.70,unitWeight:2.25,unit:"rack",mode:"units"},spare:{label:"Spare / St. Louis",yield:.70,unitWeight:2.25,unit:"rack",mode:"units"}}},
+ turkey:{name:"Turkey",default:"whole",options:{whole:{label:"Whole Turkey",yield:.55,unitWeight:14,unit:"whole turkey",mode:"units"},breast:{label:"Turkey Breast",yield:.65,unitWeight:7,unit:"turkey breast",mode:"units"},legs:{label:"Turkey Legs",yield:.45,unitWeight:.75,unit:"turkey leg",mode:"units"}}}
 };
 
-let sideRecommendation = function(id){
-  const active=selectedProteinTags();
-  const any=tags=>tags.some(t=>active.has(t));
-  switch(id){
-    case "mac": return active.size>0;
-    case "cauli": return any(["chicken_pulled","chicken_quarters","chicken_thighs","fish"]);
-    case "slaw": return any(["pulled_pork","brisket","pmbe","ribs","brats","chicken_pulled","chicken_quarters","chicken_thighs","fish"]);
-    case "collards": return any(["pulled_pork","brisket","pmbe","ribs"]);
-    case "broccoli": return any(["fish","chicken_pulled","chicken_quarters","chicken_thighs","pulled_pork","brisket","pmbe","ribs"]);
-    case "cucumber": return any(["fish","chicken_pulled","chicken_quarters","chicken_thighs"]);
-    case "kraut": return active.has("brats");
-    case "beans": return false;
-    case "corn": return any(["chicken_pulled","chicken_quarters","chicken_thighs","fish","pulled_pork","brisket","pmbe","ribs"]);
-    case "cornbread": return active.size>0;
-    case "rolls": return any(["pulled_pork","chicken_pulled","brisket"]);
-    default: return false;
-  }
-};
 function selectedProteinTags(){
-  const tags=new Set();
-  selected.forEach(k=>{
-    if(k==="chicken"){
-      const prep=choices.chicken||meats.chicken.default;
-      if(prep==="whole")tags.add("chicken_pulled");
-      else if(prep==="legq")tags.add("chicken_quarters");
-      else if(prep==="thigh")tags.add("chicken_thighs");
-    }
-    if(k==="fish")tags.add("fish");
-    if(k==="pork")tags.add("pulled_pork");
-    if(k==="brisket")tags.add("brisket");
-    if(k==="pmbe")tags.add("pmbe");
-    if(k==="brats")tags.add("brats");
-    if(k==="ribs")tags.add("ribs");
-    if(k==="prime")tags.add("prime_rib");
-    if(k==="hog")tags.add("whole_hog");
-    if(k==="turkey")tags.add("chicken_pulled","chicken_quarters","chicken_thighs");
-  });
-  return tags;
+ const tags=new Set();
+ selected.forEach(k=>{if(k==="chicken"){const prep=choices.chicken||meats.chicken.default;if(prep==="whole")tags.add("chicken");else if(prep==="legq")tags.add("chicken");else if(prep==="thigh")tags.add("chicken")}if(k==="fish")tags.add("fish");if(k==="pork")tags.add("pulled_pork");if(k==="hog")tags.add("whole_hog");if(k==="brats")tags.add("brats");if(k==="brisket")tags.add("brisket");if(k==="pmbe")tags.add("pmbe");if(k==="pbbe")tags.add("pork_belly_burnt_ends");if(k==="prime")tags.add("prime_rib");if(k==="ribs")tags.add("ribs");if(k==="turkey")tags.add("turkey")});
+ return tags;
 }
 
+const sideRecommendationMatrix=Object.freeze({
+ chicken:new Set(["beans","cauli","corn","cucumber","greenbeans","mac","potatosalad","slaw","cornbread"]),
+ fish:new Set(["asparagus","beans","cucumber","greenbeans","slaw"]),
+ pulled_pork:new Set(["beans","cauli","mac","slaw","rolls"]),
+ whole_hog:new Set(["beans","collards","potatosalad","slaw","rolls"]),
+ brats:new Set(["kraut"]),
+ brisket:new Set(["beans","cauli","cucumber","greenbeans","mac","potatosalad","cornbread"]),
+ pmbe:new Set(["beans","cauli","corn","cucumber","mac","potatosalad","slaw","cornbread"]),
+ prime_rib:new Set(["asparagus","greenbeans","rolls"]),
+ ribs:new Set(["beans","corn","cucumber","greenbeans","potatosalad","slaw","cornbread","rolls"]),
+ turkey:new Set(["cauli","greenbeans","mac","potatosalad","rolls"]),
+ pork_belly_burnt_ends:new Set(["beans","cauli","cucumber","mac","potatosalad","slaw","cornbread"])
+});
+let sideRecommendation=id=>{for(const tag of selectedProteinTags())if(sideRecommendationMatrix[tag]?.has(id))return true;return false};
+
 const sides={
- mac:{name:"Mac & Cheese",group:"main",unit:"tin",base:.75,min:.25,sensitivity:.45,round:.25,fill:"nearly full",note:"Anchor favorite; planned leftover is useful."},
+ asparagus:{name:"Asparagus",group:"main",unit:"recipe",base:1,min:.5,sensitivity:.70,round:.25,fill:"recipe",note:"Grilled or smoked BBQ vegetable side."},
+ beans:{name:"Baked Beans",group:"main",unit:"tin",base:.50,min:.25,sensitivity:.90,round:.25,fill:"thumb clearance",note:"Deliberately restrained; Meatfest history shows chronic overproduction."},
+ broccoli:{name:"Broccoli Salad",group:"main",unit:"recipe",base:1,min:.5,sensitivity:.70,round:.25,fill:"recipe",note:"BBQ-style salad; one recipe has historically been about right."},
  cauli:{name:"Cauliflower Mac & Cheese",group:"main",unit:"tin",base:.75,min:.25,sensitivity:.70,round:.25,fill:"nearly full",note:"Perennial favorite; historically less total demand than regular Mac."},
  slaw:{name:"Coleslaw",group:"main",unit:"recipe",base:2.50,min:.5,sensitivity:.45,round:.5,fill:"recipe",note:"Anchor favorite; your 2024 double recipe ran out."},
  collards:{name:"Collard Greens",group:"main",unit:"recipe",base:1.25,min:.5,sensitivity:.70,round:.25,fill:"recipe",note:"Popular, but leftovers are intentionally limited because they do not reheat well."},
- broccoli:{name:"Broccoli Salad",group:"main",unit:"recipe",base:1,min:.5,sensitivity:.70,round:.25,fill:"recipe",note:"BBQ-style salad; one recipe has historically been about right."},
- cucumber:{name:"Cucumber Salad",group:"main",unit:"recipe",base:1,min:.5,sensitivity:.70,round:.25,fill:"recipe",note:"One recipe has historically been about right."},
- kraut:{name:"Sauerkraut",group:"main",unit:"tin",base:.50,min:.25,sensitivity:.90,round:.25,fill:"thumb clearance",note:"Strongly paired with Polish Brats; keep leftovers tight because it does not reheat well."},
- beans:{name:"Baked Beans",group:"main",unit:"tin",base:.50,min:.25,sensitivity:.90,round:.25,fill:"thumb clearance",note:"Deliberately restrained; Meatfest history shows chronic overproduction."},
  corn:{name:"Corn on the Cob",group:"unit",unit:"ear",base:7,min:4,sensitivity:.60,round:2,fill:"half-ear portions",note:"Served as half ears. Historical target is deliberately modest."},
+ cucumber:{name:"Cucumber Salad",group:"main",unit:"recipe",base:1,min:.5,sensitivity:.70,round:.25,fill:"recipe",note:"One recipe has historically been about right."},
+ greenbeans:{name:"Green Beans",group:"main",unit:"recipe",base:1,min:.5,sensitivity:.70,round:.25,fill:"recipe",note:"Grilled or smoked BBQ vegetable side."},
+ mac:{name:"Mac & Cheese",group:"main",unit:"tin",base:.75,min:.25,sensitivity:.45,round:.25,fill:"nearly full",note:"Anchor favorite; planned leftover is useful."},
+ pastasalad:{name:"Pasta Salad",group:"main",unit:"recipe",base:1.5,min:.5,sensitivity:.55,round:.5,fill:"recipe",note:"Classic cold BBQ side; practical make-ahead option."},
+ potatosalad:{name:"Potato Salad",group:"main",unit:"recipe",base:1.5,min:.5,sensitivity:.55,round:.5,fill:"recipe",note:"Classic BBQ side."},
+ kraut:{name:"Sauerkraut",group:"main",unit:"tin",base:.50,min:.25,sensitivity:.90,round:.25,fill:"thumb clearance",note:"Strongly paired with Polish Brats; keep leftovers tight because it does not reheat well."},
  cornbread:{name:"Cornbread",group:"accomp",unit:"piece",base:24,min:12,sensitivity:.20,round:6,fill:"mini cupcake",recipePieces:24,note:"BBQ accompaniment; traditional + gluten-free pieces can be mixed as needed."},
  rolls:{name:"Hawaiian Rolls",group:"accomp",unit:"piece",base:16,min:8,sensitivity:.10,round:8,fill:"piece",packagePieces:32,note:"Sandwich vehicle for pulled pork, pulled chicken and sliced brisket. Costco twin pack is 32 rolls."}
 };
 let selectedSides=new Set();
-const sideOrder=["mac","cauli","slaw","collards","broccoli","cucumber","kraut","beans","corn","cornbread","rolls"];
+const sideOrder=["asparagus","beans","broccoli","cauli","slaw","collards","corn","cucumber","greenbeans","mac","pastasalad","potatosalad","kraut","cornbread","rolls"];
 function sideProteinFactor(n){return ({1:1.20,2:1.15,3:1.10,4:1.05,5:1.00,6:.95,7:.92,8:.90})[Math.max(1,Math.min(8,n))]||.90}
 function sideVarietyFactor(n){return ({1:1.35,2:1.18,3:1.08,4:1.00,5:.97,6:.94,7:.92,8:.90})[Math.max(1,Math.min(8,n))]||.90}
-function niceFraction(x){
-  const whole=Math.floor(x+1e-8),frac=x-whole;
-  let f="";
-  if(Math.abs(frac-.25)<.03)f="¼";else if(Math.abs(frac-.5)<.03)f="½";else if(Math.abs(frac-.75)<.03)f="¾";
-  return whole?(f?`${whole}${f}`:`${Math.round(x*10)/10}`):(f||`${Math.round(x*10)/10}`);
-}
+function niceFraction(x){const whole=Math.floor(x+1e-8),frac=x-whole;let f="";if(Math.abs(frac-.25)<.03)f="¼";else if(Math.abs(frac-.5)<.03)f="½";else if(Math.abs(frac-.75)<.03)f="¾";return whole?(f?`${whole}${f}`:`${Math.round(x*10)/10}`):(f||`${Math.round(x*10)/10}`)}
 function roundUpTo(x,step){return Math.ceil((x-1e-9)/step)*step}
 function roundNearest(x,step){return Math.round(x/step)*step}
-function sideQty(id){
-  const s=sides[id],[adults,kids]=activeTotals(),eaters=adults+kids*.5;
-  if(!eaters)return 0;
-  const pFactor=sideProteinFactor(selected.size);
-  const nMain=Math.max(1,[...selectedSides].filter(x=>sides[x].group==="main").length);
-  const vFactor=sideVarietyFactor(nMain);
-  let q=s.base*(eaters/47)*pFactor*(1+(vFactor-1)*s.sensitivity);
-  if(planningMode==="family")q*=1.125;
-  if(id==="kraut"&&selected.has("brats"))q*=1.15;
-  if(id==="corn"&&selected.size>=4)q*=.90;
-  if(id==="rolls"){
-    const sandwichProtein=(selected.has("pork")?1:0)+(selected.has("chicken")?1:0)+(selected.has("brisket")?1:0);
-    q*=sandwichProtein?(0.65+0.12*Math.min(3,sandwichProtein)):.35;
-  }
-  if(id==="cornbread")q*=selected.size?(1+.06*Math.min(4,selected.size)):0;
-  if(planningMode==="family")q=Math.max(s.min,q);else if(s.unit==="tin"||s.unit==="recipe")q=Math.max(s.base,q);else q=Math.max(s.min,q);
-  if(s.unit==="tin")return roundNearest(q,s.round);
-  if(s.unit==="recipe")return roundUpTo(q,s.round);
-  if(s.unit==="ear")return Math.max(4,roundUpTo(q,2));
-  return Math.max(s.min,roundUpTo(q,s.round));
-}
-function sideBuyText(id,q){
-  const s=sides[id];
-  if(s.unit==="tin"){
-    if(q===.25)return "¼ tin";if(q===.5)return "½ tin";if(q===.75)return "¾ tin";if(q===1)return "1 full tin";
-    const full=Math.floor(q+1e-8),rem=Math.round((q-full)*4)/4,parts=[];
-    if(full)parts.push(`${full} full tin${full>1?"s":""}`);
-    if(rem===.25)parts.push("¼ tin");if(rem===.5)parts.push("½ tin");if(rem===.75)parts.push("¾ tin");
-    return parts.join(" + ");
-  }
-  if(s.unit==="recipe")return `${niceFraction(q)} recipe${q===1?"":"s"}`;
-  if(s.unit==="ear")return `${Math.round(q)} ear${q===1?"":"s"} (${Math.round(q*2)} half-ear pieces)`;
-  if(s.unit==="piece"){
-    if(id==="cornbread")return `${Math.round(q)} pieces • make ${Math.ceil(q/s.recipePieces)} recipe${Math.ceil(q/s.recipePieces)===1?"":"s"} (${s.recipePieces} pieces each)`;
-    const pk=Math.ceil(q/s.packagePieces);return `${Math.round(q)} pieces • buy ${pk} package${pk===1?"":"s"} (${s.packagePieces} each)`;
-  }
-  return `${Math.round(q)} ${s.unit}`;
-}
+function sideQty(id){const s=sides[id],[adults,kids]=activeTotals(),eaters=adults+kids*.5;if(!eaters)return 0;const pFactor=sideProteinFactor(selected.size),nMain=Math.max(1,[...selectedSides].filter(x=>sides[x].group==="main").length),vFactor=sideVarietyFactor(nMain);let q=s.base*(eaters/47)*pFactor*(1+(vFactor-1)*s.sensitivity);if(planningMode==="family")q*=1.125;if(id==="kraut"&&selected.has("brats"))q*=1.15;if(id==="corn"&&selected.size>=4)q*=.90;if(id==="rolls"){const sandwichProtein=(selected.has("pork")?1:0)+(selected.has("chicken")?1:0)+(selected.has("brisket")?1:0);q*=sandwichProtein?(0.65+0.12*Math.min(3,sandwichProtein)):.35}if(id==="cornbread")q*=selected.size?(1+.06*Math.min(4,selected.size)):0;if(planningMode==="family")q=Math.max(s.min,q);else if(s.unit==="tin"||s.unit==="recipe")q=Math.max(s.base,q);else q=Math.max(s.min,q);if(s.unit==="tin")return roundNearest(q,s.round);if(s.unit==="recipe")return roundUpTo(q,s.round);if(s.unit==="ear")return Math.max(4,roundUpTo(q,2));return Math.max(s.min,roundUpTo(q,s.round))}
+function sideBuyText(id,q){const s=sides[id];if(s.unit==="tin"){if(q===.25)return "¼ tin";if(q===.5)return "½ tin";if(q===.75)return "¾ tin";if(q===1)return "1 full tin";const full=Math.floor(q+1e-8),rem=Math.round((q-full)*4)/4,parts=[];if(full)parts.push(`${full} full tin${full>1?"s":""}`);if(rem===.25)parts.push("¼ tin");if(rem===.5)parts.push("½ tin");if(rem===.75)parts.push("¾ tin");return parts.join(" + ")}if(s.unit==="recipe")return `${niceFraction(q)} recipe${q===1?"":"s"}`;if(s.unit==="ear")return `${Math.round(q)} ear${q===1?"":"s"} (${Math.round(q*2)} half-ear pieces)`;if(s.unit==="piece"){if(id==="cornbread")return `${Math.round(q)} pieces • make ${Math.ceil(q/s.recipePieces)} recipe${Math.ceil(q/s.recipePieces)===1?"":"s"} (${s.recipePieces} pieces each)`;const pk=Math.ceil(q/s.packagePieces);return `${Math.round(q)} pieces • buy ${pk} package${pk===1?"":"s"} (${s.packagePieces} each)`}return `${Math.round(q)} ${s.unit}`}
 function sideDetails(id){const s=sides[id];return id==="rolls"||id==="corn"?s.note:`${s.note} Fill: ${s.fill}.`}
-function renderSideCards(){
-  const main=sideOrder.filter(id=>sides[id].group==="main"||sides[id].group==="unit"),accomp=sideOrder.filter(id=>sides[id].group==="accomp");
-  const card=id=>{const s=sides[id],on=selectedSides.has(id),rec=sideRecommendation(id);return `<div class="sideCard ${on?"on":""} ${rec?"recommended":""}" data-side="${id}"><div class="sideTop"><div><b>${s.name}</b>${rec?'<span class="sideRec">RECOMMENDED</span>':''}</div><span class="sideCheck"></span></div><small>${s.unit==="tin"?"Practical serving-pan unit":s.unit==="recipe"?"Prepared from your recipe":s.unit==="ear"?"Whole ears → half-ear servings":s.unit==="piece"?"Plan pieces → buy packages":"Practical serving unit"}</small></div>`};
-  $("mainSideCards").innerHTML=main.map(card).join("");$("accompSideCards").innerHTML=accomp.map(card).join("");
-  document.querySelectorAll("[data-side]").forEach(el=>el.onclick=()=>{const id=el.dataset.side;if(selectedSides.has(id))selectedSides.delete(id);else selectedSides.add(id);renderSideCards();calcSides();save()});
-}
-function calcSides(){
-  const box=$("sideResults");if(!box)return;
-  if(!selectedSides.size){box.innerHTML='<p class="note">Select any sides you want the calculator to plan. Recommended choices are highlighted above.</p>';return}
-  const rows=[...selectedSides].sort((a,b)=>sideOrder.indexOf(a)-sideOrder.indexOf(b)).map(id=>({id,q:sideQty(id)}));
-  box.innerHTML=rows.map(r=>{const s=sides[r.id];return `<div class="sideResult"><div class="resultTop"><div><div class="resultTitle">${s.name}</div><span class="pill">${s.unit==="tin"?"Tin":s.unit==="recipe"?"Recipe":s.unit==="ear"?"Ears":"Pieces"}</span>${sideRecommendation(r.id)?'<span class="pill">Recommended</span>':''}</div><div class="buy">${sideBuyText(r.id,r.q)}</div></div><div class="sideReason">${sideDetails(r.id)}</div></div>`}).join("");
-}
+function renderSideCards(){const main=sideOrder.filter(id=>sides[id].group==="main"||sides[id].group==="unit"),accomp=sideOrder.filter(id=>sides[id].group==="accomp");const card=id=>{const s=sides[id],on=selectedSides.has(id),rec=sideRecommendation(id);return `<div class="sideCard ${on?"on":""} ${rec?"recommended":""}" data-side="${id}"><div class="sideTop"><div><b>${s.name}</b>${rec?'<span class="sideRec">RECOMMENDED</span>':''}</div><span class="sideCheck"></span></div><small>${s.unit==="tin"?"Practical serving-pan unit":s.unit==="recipe"?"Prepared from your recipe":s.unit==="ear"?"Whole ears → half-ear servings":s.unit==="piece"?"Plan pieces → buy packages":"Practical serving unit"}</small></div>`};$("mainSideCards").innerHTML=main.map(card).join("");$("accompSideCards").innerHTML=accomp.map(card).join("");document.querySelectorAll("[data-side]").forEach(el=>el.onclick=()=>{const id=el.dataset.side;if(selectedSides.has(id))selectedSides.delete(id);else selectedSides.add(id);renderSideCards();calcSides();save()})}
+function calcSides(){const box=$("sideResults");if(!box)return;if(!selectedSides.size){box.innerHTML='<p class="note">Select any sides you want the calculator to plan. Recommended choices are highlighted above.</p>';return}const rows=[...selectedSides].sort((a,b)=>sideOrder.indexOf(a)-sideOrder.indexOf(b)).map(id=>({id,q:sideQty(id)}));box.innerHTML=rows.map(r=>{const s=sides[r.id];return `<div class="sideResult"><div class="resultTop"><div><div class="resultTitle">${s.name}</div><span class="pill">${s.unit==="tin"?"Tin":s.unit==="recipe"?"Recipe":s.unit==="ear"?"Ears":"Pieces"}</span>${sideRecommendation(r.id)?'<span class="pill">Recommended</span>':''}</div><div class="buy">${sideBuyText(r.id,r.q)}</div></div><div class="sideReason">${sideDetails(r.id)}</div></div>`}).join("")}
 
-const order=["chicken","fish","pork","hog","brats","brisket","pmbe","prime","ribs"];
+const order=["chicken","fish","pork","hog","brats","brisket","pmbe","pbbe","prime","ribs","turkey"];
 let selected=new Set();let choices={};let guests=[];let mode="manual";let planningMode="meatfest";
 order.forEach(k=>choices[k]=meats[k].default);
 const $=id=>document.getElementById(id);
