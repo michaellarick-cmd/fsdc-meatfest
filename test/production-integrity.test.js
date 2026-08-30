@@ -23,6 +23,12 @@ test('production UI contains the canonical side catalog and restored proteins', 
   assert.match(app, /sideOrder=\["asparagus","beans","broccoli","cauli","slaw","collards","corn","cucumber","greenbeans","mac","pastasalad","potatosalad","kraut","cornbread","rolls"\]/);
 });
 
+test('protein order is canonical for both selection and shopping-list output', () => {
+  assert.match(app, /const order=\["brisket","pmbe","ribs","pork","pbbe","brats","chicken","turkey","fish","prime","hog"\]/);
+  assert.match(app, /const visibleOrder=planningMode==="family"\?order\.filter/);
+  assert.match(presentation, /s\.rows\.map\(r=>/);
+});
+
 test('production presentation renders the meat shopping list', () => {
   assert.match(presentation, /const resultsBox = \$\("results"\)/);
   assert.match(presentation, /resultsBox\.innerHTML = rows\.length/);
