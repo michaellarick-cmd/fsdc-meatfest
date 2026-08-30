@@ -12,7 +12,6 @@ for(let i=bodyStart;i<source.length;i++){if(source[i]==='{')depth++;else if(sour
 assert.ok(end>bodyStart,'populatePrint body could not be isolated');
 const fnSource=source.slice(start,end).replace(/^window\.populatePrint=/,'globalThis.populatePrint=');
 
-const values={};
 const elements=new Proxy({}, {get:(target,id)=>target[id]||(target[id]={textContent:'',innerHTML:''})});
 const context={window:{buildSummary:()=>({adults:33,kids:12,eaters:39,rows:[{key:'brisket',m:{name:'Brisket'},option:{label:'Whole Packer',yield:.5},row:{raw:28,finished:14},buy:'BUY 1 whole packer (~28 lb)'}],sideRows:[{id:'slaw',q:3},{id:'rolls',q:16}],total:28})},eventDetails:()=>({name:'Labor Day Meatfest',display:'9/5/2026'}),$:(id)=>elements[id],sides:{slaw:{name:'Coleslaw'},rolls:{name:'Hawaiian Rolls'}},sideDetails:(id)=>id==='slaw'?'Anchor favorite.':'Sandwich vehicle.',sideBuyText:(id,q)=>id==='slaw'?`${q} recipes`:`${q} pieces`,Math};
 vm.createContext(context);
@@ -38,4 +37,10 @@ test('print builder handles an empty plan without throwing',()=>{
   assert.match(elements.psBuyRows.innerHTML,/No proteins selected/);
   assert.match(elements.psSides.innerHTML,/No sides selected/);
   assert.equal(elements.psTotal.textContent,'0 lb');
+});
+
+test('hero total is labeled as purchase weight, not raw requirement',()=>{
+  assert.match(source,/querySelector\(\\"\.hero \.small\\"\)/);
+  assert.match(source,/textContent=\\"TOTAL PURCHASE WEIGHT\\"/);
+  assert.doesNotMatch(source,/textContent=\\"TOTAL RAW MEAT TO BUY\\"/);
 });
