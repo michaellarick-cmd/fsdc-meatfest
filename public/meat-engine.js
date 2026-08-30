@@ -7,6 +7,10 @@
     pmbeYield: .60,
     porkYield: .60,
     chickenYield: .62,
+    chickenLegQuarterYield: .42,
+    chickenThighYield: .52,
+    fishYield: .76,
+    primeRibYield: .80,
     turkeyYield: .55,
     turkeyBreastYield: .65,
     turkeyLegYield: .45,
@@ -19,6 +23,12 @@
     porkLb: 17,
     chickenBirds: 4,
     chickenLb: 5,
+    chickenLegQuarterLb: .59375,
+    chickenThighLb: .25,
+    fishFiletLb: .33,
+    primeRibRoastLb: 5,
+    brisketFlatLb: 7,
+    porkBonelessLb: 8,
     turkeyLb: 14,
     turkeyBreastLb: 7,
     turkeyLegLb: .75,
@@ -94,13 +104,27 @@
       finished = raw * PORTIONS.bratYield;
     } else if (key === 'brisket' && choice.id === 'packer') {
       raw = ANCHORS.brisketLb * scale; units = 1; buyWeight = Math.max(14, raw); finished = raw * PORTIONS.brisketYield;
+    } else if (key === 'brisket' && choice.id === 'flat') {
+      const result = unitProteinRow(eaters * Number(serving), ANCHORS.brisketFlatLb, PORTIONS.brisketYield + .05);
+      return result;
     } else if (key === 'pmbe') {
       raw = ANCHORS.pmbeLb * scale; units = roundUp(raw, 4); buyWeight = units * 4; finished = raw * PORTIONS.pmbeYield;
+    } else if (key === 'pork' && choice.id === 'boneless') {
+      const result = unitProteinRow(eaters * Number(serving), ANCHORS.porkBonelessLb, PORTIONS.porkYield);
+      return result;
     } else if (key === 'pork') {
       raw = ANCHORS.porkLb * scale; units = roundUp(raw, 8.5); buyWeight = units * 8.5; finished = raw * PORTIONS.porkYield;
     } else if (key === 'chicken' && choice.unit === 'whole fryer') {
       const birdsNeeded = ANCHORS.chickenBirds * scale;
       units = roundUp(birdsNeeded, 1); buyWeight = units * ANCHORS.chickenLb; raw = birdsNeeded * ANCHORS.chickenLb; finished = raw * PORTIONS.chickenYield;
+    } else if (key === 'chicken' && choice.id === 'legq') {
+      return unitProteinRow(eaters * Number(serving), ANCHORS.chickenLegQuarterLb, PORTIONS.chickenLegQuarterYield);
+    } else if (key === 'chicken' && choice.id === 'thigh') {
+      return unitProteinRow(eaters * Number(serving), ANCHORS.chickenThighLb, PORTIONS.chickenThighYield);
+    } else if (key === 'fish') {
+      return unitProteinRow(eaters * Number(serving), ANCHORS.fishFiletLb, PORTIONS.fishYield);
+    } else if (key === 'prime') {
+      return unitProteinRow(eaters * Number(serving), ANCHORS.primeRibRoastLb, PORTIONS.primeRibYield);
     } else if (key === 'turkey') {
       const unitWeight = choice.id === 'breast' ? ANCHORS.turkeyBreastLb : choice.id === 'legs' ? ANCHORS.turkeyLegLb : ANCHORS.turkeyLb;
       const yieldRate = choice.id === 'breast' ? PORTIONS.turkeyBreastYield : choice.id === 'legs' ? PORTIONS.turkeyLegYield : PORTIONS.turkeyYield;
