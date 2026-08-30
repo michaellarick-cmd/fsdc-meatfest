@@ -9,10 +9,10 @@ const appStart=app.indexOf('function chickenPrep');
 const appEnd=app.indexOf('function renderSideCards');
 assert.ok(appStart>=0&&appEnd>appStart,'production side planner not found in app.js');
 const finalStart=final.indexOf('Object.assign(sides, {');
-const finalEnd=final.indexOf('\n\n  meats.turkey =');
-assert.ok(finalStart>=0&&finalEnd>finalStart,'production restored-side catalog not found in meatfest-final.js');
+const finalEnd=final.indexOf('  // Whole-hog preparation is a presentation choice');
+assert.ok(finalStart>=0&&finalEnd>finalStart,'production side integration not found in meatfest-final.js');
 
-const context={choices:{chicken:'whole'},selected:new Set(),selectedSides:new Set(),planningMode:'meatfest',activeTotals:()=>[48,0]};
+const context={choices:{chicken:'whole'},selected:new Set(),selectedSides:new Set(),planningMode:'meatfest',activeTotals:()=>[48,0],meats:{},order:[]};
 vm.createContext(context);
 vm.runInContext(`${app.slice(appStart,appEnd)}\n${final.slice(finalStart,finalEnd)}\nglobalThis.__sideTest={sides,sideOrder,sideQty,sideRecommendation};`,context);
 const {sides,sideOrder,sideQty,sideRecommendation}=context.__sideTest;

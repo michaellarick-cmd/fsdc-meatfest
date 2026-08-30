@@ -438,4 +438,4 @@ if(!localStorage.getItem("mf11")) $("serving").value=".333333";
 syncServingCards();
 renderMeats();
 renderSideCards();
-renderGuests();if(mode==="guest"){ $("manualTab").classList.remove("active");$("guestTab").classList.add("active");$("manualPane").classList.add("hidden");$("guestPane").classList.remove("hidden") }calc();
+renderGuests();if(mode==="guest"){ $("manualTab").classList.remove("active");$("guestTab").classList.add("active");$("manualPane").classList.add("hidden");$("guestPane").classList.remove("hidden") }
