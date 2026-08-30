@@ -44,6 +44,12 @@ test('production presentation renders the meat shopping list', () => {
   assert.match(presentation, /row\.finished/);
 });
 
+test('hero total is labeled as purchase weight, not raw meat to buy', () => {
+  assert.match(presentation, /const totalLabel=document\.querySelector\("\.hero \.small"\)/);
+  assert.match(presentation, /totalLabel\.textContent="TOTAL PURCHASE WEIGHT"/);
+  assert.match(presentation, /\$\("totalRaw"\)\.textContent=total\?/);
+});
+
 test('Family mode uses the isolated engine path', () => {
   assert.match(engine, /function familyRow\(/);
   assert.match(engine, /FAMILY_CUSHION/);
