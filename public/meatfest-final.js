@@ -1,7 +1,5 @@
 /* FSDC Meatfest — browser presentation layer for the shared MeatEngine. */
 (() => {
-  // Meatfest-specific presentation metadata belongs here as committed source.
-  // The Worker serves these assets unchanged; no request-time patching occurs.
   const printStyle = document.createElement("style");
   printStyle.media = "print";
   printStyle.textContent = `
@@ -30,7 +28,6 @@ body>*{display:none!important}
 #printSheet .ps-side-name{font-weight:800}
 #printSheet .ps-side-amount{font-weight:900;text-align:right;max-width:2.15in}
 #printSheet .ps-sides-note{font-size:7.5px;color:#000;margin-top:5px;line-height:1.2}
-/* Left column = meat; right column = sides. */
 #printSheet .ps-grid>div:nth-child(1) .ps-box:nth-child(1){grid-column:1;grid-row:1}
 #printSheet .ps-grid>div:nth-child(1) .ps-box:nth-child(2){grid-column:1;grid-row:2}
 #printSheet .ps-grid>div:nth-child(2) .ps-box:nth-child(1){grid-column:1;grid-row:3}
@@ -43,82 +40,50 @@ body>*{display:none!important}
   document.head.appendChild(printStyle);
 
   Object.assign(sides, {
-    greenbeans:{name:"Green Beans",group:"main",unit:"recipe",base:1.0,min:0.5,sensitivity:.70,round:.25,fill:"recipe",note:"Grilled or smoked BBQ vegetable side."},
-    potatosalad:{name:"Potato Salad",group:"main",unit:"recipe",base:1.5,min:0.5,sensitivity:.55,round:.5,fill:"recipe",note:"Classic BBQ side."},
-    asparagus:{name:"Asparagus",group:"main",unit:"recipe",base:1.0,min:0.5,sensitivity:.70,round:.25,fill:"recipe",note:"Grilled or smoked BBQ vegetable side."},
-    pastasalad:{name:"Pasta Salad",group:"main",unit:"recipe",base:1.5,min:0.5,sensitivity:.55,round:.5,fill:"recipe",note:"Classic cold BBQ side; practical make-ahead option."}
+    greenbeans:{name:"Green Beans",group:"main",unit:"recipe",base:1,min:.5,sensitivity:.70,round:.25,fill:"recipe",note:"Grilled or smoked BBQ vegetable side."},
+    potatosalad:{name:"Potato Salad",group:"main",unit:"recipe",base:1.5,min:.5,sensitivity:.55,round:.5,fill:"recipe",note:"Classic BBQ side."},
+    asparagus:{name:"Asparagus",group:"main",unit:"recipe",base:1,min:.5,sensitivity:.70,round:.25,fill:"recipe",note:"Grilled or smoked BBQ vegetable side."},
+    pastasalad:{name:"Pasta Salad",group:"main",unit:"recipe",base:1.5,min:.5,sensitivity:.55,round:.5,fill:"recipe",note:"Classic cold BBQ side; practical make-ahead option."}
   });
-  sideOrder.splice(0, sideOrder.length, "asparagus","beans","broccoli","cauli","collards","corn","cucumber","greenbeans","kraut","mac","pastasalad","potatosalad","slaw","cornbread","rolls");
+  sideOrder.splice(0,sideOrder.length,"asparagus","beans","broccoli","cauli","collards","corn","cucumber","greenbeans","kraut","mac","pastasalad","potatosalad","slaw","cornbread","rolls");
 
-  meats.turkey = {
-    name: "Turkey",
-    default: "whole",
-    options: {
-      whole: {label:"Whole Turkey",yield:.55,unitWeight:14,unit:"whole turkey",mode:"units"},
-      breast: {label:"Turkey Breast",yield:.65,unitWeight:7,unit:"turkey breast",mode:"units"},
-      legs: {label:"Turkey Legs",yield:.45,unitWeight:.75,unit:"turkey leg",mode:"units"}
-    }
-  };
-  if (!order.includes("turkey")) order.push("turkey");
-  if (!choices.turkey) choices.turkey = meats.turkey.default;
+  meats.turkey={name:"Turkey",default:"whole",options:{
+    whole:{label:"Whole Turkey",yield:.55,unitWeight:14,unit:"whole turkey",mode:"units"},
+    breast:{label:"Turkey Breast",yield:.65,unitWeight:7,unit:"turkey breast",mode:"units"},
+    legs:{label:"Turkey Legs",yield:.45,unitWeight:.75,unit:"turkey leg",mode:"units"}
+  }};
+  if(!order.includes("turkey"))order.push("turkey");
+  if(!choices.turkey)choices.turkey=meats.turkey.default;
 
-  function proteinTagsForRecommendations() {
-    const tags = new Set();
-    selected.forEach(key => {
-      if (key === "chicken") {
-        const prep = choices.chicken || meats.chicken.default;
-        if (prep === "whole") tags.add("chicken_pulled");
-        else if (prep === "legq") tags.add("chicken_quarters");
-        else if (prep === "thigh") tags.add("chicken_thighs");
-      } else if (key === "turkey") {
-        tags.add("chicken_pulled"); tags.add("chicken_quarters"); tags.add("chicken_thighs");
-      } else if (key === "fish") tags.add("fish");
-      else if (key === "pork") tags.add("pulled_pork");
-      else if (key === "brisket") tags.add("brisket");
-      else if (key === "pmbe") tags.add("pmbe");
-      else if (key === "brats") tags.add("brats");
-      else if (key === "ribs") tags.add("ribs");
-      else if (key === "prime") tags.add("prime_rib");
-      else if (key === "hog") tags.add("whole_hog");
-    });
-    return tags;
+  function proteinTagsForRecommendations(){
+    const tags=new Set();
+    selected.forEach(key=>{
+      if(key==="chicken"){
+        const prep=choices.chicken||meats.chicken.default;
+        if(prep==="whole")tags.add("chicken_pulled");else if(prep==="legq")tags.add("chicken_quarters");else if(prep==="thigh")tags.add("chicken_thighs");
+      }else if(key==="turkey"){tags.add("chicken_pulled");tags.add("chicken_quarters");tags.add("chicken_thighs");}
+      else if(key==="fish")tags.add("fish");else if(key==="pork")tags.add("pulled_pork");else if(key==="brisket")tags.add("brisket");else if(key==="pmbe")tags.add("pmbe");else if(key==="brats")tags.add("brats");else if(key==="ribs")tags.add("ribs");else if(key==="prime")tags.add("prime_rib");else if(key==="hog")tags.add("whole_hog");
+    });return tags;
   }
-
-  sideRecommendation = function (id) {
-    const active = proteinTagsForRecommendations();
-    const any = tags => tags.some(tag => active.has(tag));
-    switch (id) {
-      case "mac": return active.size > 0;
-      case "cauli": return any(["chicken_pulled","chicken_quarters","chicken_thighs","fish"]);
-      case "slaw": return any(["pulled_pork","brisket","pmbe","ribs","brats","chicken_pulled","chicken_quarters","chicken_thighs","fish"]);
-      case "collards": return any(["pulled_pork","brisket","pmbe","ribs"]);
-      case "broccoli": return any(["fish","chicken_pulled","chicken_quarters","chicken_thighs","pulled_pork","brisket","pmbe","ribs"]);
-      case "cucumber": return any(["fish","chicken_pulled","chicken_quarters","chicken_thighs"]);
-      case "kraut": return active.has("brats");
-      case "beans": return false;
-      case "corn": return any(["chicken_pulled","chicken_quarters","chicken_thighs","fish","pulled_pork","brisket","pmbe","ribs"]);
-      case "cornbread": return active.size > 0;
-      case "rolls": return any(["pulled_pork","chicken_pulled","brisket"]);
-      case "greenbeans": return active.has("prime_rib");
-      case "asparagus": return active.has("prime_rib");
-      case "potatosalad": return active.size > 0;
-      case "pastasalad": return active.size > 0;
-      default: return false;
+  sideRecommendation=function(id){
+    const active=proteinTagsForRecommendations(),any=tags=>tags.some(tag=>active.has(tag));
+    switch(id){
+      case "mac":return active.size>0;case "cauli":return any(["chicken_pulled","chicken_quarters","chicken_thighs","fish"]);case "slaw":return any(["pulled_pork","brisket","pmbe","ribs","brats","chicken_pulled","chicken_quarters","chicken_thighs","fish"]);case "collards":return any(["pulled_pork","brisket","pmbe","ribs"]);case "broccoli":return any(["fish","chicken_pulled","chicken_quarters","chicken_thighs","pulled_pork","brisket","pmbe","ribs"]);case "cucumber":return any(["fish","chicken_pulled","chicken_quarters","chicken_thighs"]);case "kraut":return active.has("brats");case "beans":return false;case "corn":return any(["chicken_pulled","chicken_quarters","chicken_thighs","fish","pulled_pork","brisket","pmbe","ribs"]);case "cornbread":return active.size>0;case "rolls":return any(["pulled_pork","chicken_pulled","brisket"]);case "greenbeans":return active.has("prime_rib");case "asparagus":return active.has("prime_rib");case "potatosalad":return active.size>0;case "pastasalad":return active.size>0;default:return false;
     }
   };
 
-  meats.hog.options = {
-    headfeet: {label:"Head & Feet On",yield:"hog",unitWeight:null,unit:"whole hog",mode:"hog",headFeet:"on",note:"Original Meatfest whole-hog model: hanging weight with head + feet on."},
-    headoff: {label:"Head & Feet Off",yield:"hog",unitWeight:null,unit:"whole hog",mode:"hog",headFeet:"off",note:"Hanging-weight target adjusted 7% lower for head + feet removed."}
+  meats.hog.options={
+    headfeet:{label:"Head & Feet On",yield:"hog",unitWeight:null,unit:"whole hog",mode:"hog",headFeet:"on",note:"Original Meatfest whole-hog model: hanging weight with head + feet on."},
+    headoff:{label:"Head & Feet Off",yield:"hog",unitWeight:null,unit:"whole hog",mode:"hog",headFeet:"off",note:"Hanging-weight target adjusted 7% lower for head + feet removed."}
   };
-  if (!meats.hog.options[choices.hog]) choices.hog="headfeet";
+  if(!meats.hog.options[choices.hog])choices.hog="headfeet";
 
   function activeEaters(){const [adults,kids]=activeTotals();return{adults,kids,eaters:adults+kids*.5};}
   function portion(){return Number($("serving").value)||MeatEngine.STANDARD_SERVING;}
 
   function rowFor(key,eaters){
     const m=meats[key],choiceId=choices[key]||m.default,option=m.options[choiceId];
-    const engine=planningMode==="family"?MeatEngine.familyRow:MeatEngine.canonicalRow;
+    const engine = planningMode === "family" ? MeatEngine.familyRow : MeatEngine.canonicalRow;
     const row=engine({key,eaters,serving:portion(),choice:{id:choiceId,unit:option?.unit,headFeet:option?.headFeet}});if(!row)return null;
     let buy,note=option?.note||"";const family=planningMode==="family";
     if(key==="hog"){
@@ -155,17 +120,20 @@ body>*{display:none!important}
     $("statAdults").textContent=t.adults;$("statKids").textContent=t.kids;$("statEaters").textContent=MeatEngine.round1(t.eaters);$("totalRaw").textContent=total?`${MeatEngine.round1(total)} lb`:"0 lb";
     $("summary").textContent=rows.length?`${rows.length} protein${rows.length>1?"s":""} • ${MeatEngine.round1(t.eaters)} adult-equivalent eaters${planningMode==="family"?" • 12.5% family cushion":""}`:"Select at least one protein.";
     const resultsBox = $("results");
-    if(resultsBox)resultsBox.innerHTML=rows.length?rows.map(({key,m,option,row,buy,note})=>{const excess=row.excess>.5?` • Planned excess: <span class="excess">${MeatEngine.round1(row.excess)} lb</span>`:"";const unit=key==="hog"?" • Purchase basis: hanging weight":(key!=="ribs"&&key!=="brats"&&option.mode==="units")?` • Planning unit: ${option.unitWeight} lb`:"";const yieldRate=key==="hog"?row.finished/row.raw:(typeof option.yield==="number"?option.yield:1);return `<div class="result"><div class="resultTop"><div><div class="resultTitle">${m.name}</div><span class="pill">${option.label}</span><span class="pill">${Math.round(yieldRate*100)}% yield</span></div><div class="buy">${buy||""}</div></div><div class="details">Finished meat needed: <b>${MeatEngine.round1(row.finished)} lb</b> • Raw/hanging requirement: <b>${MeatEngine.round1(row.raw)} lb</b>${unit}${planningMode==="family"?" • Family purchase model":""}${excess}</div>${note?`<div class="purchaseNote">${note}</div>`:""}</div>`}).join(""):"<p class='note'>Select at least one protein.</p>";
+    resultsBox.innerHTML = rows.length ? rows.map(({key,m,option,row,buy,note})=>{const excess=row.excess>.5?` • Planned excess: <span class="excess">${MeatEngine.round1(row.excess)} lb</span>`:"";const unit=key==="hog"?" • Purchase basis: hanging weight":(key!=="ribs"&&key!=="brats"&&option.mode==="units")?` • Planning unit: ${option.unitWeight} lb`:"";const yieldRate=key==="hog"?row.finished/row.raw:(typeof option.yield==="number"?option.yield:1);return `<div class="result"><div class="resultTop"><div><div class="resultTitle">${m.name}</div><span class="pill">${option.label}</span><span class="pill">${Math.round(yieldRate*100)}% yield</span></div><div class="buy">${buy||""}</div></div><div class="details">Finished meat needed: <b>${MeatEngine.round1(row.finished)} lb</b> • Raw/hanging requirement: <b>${MeatEngine.round1(row.raw)} lb</b>${unit}${planningMode==="family"?" • Family purchase model":""}${excess}</div>${note?`<div class="purchaseNote">${note}</div>`:""}</div>`}).join("") : "<p class='note'>Select at least one protein.</p>";
     calcSides();
   };
 
   window.buildSummary=function(){const t=activeEaters();const rows=[...selected].map(key=>rowFor(key,t.eaters)).filter(Boolean);return{adults:t.adults,kids:t.kids,eaters:t.eaters,rows,total:rows.reduce((s,r)=>s+r.row.buyWeight,0)}};
 
   window.populatePrint=function(){
-    const s=window.buildSummary(),ev=eventDetails();$("psTitle").textContent=ev.name.toUpperCase();$("psSub").textContent=`${ev.display}  |  ${s.rows.map(r=>r.m.name).join(" • ")}`;$("psAdults").textContent=s.adults;$("psKids").textContent=s.kids;$("psEaters").textContent=Math.round(s.eaters*10)/10;
+    const s=window.buildSummary(),ev=eventDetails();
+    $("psTitle").textContent=ev.name.toUpperCase();$("psSub").textContent=`${ev.display}  |  ${s.rows.map(r=>r.m.name).join(" • ")}`;
+    $("psAdults").textContent=s.adults;$("psKids").textContent=s.kids;$("psEaters").textContent=Math.round(s.eaters*10)/10;
     $("psProteins").innerHTML=s.rows.map(r=>`<span class="pill">${r.option.label}</span>`).join(" ");
     $("psSides").innerHTML=selectedSides.size?[...selectedSides].sort((a,b)=>sideOrder.indexOf(a)-sideOrder.indexOf(b)).map(id=>`<div class="ps-side-row"><span class="ps-side-name">${sides[id].name}</span><span class="ps-side-amount">${sideBuyText(id,sideQty(id))}</span></div>`).join(""):`<div class="ps-sides-note">No sides selected.</div>`;
-    $("psBuyRows").innerHTML=s.rows.map(r=>`<div class="ps-row"><div><div class="ps-name">${r.m.name}</div><div class="ps-detail">${r.option.label} • ${Math.round((r.key==="hog"?r.row.finished/r.row.raw:(typeof r.option.yield==="number"?r.option.yield:1))*100)}% yield • ${Math.round(r.row.raw*10)/10} lb raw</div></div><div class="ps-buy">${r.buy.replace(/^BUY /,"")}</div></div>`).join("");$("psTotal").textContent=`${Math.ceil(s.total*10)/10} lb`;return s;
+    $("psBuyRows").innerHTML=s.rows.map(r=>`<div class="ps-row"><div><div class="ps-name">${r.m.name}</div><div class="ps-detail">${r.option.label} • ${Math.round((r.key==="hog"?r.row.finished/r.row.raw:(typeof r.option.yield==="number"?r.option.yield:1))*100)}% yield • ${Math.round(r.row.raw*10)/10} lb raw</div></div><div class="ps-buy">${r.buy.replace(/^BUY /,"")}</div></div>`).join("");
+    $("psTotal").textContent=`${Math.ceil(s.total*10)/10} lb`;return s;
   };
 
   renderMeats();renderSideCards();window.calc();
