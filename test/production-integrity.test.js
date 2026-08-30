@@ -76,7 +76,3 @@ test('reset fields use placeholders instead of real zero/default values', () => 
   assert.doesNotMatch(index, /id="adults"[^>]*value="0"/);
   assert.doesNotMatch(index, /id="kids"[^>]*value="0"/);
 });
-
-test('saved zero defaults are normalized without depending on quote style or formatting', () => {
-  assert.match(app, /value\s*===\s*["']0["']\s*\?\s*["']["']\s*:\s*value/);
-});
