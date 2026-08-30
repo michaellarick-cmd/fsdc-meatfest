@@ -6,7 +6,7 @@
     section.dataset.sideCleanup = '1';
 
     const groups = section.querySelectorAll('.sideGroups > div');
-    if (groups[0]) groups[0].insertAdjacentHTML('beforebegin', '<div class="sideIntro"><div><b>Build the menu</b><span>Pick the sides you actually want to serve.</span></div><span class="sideLegend"><i></i> Recommended pairing</span>');
+    if (groups[0]) groups[0].insertAdjacentHTML('beforebegin', '<div class="sideIntro"><div><b>Build the menu</b><span>Pick the sides you actually want to serve.</span></div><span class="sideLegend"><i></i> Recommended pairing</span></div>');
 
     const titles = section.querySelectorAll('.sideGroupTitle');
     if (titles[0]) titles[0].innerHTML = 'SIDES';
@@ -14,27 +14,16 @@
 
     const refresh = () => {
       section.querySelectorAll('.sideCard').forEach(card => {
-        const name = card.querySelector('b');
-        const rec = card.querySelector('.sideRec');
         const small = card.querySelector('small');
-        if (rec) rec.textContent = 'RECOMMENDED';
-        if (small && !small.dataset.cleaned) {
-          small.dataset.cleaned = '1';
-          small.textContent = small.textContent.replace('Practical serving-pan unit', 'Serving-pan').replace('Prepared from your recipe', 'Recipe batch').replace('Whole ears → half-ear servings', 'Half-ear servings').replace('Plan pieces → buy packages', 'Pieces / packages').replace('Practical serving unit', 'Serving unit');
-        }
-        if (name) {
-          const title = name.textContent.trim();
-          if (name.getAttribute('title') !== title) name.setAttribute('title', title);
-        }
+        if (small && !small.dataset.cleaned) small.dataset.cleaned = '1';
       });
     };
 
     refresh();
 
-    // The side picker replaces its card contents with innerHTML when a
-    // selection changes, so childList observation is sufficient. Observing
-    // attributes here caused an infinite MutationObserver loop because
-    // refresh() itself updates the title attribute.
+    // renderSideCards() replaces card markup on selection. Observe only
+    // child-list changes and make refresh() attribute-only so this observer
+    // can never trigger itself.
     new MutationObserver(refresh).observe(section, {subtree:true, childList:true});
   };
 
