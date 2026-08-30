@@ -1,0 +1,3 @@
+# Keep the HTML shell and client-side application assets fresh.
+/*
+  Cache-Control: no-store
