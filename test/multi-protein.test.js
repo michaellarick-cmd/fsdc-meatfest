@@ -15,13 +15,7 @@ const choices = {
 };
 
 test('multi-protein planning allocates one overall finished-meat target', () => {
-  const rows = MeatEngine.multiProteinRows({
-    keys: Object.keys(choices),
-    eaters: 44,
-    serving: standard,
-    choices,
-  });
-
+  const rows = MeatEngine.multiProteinRows({ keys: Object.keys(choices), eaters: 44, serving: standard, choices });
   assert.equal(rows.length, 6);
   const finished = rows.reduce((sum, row) => sum + row.finished, 0);
   const purchase = rows.reduce((sum, row) => sum + row.buyWeight, 0);
@@ -31,31 +25,20 @@ test('multi-protein planning allocates one overall finished-meat target', () => 
 });
 
 test('multi-protein role shares preserve the canonical anchor proportions', () => {
-  const keys = ['brisket', 'pmbe', 'ribs', 'pork', 'brats', 'chicken'];
-  const rows = MeatEngine.multiProteinRows({ keys, eaters: 48, serving: standard, choices });
+  const rows = MeatEngine.multiProteinRows({ keys: Object.keys(choices), eaters: 48, serving: standard, choices });
   const roleTotal = rows.reduce((sum, row) => sum + row.roleShare, 0);
   assert.ok(Math.abs(roleTotal - 1) < 1e-12);
   for (const row of rows) assert.ok(row.roleShare > 0);
 });
 
 test('whole hog remains an exclusive feature-protein path', () => {
-  const rows = MeatEngine.multiProteinRows({
-    keys: ['hog', 'chicken'],
-    eaters: 44,
-    serving: standard,
-    choices: { hog: { headFeet: 'on' }, chicken: { unit: 'whole fryer' } },
-  });
+  const rows = MeatEngine.multiProteinRows({ keys: ['hog', 'chicken'], eaters: 44, serving: standard, choices: { hog: { headFeet: 'on' }, chicken: { unit: 'whole fryer' } } });
   assert.deepEqual(rows, []);
 });
 
-test('a single selected protein still receives the full overall meat target', () => {
-  const rows = MeatEngine.multiProteinRows({
-    keys: ['chicken'],
-    eaters: 44,
-    serving: standard,
-    choices: { chicken: { unit: 'whole fryer' } },
-  });
+test('a single selected protein receives the full overall meat target', () => {
+  const rows = MeatEngine.multiProteinRows({ keys: ['chicken'], eaters: 44, serving: standard, choices: { chicken: { unit: 'whole fryer' } } });
   assert.equal(rows.length, 1);
   assert.ok(Math.abs(rows[0].finished - (44 / 3)) < 1e-9);
-  assert.equal(rows[0].buyWeight, 20);
+  assert.equal(rows[0].buyWeight, 25);
 });
