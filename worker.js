@@ -16,7 +16,7 @@ export default {
         if (!js.includes(SIDES_MARKER)) {
           const sideDefinitions = `\n${SIDES_MARKER}\nsides.greenbeans={name:"Green Beans",group:"main",unit:"recipe",base:1.0,min:0.5,sensitivity:.70,round:.25,fill:"recipe",note:"Grilled or smoked BBQ vegetable side."};\nsides.potatosalad={name:"Potato Salad",group:"main",unit:"recipe",base:1.5,min:0.5,sensitivity:.55,round:.5,fill:"recipe",note:"Classic BBQ side."};\nsides.asparagus={name:"Asparagus",group:"main",unit:"recipe",base:1.0,min:0.5,sensitivity:.70,round:.25,fill:"recipe",note:"Grilled or smoked BBQ vegetable side."};\nsides.pastasalad={name:"Pasta Salad",group:"main",unit:"recipe",base:1.5,min:0.5,sensitivity:.55,round:.5,fill:"recipe",note:"Classic cold BBQ side; practical make-ahead option."};\n`;
           js = js.replace('};\nlet selectedSides=new Set();', '};' + sideDefinitions + 'let selectedSides=new Set();');
-          js = js.replace('const sideOrder=["mac","cauli","slaw","collards","broccoli","cucumber","kraut","beans","corn","cornbread","rolls"];', 'const sideOrder=["mac","cauli","slaw","collards","broccoli","cucumber","kraut","beans","greenbeans","potatosalad","asparagus","pastasalad","corn","cornbread","rolls"];');
+          js = js.replace('const sideOrder=["mac","cauli","slaw","collards","broccoli","cucumber","kraut","beans","corn","cornbread","rolls"];', 'const sideOrder=["asparagus","beans","broccoli","cauli","slaw","collards","corn","cucumber","greenbeans","mac","pastasalad","potatosalad","kraut","cornbread","rolls"];');
         }
         const headers = new Headers(response.headers);
         headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
