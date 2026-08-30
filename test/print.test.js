@@ -13,7 +13,13 @@ assert.ok(end>bodyStart,'populatePrint body could not be isolated');
 const fnSource=source.slice(start,end).replace(/^window\.populatePrint=/,'globalThis.populatePrint=');
 
 const elements=new Proxy({}, {get:(target,id)=>target[id]||(target[id]={textContent:'',innerHTML:''})});
-const context={window:{buildSummary:()=>({adults:33,kids:12,eaters:39,rows:[{key:'brisket',m:{name:'Brisket'},option:{label:'Whole Packer',yield:.5},row:{raw:28,finished:14},buy:'BUY 1 whole packer (~28 lb)'}],sideRows:[{id:'slaw',q:3},{id:'rolls',q:16}],total:28})},eventDetails:()=>({name:'Labor Day Meatfest',display:'9/5/2026'}),$:(id)=>elements[id],sides:{slaw:{name:'Coleslaw'},rolls:{name:'Hawaiian Rolls'}},sideDetails:(id)=>id==='slaw'?'Anchor favorite.':'Sandwich vehicle.',sideBuyText:(id,q)=>id==='slaw'?`${q} recipes`:`${q} pieces`,Math};
+const buildSummary=()=>({adults:33,kids:12,eaters:39,rows:[{key:'brisket',m:{name:'Brisket'},option:{label:'Whole Packer',yield:.5},row:{raw:28,finished:14},buy:'BUY 1 whole packer (~28 lb)'}],sideRows:[{id:'slaw',q:3},{id:'rolls',q:16}],total:28});
+const eventDetails=()=>({name:'Labor Day Meatfest',display:'9/5/2026'});
+const sides={slaw:{name:'Coleslaw'},rolls:{name:'Hawaiian Rolls'}};
+const sideDetails=(id)=>id==='slaw'?'Anchor favorite.':'Sandwich vehicle.';
+const sideBuyText=(id,q)=>id==='slaw'?`${q} recipes`:`${q} pieces`;
+const MeatEngine={round1:(x)=>Math.round((x+Number.EPSILON)*10)/10};
+const context={window:{buildSummary,eventDetails},buildSummary,eventDetails,sides,sideDetails,sideBuyText,MeatEngine,$:(id)=>elements[id],Math};
 vm.createContext(context);
 vm.runInContext(fnSource,context);
 
@@ -32,6 +38,7 @@ test('print builder populates event, attendee, protein, meat, sides, and total s
 
 test('print builder handles an empty plan without throwing',()=>{
   context.window.buildSummary=()=>({adults:0,kids:0,eaters:0,rows:[],sideRows:[],total:0});
+  context.buildSummary=context.window.buildSummary;
   context.populatePrint();
   assert.match(elements.psProteins.textContent,/No proteins selected/);
   assert.match(elements.psBuyRows.innerHTML,/No proteins selected/);
