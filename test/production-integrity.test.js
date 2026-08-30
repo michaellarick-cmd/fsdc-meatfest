@@ -44,7 +44,11 @@ test('production presentation renders the meat shopping list', () => {
   assert.match(presentation, /row\.finished/);
 });
 
-test('hero total is labeled as purchase weight, not raw meat to buy', () => {
+test('all purchase-weight totals use purchase-weight wording', () => {
+  assert.match(index, /<div class="small">TOTAL PURCHASE WEIGHT<\/div>/);
+  assert.match(index, /<span class="ps-totalLabel">TOTAL PURCHASE WEIGHT<\/span>/);
+  assert.doesNotMatch(index, /TOTAL RAW MEAT TO BUY/);
+  assert.doesNotMatch(index, /TOTAL RAW MEAT<\/span>/);
   assert.match(presentation, /const totalLabel=document\.querySelector\("\.hero \.small"\)/);
   assert.match(presentation, /totalLabel\.textContent="TOTAL PURCHASE WEIGHT"/);
   assert.match(presentation, /\$\("totalRaw"\)\.textContent=total\?/);
