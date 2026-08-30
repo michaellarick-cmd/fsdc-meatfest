@@ -55,11 +55,11 @@ export default {
 
     let html = await response.text();
 
-    // side-cleanup only polishes presentation; calculation/recommendation
-    // integration stays in app.js scope via the transform above.
-    html = html
-      .replace('</head>', '<link rel="stylesheet" href="/side-cleanup.css?v=2"></head>')
-      .replace('</body>', '<script src="/side-cleanup.js?v=2"></script></body>');
+    // The side picker is rendered directly by app.js. Do not inject a
+    // second presentation-layer script or MutationObserver into the DOM.
+    // That redundant observer caused repeated mutation work during every
+    // side selection and was the source of the runaway UI slowdown/reload.
+    html = html.replace('</head>', '<link rel="stylesheet" href="/side-cleanup.css?v=2"></head>');
 
     const headers = new Headers(response.headers);
     headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
