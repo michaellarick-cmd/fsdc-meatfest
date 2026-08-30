@@ -2,11 +2,34 @@
 (() => {
   const BASE_EATERS = 48;
   const STANDARD_SERVING = 1 / 3;
-  const PORTIONS = Object.freeze({ brisketYield: .50, pmbeYield: .60, porkYield: .60, chickenYield: .62, ribsYield: .70, bratYield: .90 });
+  const PORTIONS = Object.freeze({
+    brisketYield: .50,
+    pmbeYield: .60,
+    porkYield: .60,
+    chickenYield: .62,
+    turkeyYield: .55,
+    turkeyBreastYield: .65,
+    turkeyLegYield: .45,
+    ribsYield: .70,
+    bratYield: .90
+  });
   const ANCHORS = Object.freeze({
-    brisketLb: 19.5, pmbeLb: 16, porkLb: 17, chickenBirds: 4, chickenLb: 5,
-    ribsRacks: 5, ribsPerRack: 11, ribRackLb: 2.25, ribsTakeRate: .60,
-    ribsPerTaker: 1.75, bratLinks: 8, bratLinkLb: .5, bratsPerEater: 1/6,
+    brisketLb: 19.5,
+    pmbeLb: 16,
+    porkLb: 17,
+    chickenBirds: 4,
+    chickenLb: 5,
+    turkeyLb: 14,
+    turkeyBreastLb: 7,
+    turkeyLegLb: .75,
+    ribsRacks: 5,
+    ribsPerRack: 11,
+    ribRackLb: 2.25,
+    ribsTakeRate: .60,
+    ribsPerTaker: 1.75,
+    bratLinks: 8,
+    bratLinkLb: .5,
+    bratsPerEater: 1 / 6,
     wholeHogHeadFeetOffFactor: .93,
     wholeHogYieldCurve: Object.freeze([[41.6667,.40],[55.5556,.45],[66.6667,.50],[100,.55],[150,.60]])
   });
@@ -25,12 +48,10 @@
   }
 
   function wholeHogPlan(finishedMeat, headFeet = 'on') {
-    // The production Meatfest curve is intentionally defined from hanging
-    // weight, never live weight. It preserves the original Meatfest model:
-    // yield improves as hog size increases. The original anchors were based
-    // on head + feet on. For head + feet off, use a transparent 7% reduction
-    // to the required hanging weight, the midpoint of published head/feet
-    // contribution ranges used in our validation research.
+    // The production Meatfest curve is defined from hanging weight, never
+    // live weight. It preserves the original head + feet-on model. For head
+    // + feet off, the validated planning adjustment reduces the required
+    // hanging weight by 7%.
     let onWeight = Math.max(0.1, finishedMeat / .50);
     for (let i = 0; i < 40; i++) {
       const next = finishedMeat / wholeHogYield(onWeight);
@@ -40,6 +61,13 @@
     const factor = headFeet === 'off' ? ANCHORS.wholeHogHeadFeetOffFactor : 1;
     const hangingWeight = onWeight * factor;
     return { hangingWeight, yield: finishedMeat / hangingWeight, headFeet };
+  }
+
+  function unitProteinRow(finished, unitWeight, yieldRate) {
+    const raw = finished / yieldRate;
+    const units = roundUp(raw, unitWeight);
+    const buyWeight = units * unitWeight;
+    return { raw, finished: raw * yieldRate, units, buyWeight, excess: Math.max(0, buyWeight - raw) };
   }
 
   function canonicalRow({ key, eaters, serving = STANDARD_SERVING, choice = {} }) {
@@ -73,6 +101,11 @@
     } else if (key === 'chicken' && choice.unit === 'whole fryer') {
       const birdsNeeded = ANCHORS.chickenBirds * scale;
       units = roundUp(birdsNeeded, 1); buyWeight = units * ANCHORS.chickenLb; raw = birdsNeeded * ANCHORS.chickenLb; finished = raw * PORTIONS.chickenYield;
+    } else if (key === 'turkey') {
+      const unitWeight = choice.id === 'breast' ? ANCHORS.turkeyBreastLb : choice.id === 'legs' ? ANCHORS.turkeyLegLb : ANCHORS.turkeyLb;
+      const yieldRate = choice.id === 'breast' ? PORTIONS.turkeyBreastYield : choice.id === 'legs' ? PORTIONS.turkeyLegYield : PORTIONS.turkeyYield;
+      const result = unitProteinRow(eaters * Number(serving), unitWeight, yieldRate);
+      return result;
     } else return null;
     return { raw, finished, units, buyWeight, excess: Math.max(0, buyWeight - raw) };
   }
