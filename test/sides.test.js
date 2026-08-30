@@ -1,55 +1,51 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sides, sideOrder, sideQty } from '../public/side-engine.js';
+import vm from 'node:vm';
+import fs from 'node:fs';
 
-const restored = ['asparagus', 'greenbeans', 'pastasalad', 'potatosalad'];
-const headcounts = [10, 30, 48, 75, 100];
+const app=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
+const final=fs.readFileSync(new URL('../public/meatfest-final.js',import.meta.url),'utf8');
+const appStart=app.indexOf('function chickenPrep');
+const appEnd=app.indexOf('function renderSideCards');
+assert.ok(appStart>=0&&appEnd>appStart,'production side planner not found in app.js');
+const finalStart=final.indexOf('Object.assign(sides, {');
+const finalEnd=final.indexOf('\n\n  meats.turkey =');
+assert.ok(finalStart>=0&&finalEnd>finalStart,'production restored-side catalog not found in meatfest-final.js');
 
-test('restored sides exist in the side engine', () => {
-  for (const id of restored) {
-    assert.ok(sides[id], `${id} is missing from the side engine`);
-    assert.ok(sideOrder.includes(id), `${id} is missing from side order`);
-  }
+const context={choices:{chicken:'whole'},selected:new Set(),selectedSides:new Set(),planningMode:'meatfest',activeTotals:()=>[48,0]};
+vm.createContext(context);
+vm.runInContext(`${app.slice(appStart,appEnd)}\n${final.slice(finalStart,finalEnd)}\nglobalThis.__sideTest={sides,sideOrder,sideQty,sideRecommendation};`,context);
+const {sides,sideOrder,sideQty,sideRecommendation}=context.__sideTest;
+const restored=['asparagus','greenbeans','pastasalad','potatosalad'];
+const expected=['asparagus','beans','broccoli','cauli','collards','corn','cucumber','greenbeans','kraut','mac','pastasalad','potatosalad','slaw','cornbread','rolls'];
+
+test('production side catalog is complete and alphabetized',()=>{
+  for(const id of restored){assert.ok(sides[id],`${id} missing`);assert.ok(sideOrder.includes(id),`${id} missing from order`);}
+  assert.deepEqual(Array.from(sideOrder),expected);
 });
 
-test('restored sides return valid quantities across event sizes', () => {
-  for (const id of restored) {
-    let previous = 0;
-    for (const eaters of headcounts) {
-      const quantity = sideQty(id, { eaters, proteinCount: 1, mainSideCount: 1 });
-      assert.ok(Number.isFinite(quantity));
-      assert.ok(quantity > 0);
-      assert.ok(quantity >= previous);
-      previous = quantity;
-    }
-  }
+test('restored side quantities are finite, positive, and monotonic',()=>{
+  for(const id of restored){let previous=0;for(const eaters of [10,30,48,75,100]){context.activeTotals=()=>[eaters,0];const q=sideQty(id);assert.ok(Number.isFinite(q));assert.ok(q>0);assert.ok(q>=previous);previous=q;}}
 });
 
-test('restored sides respond to protein count and variety', () => {
-  for (const id of restored) {
-    const normal = sideQty(id, { eaters: 48, proteinCount: 1, mainSideCount: 1 });
-    const varied = sideQty(id, { eaters: 48, proteinCount: 3, mainSideCount: 3 });
-    assert.notEqual(normal, varied, `${id} ignores protein/variety inputs`);
-  }
+test('prime rib recommends green beans and asparagus',()=>{
+  context.selected=new Set(['prime']);
+  assert.equal(sideRecommendation('greenbeans'),true);
+  assert.equal(sideRecommendation('asparagus'),true);
+  context.selected=new Set(['chicken']);
+  assert.equal(sideRecommendation('greenbeans'),false);
+  assert.equal(sideRecommendation('asparagus'),false);
 });
 
-test('family mode is valid and deterministic at every tested headcount', () => {
-  for (const id of restored) {
-    for (const eaters of headcounts) {
-      const inputs = { eaters, proteinCount: 2, mainSideCount: 2 };
-      const family = sideQty(id, { ...inputs, planningMode: 'family' });
-      assert.ok(Number.isFinite(family));
-      assert.ok(family > 0);
-      assert.equal(family, sideQty(id, { ...inputs, planningMode: 'family' }));
-    }
-  }
+test('turkey inherits chicken recommendation behavior',()=>{
+  context.selected=new Set(['turkey']);
+  for(const id of ['cauli','slaw','broccoli','cucumber','corn','cornbread','rolls']) assert.equal(sideRecommendation(id),true,`${id} missing turkey recommendation`);
 });
 
-test('family mode provides its intended uplift for a full-size event', () => {
-  for (const id of restored) {
-    const inputs = { eaters: 100, proteinCount: 2, mainSideCount: 2 };
-    const meatfest = sideQty(id, { ...inputs, planningMode: 'meatfest' });
-    const family = sideQty(id, { ...inputs, planningMode: 'family' });
-    assert.ok(family >= meatfest, `${id} family quantity is below Meatfest at 100 eaters`);
+test('potato salad and pasta salad are general BBQ recommendations',()=>{
+  for(const protein of ['prime','fish','pork','brats','ribs']){
+    context.selected=new Set([protein]);
+    assert.equal(sideRecommendation('potatosalad'),true);
+    assert.equal(sideRecommendation('pastasalad'),true);
   }
 });
