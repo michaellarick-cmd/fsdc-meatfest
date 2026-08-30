@@ -131,7 +131,34 @@ test('brats use one half-pound link per six adult-equivalent eaters', () => {
   close(result.buyWeight, 4);
 });
 
+test('prime rib has a production shopping row', () => {
+  const result = row('prime', 50, standard, { id: 'whole', unit: 'roast' });
+  close(result.raw, 20.833333333333332);
+  close(result.finished, 16.666666666666668);
+  assert.equal(result.units, 5);
+  assert.equal(result.buyWeight, 25);
+});
+
+test('fish, poultry cuts, brisket flat, and boneless pork have production shopping rows', () => {
+  const cases = [
+    ['fish', { unit: 'filet' }, .33, .76],
+    ['chicken', { id: 'legq', unit: 'leg quarter' }, .59375, .42],
+    ['chicken', { id: 'thigh', unit: 'thigh' }, .25, .52],
+    ['brisket', { id: 'flat', unit: 'flat' }, 7, .55],
+    ['pork', { id: 'boneless', unit: 'boneless shoulder' }, 8, .60],
+  ];
+  for (const [key, choice, unitWeight, yieldRate] of cases) {
+    const result = row(key, 48, standard, choice);
+    assert.ok(result, `${key} returned no row`);
+    assert.ok(Number.isFinite(result.raw));
+    assert.ok(Number.isFinite(result.buyWeight));
+    assert.ok(result.units >= 1);
+    close(result.finished, 16, 1e-8);
+    close(result.raw * yieldRate, result.finished, 1e-8);
+    assert.equal(result.buyWeight, result.units * unitWeight);
+  }
+});
+
 test('unsupported selections return no calculation row', () => {
   assert.equal(row('not-a-protein', 48), null);
-  assert.equal(row('chicken', 48), null);
 });
