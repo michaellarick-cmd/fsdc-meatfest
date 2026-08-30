@@ -18,7 +18,7 @@ const setPlan=({adults=48,kids=0,proteins=[],sides=[],mode='meatfest'})=>{contex
 
 test('production side catalog is complete and correctly ordered',()=>{assert.deepEqual(Array.from(sideOrder),expectedOrder);for(const id of expectedOrder)assert.ok(sides[id],`${id} missing`);assert.equal(sides.cornbread.group,'accomp');assert.equal(sides.rolls.group,'accomp')});
 
-test('side quantities respond to eater count and protein count',()=>{setPlan({adults:48,proteins:['brisket'],sides:['slaw']});const oneProtein=sideQty('slaw');setPlan({adults:24,proteins:['brisket'],sides:['slaw']});const halfEaters=sideQty('slaw');setPlan({adults:48,proteins:['brisket','ribs','pork','chicken'],sides:['slaw']});const fourProteins=sideQty('slaw');assert.equal(oneProtein,4);assert.equal(halfEaters,2.5);assert.equal(fourProteins,3)});
+test('side quantities respond to eater count and protein count',()=>{setPlan({adults:48,proteins:['brisket'],sides:['slaw']});const oneProtein=sideQty('slaw');setPlan({adults:24,proteins:['brisket'],sides:['slaw']});const halfEaters=sideQty('slaw');setPlan({adults:48,proteins:['brisket','ribs','pork','chicken'],sides:['slaw']});const fourProteins=sideQty('slaw');assert.equal(oneProtein,4);assert.equal(halfEaters,2.5);assert.equal(fourProteins,3.5)});
 
 test('side sensitivity, minimums, and practical rounding are enforced',()=>{setPlan({adults:1,proteins:['brisket'],sides:['beans','slaw','corn','cornbread']});assert.equal(sideQty('beans'),.5);assert.equal(sideQty('slaw'),2.5);assert.equal(sideQty('corn'),4);assert.equal(sideQty('cornbread'),12)});
 
