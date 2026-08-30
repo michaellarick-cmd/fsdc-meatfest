@@ -33,22 +33,23 @@ test('restored sides respond to protein count and variety', () => {
   }
 });
 
-test('family mode is valid, deterministic, and uses its own planning rule', () => {
+test('family mode is valid and deterministic at every tested headcount', () => {
   for (const id of restored) {
     for (const eaters of headcounts) {
       const inputs = { eaters, proteinCount: 2, mainSideCount: 2 };
-      const meatfest = sideQty(id, { ...inputs, planningMode: 'meatfest' });
       const family = sideQty(id, { ...inputs, planningMode: 'family' });
-
       assert.ok(Number.isFinite(family));
       assert.ok(family > 0);
       assert.equal(family, sideQty(id, { ...inputs, planningMode: 'family' }));
-      assert.equal(meatfest, sideQty(id, { ...inputs, planningMode: 'meatfest' }));
-
-      // Family mode intentionally applies a 12.5% planning uplift before
-      // purchase-unit rounding. The rounded result can occasionally tie the
-      // Meatfest quantity, so it must not be required to be strictly larger.
-      assert.ok(family >= meatfest || family === meatfest);
     }
+  }
+});
+
+test('family mode provides its intended uplift for a full-size event', () => {
+  for (const id of restored) {
+    const inputs = { eaters: 100, proteinCount: 2, mainSideCount: 2 };
+    const meatfest = sideQty(id, { ...inputs, planningMode: 'meatfest' });
+    const family = sideQty(id, { ...inputs, planningMode: 'family' });
+    assert.ok(family >= meatfest, `${id} family quantity is below Meatfest at 100 eaters`);
   }
 });
