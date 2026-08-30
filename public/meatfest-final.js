@@ -39,14 +39,17 @@ body>*{display:none!important}
   `;
   document.head.appendChild(printStyle);
 
-  Object.assign(sides, {
-    greenbeans:{name:"Green Beans",group:"main",unit:"recipe",base:1,min:.5,sensitivity:.70,round:.25,fill:"recipe",note:"Grilled or smoked BBQ vegetable side."},
-    potatosalad:{name:"Potato Salad",group:"main",unit:"recipe",base:1.5,min:.5,sensitivity:.55,round:.5,fill:"recipe",note:"Classic BBQ side."},
-    asparagus:{name:"Asparagus",group:"main",unit:"recipe",base:1,min:.5,sensitivity:.70,round:.25,fill:"recipe",note:"Grilled or smoked BBQ vegetable side."},
-    pastasalad:{name:"Pasta Salad",group:"main",unit:"recipe",base:1.5,min:.5,sensitivity:.55,round:.5,fill:"recipe",note:"Classic cold BBQ side; practical make-ahead option."}
-  });
-  sideOrder.splice(0,sideOrder.length,"asparagus","beans","broccoli","cauli","collards","corn","cucumber","greenbeans","kraut","mac","pastasalad","potatosalad","slaw","cornbread","rolls");
+  /* Canonical side presentation order: main sides are alphabetical; accompaniments stay separate. */
+  sideOrder.splice(0,sideOrder.length,"asparagus","beans","broccoli","cauli","slaw","collards","corn","cucumber","greenbeans","mac","pastasalad","potatosalad","kraut","cornbread","rolls");
 
+  Object.assign(sides, {
+    asparagus:{name:"Asparagus",group:"main",unit:"recipe",base:1,min:.5,sensitivity:.70,round:.25,fill:"recipe",note:"Grilled or smoked BBQ vegetable side."},
+    greenbeans:{name:"Green Beans",group:"main",unit:"recipe",base:1,min:.5,sensitivity:.70,round:.25,fill:"recipe",note:"Grilled or smoked BBQ vegetable side."},
+    pastasalad:{name:"Pasta Salad",group:"main",unit:"recipe",base:1.5,min:.5,sensitivity:.55,round:.5,fill:"recipe",note:"Classic cold BBQ side; practical make-ahead option."},
+    potatosalad:{name:"Potato Salad",group:"main",unit:"recipe",base:1.5,min:.5,sensitivity:.55,round:.5,fill:"recipe",note:"Classic BBQ side."}
+  });
+
+  /* Turkey is selectable in the current app; retain its dedicated planning model here. */
   meats.turkey={name:"Turkey",default:"whole",options:{
     whole:{label:"Whole Turkey",yield:.55,unitWeight:14,unit:"whole turkey",mode:"units"},
     breast:{label:"Turkey Breast",yield:.65,unitWeight:7,unit:"turkey breast",mode:"units"},
@@ -55,20 +58,50 @@ body>*{display:none!important}
   if(!order.includes("turkey"))order.push("turkey");
   if(!choices.turkey)choices.turkey=meats.turkey.default;
 
+  /* Pork Belly Burnt Ends are a distinct selectable protein, not an alias for PMBE. */
+  meats.pbbe={name:"Pork Belly Burnt Ends",default:"belly",options:{
+    belly:{label:"Pork Belly Burnt Ends",yield:.65,unitWeight:5,unit:"pork belly",mode:"units",note:"Planning unit: 5 lb pork belly."}
+  }};
+  if(!order.includes("pbbe"))order.splice(Math.max(0,order.indexOf("prime")),0,"pbbe");
+  if(!choices.pbbe)choices.pbbe=meats.pbbe.default;
+
   function proteinTagsForRecommendations(){
     const tags=new Set();
     selected.forEach(key=>{
       if(key==="chicken"){
         const prep=choices.chicken||meats.chicken.default;
         if(prep==="whole")tags.add("chicken_pulled");else if(prep==="legq")tags.add("chicken_quarters");else if(prep==="thigh")tags.add("chicken_thighs");
-      }else if(key==="turkey"){tags.add("chicken_pulled");tags.add("chicken_quarters");tags.add("chicken_thighs");}
-      else if(key==="fish")tags.add("fish");else if(key==="pork")tags.add("pulled_pork");else if(key==="brisket")tags.add("brisket");else if(key==="pmbe")tags.add("pmbe");else if(key==="brats")tags.add("brats");else if(key==="ribs")tags.add("ribs");else if(key==="prime")tags.add("prime_rib");else if(key==="hog")tags.add("whole_hog");
-    });return tags;
+      }else if(key==="turkey")tags.add("turkey");
+      else if(key==="fish")tags.add("fish");else if(key==="pork")tags.add("pulled_pork");else if(key==="hog")tags.add("whole_hog");else if(key==="brats")tags.add("brats");else if(key==="brisket")tags.add("brisket");else if(key==="pmbe")tags.add("pmbe");else if(key==="prime")tags.add("prime_rib");else if(key==="ribs")tags.add("ribs");else if(key==="pbbe")tags.add("pork_belly_burnt_ends");
+    });
+    return tags;
   }
+
+  /*
+   * Recommendation matrix supplied by Meatfest.
+   * An X means RECOMMENDED only; it never changes side quantities or prevents selection.
+   * With multiple proteins, a side is recommended when any selected protein has an X.
+   */
   sideRecommendation = function(id){
-    const active=proteinTagsForRecommendations(),any=tags=>tags.some(tag=>active.has(tag));
+    const active=proteinTagsForRecommendations();
+    const any=tags=>tags.some(tag=>active.has(tag));
     switch(id){
-      case "mac":return active.size>0;case "cauli":return any(["chicken_pulled","chicken_quarters","chicken_thighs","fish"]);case "slaw":return any(["pulled_pork","brisket","pmbe","ribs","brats","chicken_pulled","chicken_quarters","chicken_thighs","fish"]);case "collards":return any(["pulled_pork","brisket","pmbe","ribs"]);case "broccoli":return any(["fish","chicken_pulled","chicken_quarters","chicken_thighs","pulled_pork","brisket","pmbe","ribs"]);case "cucumber":return any(["fish","chicken_pulled","chicken_quarters","chicken_thighs"]);case "kraut":return active.has("brats");case "beans":return false;case "corn":return any(["chicken_pulled","chicken_quarters","chicken_thighs","fish","pulled_pork","brisket","pmbe","ribs"]);case "cornbread":return active.size>0;case "rolls":return any(["pulled_pork","chicken_pulled","brisket"]);case "greenbeans":return active.has("prime_rib");case "asparagus":return active.has("prime_rib");case "potatosalad":return active.size>0;case "pastasalad":return active.size>0;default:return false;
+      case "asparagus":return any(["fish","prime_rib"]);
+      case "beans":return any(["chicken_pulled","chicken_quarters","chicken_thighs","fish","pulled_pork","whole_hog","brisket","pmbe","ribs","pork_belly_burnt_ends"]);
+      case "broccoli":return false;
+      case "cauli":return any(["chicken_pulled","chicken_quarters","chicken_thighs","pulled_pork","brisket","pmbe","turkey","pork_belly_burnt_ends"]);
+      case "slaw":return any(["chicken_pulled","chicken_quarters","chicken_thighs","fish","pulled_pork","whole_hog","pmbe","ribs","turkey","pork_belly_burnt_ends"]);
+      case "collards":return active.has("whole_hog");
+      case "corn":return any(["chicken_pulled","chicken_quarters","chicken_thighs","pmbe","ribs"]);
+      case "cucumber":return any(["chicken_pulled","chicken_quarters","chicken_thighs","fish","brisket","pmbe","ribs","pork_belly_burnt_ends"]);
+      case "greenbeans":return any(["chicken_pulled","chicken_quarters","chicken_thighs","fish","brisket","prime_rib","ribs","turkey"]);
+      case "kraut":return active.has("brats");
+      case "mac":return any(["chicken_pulled","chicken_quarters","chicken_thighs","pulled_pork","brisket","pmbe","turkey","pork_belly_burnt_ends"]);
+      case "pastasalad":return active.has("prime_rib");
+      case "potatosalad":return any(["chicken_pulled","chicken_quarters","chicken_thighs","whole_hog","brisket","pmbe","ribs","turkey","pork_belly_burnt_ends"]);
+      case "cornbread":return any(["chicken_pulled","chicken_quarters","chicken_thighs","brisket","pmbe","ribs","turkey"]);
+      case "rolls":return any(["pulled_pork","whole_hog","prime_rib","ribs","turkey"]);
+      default:return false;
     }
   };
 
@@ -100,6 +133,9 @@ body>*{display:none!important}
       else{buy=`BUY ${row.units} brisket flat${row.units===1?"":"s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;note="Brisket-flat planning uses the established 55% cooked-yield assumption and 7-lb purchase unit.";}
     }else if(key==="pmbe"){
       buy=family?`ASK FOR ~${MeatEngine.round1(row.buyWeight)} lb chuck roast`:`BUY ${row.units} chuck roast${row.units===1?"":"s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;note=family?"Family mode uses a small chuck roast and applies the family meat cushion before purchase rounding.":"Meatfest PMBE anchor: four 4-lb chuck roasts at 48 adult-equivalent eaters.";
+    }else if(key==="pbbe"){
+      buy=family?`ASK FOR ~${MeatEngine.round1(row.buyWeight)} lb pork belly`:`BUY ${row.units} pork belly${row.units===1?"":"s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
+      note=family?"Family mode uses a practical small-batch pork belly purchase after applying the family meat cushion.":"Pork Belly Burnt Ends are planned as a distinct protein using a 5-lb pork belly purchase unit and the established 65% planning yield.";
     }else if(key==="pork"){
       buy=family?`ASK FOR ~${MeatEngine.round1(row.buyWeight)} lb ${choiceId==="boneless"?"boneless pork shoulder":"pork butt"}`:`BUY ${row.units} ${choiceId==="boneless"?"boneless pork shoulder":"bone-in butt"}${row.units===1?"":"s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
       note=family?"Family mode uses a butcher-friendly small shoulder after applying the family meat cushion.":choiceId==="boneless"?"Boneless pork shoulder uses the established 60% cooked-yield assumption and 8-lb purchase unit.":"Meatfest pulled-pork anchor: two 8.5-lb bone-in butts at 48 adult-equivalent eaters.";
@@ -110,7 +146,7 @@ body>*{display:none!important}
     }else if(key==="prime"){
       buy=family?`ASK FOR ~${MeatEngine.round1(row.buyWeight)} lb ${choiceId==="bone"?"bone-in standing rib roast":"prime rib roast"}`:`BUY ${row.units} ${choiceId==="bone"?"bone-in roast":"roast"}${row.units===1?"":"s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;note=family?"Family mode uses a butcher-friendly small roast after applying the family meat cushion.":"Prime rib planning uses an 80% cooked-yield assumption and a 5-lb roast purchase unit.";
     }else if(key==="turkey"){
-      buy=`BUY ${row.units} ${option.unit}${row.units===1?"":"s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;note="Turkey uses a dedicated yield and purchase-unit model; side recommendations follow the chicken/poultry pairing set.";
+      buy=`BUY ${row.units} ${option.unit}${row.units===1?"":"s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;note="Turkey uses a dedicated yield and purchase-unit model.";
     }
     return{key,m,option,row,buy,note};
   }
