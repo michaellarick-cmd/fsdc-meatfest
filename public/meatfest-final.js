@@ -121,17 +121,32 @@
       buy = `BUY ${row.units} half-lb link${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
       note = "Established Meatfest sausage planning unit: about one ½-lb link per six adult-equivalent eaters.";
     } else if (key === "brisket") {
-      buy = `BUY 1 packer (~${MeatEngine.round1(row.buyWeight)} lb; ask for a 19–20 lb packer)`;
-      note = "Meatfest anchor: one practical whole packer; do not split a 19–20 lb requirement into multiple small packers.";
+      if (choiceId === "packer") {
+        buy = `BUY 1 packer (~${MeatEngine.round1(row.buyWeight)} lb; ask for a 19–20 lb packer)`;
+        note = "Meatfest anchor: one practical whole packer; do not split a 19–20 lb requirement into multiple small packers.";
+      } else {
+        buy = `BUY ${row.units} brisket flat${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
+        note = "Brisket-flat planning uses the established 55% cooked-yield assumption and 7-lb purchase unit.";
+      }
     } else if (key === "pmbe") {
       buy = `BUY ${row.units} chuck roast${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
       note = "Meatfest PMBE anchor: four 4-lb chuck roasts at 48 adult-equivalent eaters.";
     } else if (key === "pork") {
-      buy = `BUY ${row.units} bone-in butt${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
-      note = "Meatfest pulled-pork anchor: two 8.5-lb bone-in butts at 48 adult-equivalent eaters.";
+      buy = `BUY ${row.units} ${choiceId === "boneless" ? "boneless pork shoulder" : "bone-in butt"}${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
+      note = choiceId === "boneless"
+        ? "Boneless pork shoulder uses the established 60% cooked-yield assumption and 8-lb purchase unit."
+        : "Meatfest pulled-pork anchor: two 8.5-lb bone-in butts at 48 adult-equivalent eaters.";
     } else if (key === "chicken") {
-      buy = `BUY ${row.units} whole chicken${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
-      note = "Meatfest whole-chicken anchor: four 5-lb fryers at 48 adult-equivalent eaters.";
+      buy = `BUY ${row.units} ${option.unit}${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
+      note = choiceId === "whole"
+        ? "Meatfest whole-chicken anchor: four 5-lb fryers at 48 adult-equivalent eaters."
+        : "Poultry planning uses the selected cut's established cooked-yield and purchase unit.";
+    } else if (key === "fish") {
+      buy = `BUY ${row.units} filet${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
+      note = "Fish planning uses individual fillets at about ⅓ lb each and a 76% planning yield.";
+    } else if (key === "prime") {
+      buy = `BUY ${row.units} ${choiceId === "bone" ? "bone-in roast" : "roast"}${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
+      note = "Prime rib planning uses an 80% cooked-yield assumption and a 5-lb roast purchase unit.";
     } else if (key === "turkey") {
       buy = `BUY ${row.units} ${option.unit}${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
       note = "Turkey uses a dedicated yield and purchase-unit model; side recommendations follow the chicken/poultry pairing set.";
@@ -150,6 +165,21 @@
     $("summary").textContent = rows.length
       ? `${rows.length} protein${rows.length > 1 ? "s" : ""} • ${MeatEngine.round1(t.eaters)} adult-equivalent eaters${planningMode === "family" ? " • 10–15% family cushion" : ""}`
       : "Select at least one protein.";
+
+    const resultsBox = $("results");
+    if (resultsBox) {
+      resultsBox.innerHTML = rows.length ? rows.map(({ key, m, option, row, buy, note }) => {
+        const excess = row.excess > 0.5 ? ` • Planned excess: <span class="excess">${MeatEngine.round1(row.excess)} lb</span>` : "";
+        const unit = key === "hog"
+          ? " • Purchase basis: hanging weight"
+          : (key !== "ribs" && key !== "brats" && option.mode === "units")
+            ? ` • Planning unit: ${option.unitWeight} lb`
+            : "";
+        const yieldRate = key === "hog" ? row.finished / row.raw : (typeof option.yield === "number" ? option.yield : 1);
+        return `<div class="result"><div class="resultTop"><div><div class="resultTitle">${m.name}</div><span class="pill">${option.label}</span><span class="pill">${Math.round(yieldRate * 100)}% yield</span></div><div class="buy">${buy || ""}</div></div><div class="details">Finished meat needed: <b>${MeatEngine.round1(row.finished)} lb</b> • Raw/hanging requirement: <b>${MeatEngine.round1(row.raw)} lb</b>${unit}${excess}</div>${note ? `<div class="purchaseNote">${note}</div>` : ""}</div>`;
+      }).join("") : "<p class='note'>Select at least one protein.</p>";
+    }
+
     calcSides();
   };
 
