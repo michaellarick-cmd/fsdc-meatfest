@@ -1,8 +1,8 @@
-name: Architecture Tests
+name: Meatfest Tests
 
 on:
   push:
-    branches: [architecture-v1]
+    branches: [main]
   pull_request:
     branches: [main]
 
