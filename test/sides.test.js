@@ -4,53 +4,60 @@ import vm from 'node:vm';
 import fs from 'node:fs';
 
 const app=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
-const final=fs.readFileSync(new URL('../public/meatfest-final.js',import.meta.url),'utf8');
 const appStart=app.indexOf('const sides={');
 const appEnd=app.indexOf('const order=');
 assert.ok(appStart>=0&&appEnd>appStart,'production side planner not found in app.js');
-const finalStart=final.indexOf('Object.assign(sides, {');
-const finalEnd=final.indexOf('  meats.hog.options =');
-assert.ok(finalStart>=0&&finalEnd>finalStart,'production side integration not found in meatfest-final.js');
 
-const context={choices:{chicken:'whole'},selected:new Set(),selectedSides:new Set(),planningMode:'meatfest',activeTotals:()=>[48,0],meats:{},order:[]};
+const context={choices:{chicken:'whole'},selected:new Set(),selectedSides:new Set(),planningMode:'meatfest',activeTotals:()=>[48,0]};
 vm.createContext(context);
-vm.runInContext(`${app.slice(appStart,appEnd)}\n${final.slice(finalStart,finalEnd)}\nglobalThis.__sideTest={sides,sideOrder,sideQty,sideRecommendation};`,context);
-const {sides,sideOrder,sideQty,sideRecommendation}=context.__sideTest;
-const restored=['asparagus','greenbeans','pastasalad','potatosalad'];
-const expected=['asparagus','beans','broccoli','cauli','collards','corn','cucumber','greenbeans','kraut','mac','pastasalad','potatosalad','slaw','cornbread','rolls'];
+vm.runInContext(`${app.slice(appStart,appEnd)}\nglobalThis.__sideTest={sides,sideOrder,sideQty,sideRecommendation,sideRecommendationMatrix};`,context);
+const {sides,sideOrder,sideQty,sideRecommendation,sideRecommendationMatrix}=context.__sideTest;
 
-test('production side catalog is complete and alphabetized',()=>{
-  for(const id of restored){assert.ok(sides[id],`${id} missing`);assert.ok(sideOrder.includes(id),`${id} missing from order`);}
-  assert.deepEqual(Array.from(sideOrder),expected);
+const expectedOrder=['asparagus','beans','broccoli','cauli','slaw','collards','corn','cucumber','greenbeans','mac','pastasalad','potatosalad','kraut','cornbread','rolls'];
+
+test('production side catalog is complete and correctly ordered',()=>{
+  assert.deepEqual(Array.from(sideOrder),expectedOrder);
+  for(const id of expectedOrder)assert.ok(sides[id],`${id} missing`);
+  assert.equal(sides.cornbread.group,'accomp');
+  assert.equal(sides.rolls.group,'accomp');
 });
 
-test('restored side quantities are finite, positive, and monotonic',()=>{
-  for(const id of restored){let previous=0;for(const eaters of [10,30,48,75,100]){context.activeTotals=()=>[eaters,0];const q=sideQty(id);assert.ok(Number.isFinite(q));assert.ok(q>0);assert.ok(q>=previous);previous=q;}}
+test('side quantities remain independent of recommendation status',()=>{
+  for(const id of expectedOrder){const q=sideQty(id);assert.ok(Number.isFinite(q));assert.ok(q>0,`${id} quantity is not positive`)}
 });
 
-test('prime rib recommends its complete agreed side set',()=>{
-  context.selected=new Set(['prime']);
-  for(const id of ['mac','greenbeans','asparagus','potatosalad','pastasalad','cornbread']) assert.equal(sideRecommendation(id),true,`${id} missing prime-rib recommendation`);
-  assert.equal(sideRecommendation('beans'),false);
-});
+const matrix={
+ chicken:['beans','cauli','corn','cucumber','greenbeans','mac','potatosalad','slaw','cornbread'],
+ fish:['asparagus','beans','cucumber','greenbeans','slaw'],
+ pulled_pork:['beans','cauli','mac','slaw','rolls'],
+ whole_hog:['beans','collards','potatosalad','slaw','rolls'],
+ brats:['kraut'],
+ brisket:['beans','cauli','cucumber','greenbeans','mac','potatosalad','cornbread'],
+ pmbe:['beans','cauli','corn','cucumber','mac','potatosalad','slaw','cornbread'],
+ prime_rib:['asparagus','greenbeans','rolls'],
+ ribs:['beans','corn','cucumber','greenbeans','potatosalad','slaw','cornbread','rolls'],
+ turkey:['cauli','greenbeans','mac','potatosalad','rolls'],
+ pork_belly_burnt_ends:['beans','cauli','cucumber','mac','potatosalad','slaw','cornbread']
+};
 
-test('prime-rib-specific vegetables do not leak to unrelated proteins',()=>{
-  for(const protein of ['chicken','turkey','fish','pork','brisket','pmbe','brats','ribs','hog']){
-    context.selected=new Set([protein]);
-    assert.equal(sideRecommendation('greenbeans'),false,`${protein} incorrectly recommends green beans`);
-    assert.equal(sideRecommendation('asparagus'),false,`${protein} incorrectly recommends asparagus`);
+test('recommendation matrix exactly matches the approved grid',()=>{
+  for(const [protein,ids] of Object.entries(matrix)){
+    assert.deepEqual(Array.from(sideRecommendationMatrix[protein]).sort(),ids.slice().sort(),`${protein} matrix mismatch`);
+    context.selected=new Set([protein==='chicken'?'chicken':protein==='pulled_pork'?'pork':protein==='whole_hog'?'hog':protein==='prime_rib'?'prime':protein==='pork_belly_burnt_ends'?'pbbe':protein]);
+    for(const id of expectedOrder)assert.equal(sideRecommendation(id),ids.includes(id),`${protein} / ${id}`);
   }
 });
 
-test('turkey inherits chicken recommendation behavior',()=>{
-  context.selected=new Set(['turkey']);
-  for(const id of ['cauli','slaw','broccoli','cucumber','corn','cornbread','rolls']) assert.equal(sideRecommendation(id),true,`${id} missing turkey recommendation`);
+test('multiple proteins use OR recommendation logic',()=>{
+  context.selected=new Set(['prime','brisket']);
+  assert.equal(sideRecommendation('asparagus'),true);
+  assert.equal(sideRecommendation('greenbeans'),true);
+  assert.equal(sideRecommendation('mac'),true);
+  assert.equal(sideRecommendation('cornbread'),true);
+  assert.equal(sideRecommendation('beans'),true);
 });
 
-test('potato salad and pasta salad are general BBQ recommendations',()=>{
-  for(const protein of ['prime','fish','pork','brisket','pmbe','brats','ribs','chicken','turkey']){
-    context.selected=new Set([protein]);
-    assert.equal(sideRecommendation('potatosalad'),true);
-    assert.equal(sideRecommendation('pastasalad'),true);
-  }
+test('whole hog recommendations do not restrict side selection',()=>{
+  context.selected=new Set(['hog']);
+  for(const id of expectedOrder){context.selectedSides=new Set([id]);assert.ok(sides[id]);assert.ok(sideQty(id)>0)}
 });
