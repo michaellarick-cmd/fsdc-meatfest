@@ -1,80 +1,5 @@
 /* FSDC Meatfest — browser presentation layer for the shared MeatEngine. */
 (() => {
-  // Production-side integration lives here as ordinary application code.
-  // Nothing is injected or rewritten at request time by the Worker.
-  const restoredSides = {
-    greenbeans: {name:"Green Beans",group:"main",unit:"recipe",base:1.0,min:0.5,sensitivity:.70,round:.25,fill:"recipe",note:"Grilled or smoked BBQ vegetable side."},
-    potatosalad: {name:"Potato Salad",group:"main",unit:"recipe",base:1.5,min:0.5,sensitivity:.55,round:.5,fill:"recipe",note:"Classic BBQ side."},
-    asparagus: {name:"Asparagus",group:"main",unit:"recipe",base:1.0,min:0.5,sensitivity:.70,round:.25,fill:"recipe",note:"Grilled or smoked BBQ vegetable side."},
-    pastasalad: {name:"Pasta Salad",group:"main",unit:"recipe",base:1.5,min:0.5,sensitivity:.55,round:.5,fill:"recipe",note:"Classic cold BBQ side; practical make-ahead option."}
-  };
-  Object.assign(sides, restoredSides);
-  sideOrder.push("greenbeans","potatosalad","asparagus","pastasalad");
-  const uniqueSideOrder = [...new Set(sideOrder)];
-  sideOrder.splice(0, sideOrder.length, ...uniqueSideOrder.sort((a,b) => sides[a].name.localeCompare(sides[b].name)));
-
-  meats.turkey = {
-    name: "Turkey",
-    default: "whole",
-    options: {
-      whole: {label:"Whole Turkey",yield:.55,unitWeight:14,unit:"whole turkey",mode:"units"},
-      breast: {label:"Turkey Breast",yield:.65,unitWeight:7,unit:"turkey breast",mode:"units"},
-      legs: {label:"Turkey Legs",yield:.45,unitWeight:.75,unit:"turkey leg",mode:"units"}
-    }
-  };
-  order.push("turkey");
-  if (!choices.turkey) choices.turkey = meats.turkey.default;
-
-  // Turkey intentionally inherits the chicken/poultry recommendation set.
-  // Prime rib gets its classic vegetable pairings; potato and pasta salads
-  // remain broadly useful BBQ recommendations.
-  function proteinTagsForRecommendations() {
-    const tags = new Set();
-    selected.forEach(key => {
-      if (key === "chicken") {
-        const prep = choices.chicken || meats.chicken.default;
-        if (prep === "whole") tags.add("chicken_pulled");
-        else if (prep === "legq") tags.add("chicken_quarters");
-        else if (prep === "thigh") tags.add("chicken_thighs");
-      } else if (key === "turkey") {
-        tags.add("chicken_pulled");
-        tags.add("chicken_quarters");
-        tags.add("chicken_thighs");
-      } else if (key === "fish") tags.add("fish");
-      else if (key === "pork") tags.add("pulled_pork");
-      else if (key === "brisket") tags.add("brisket");
-      else if (key === "pmbe") tags.add("pmbe");
-      else if (key === "brats") tags.add("brats");
-      else if (key === "ribs") tags.add("ribs");
-      else if (key === "prime") tags.add("prime_rib");
-      else if (key === "hog") tags.add("whole_hog");
-    });
-    return tags;
-  }
-
-  sideRecommendation = function (id) {
-    const active = proteinTagsForRecommendations();
-    const any = tags => tags.some(tag => active.has(tag));
-    switch (id) {
-      case "mac": return active.size > 0;
-      case "cauli": return any(["chicken_pulled","chicken_quarters","chicken_thighs","fish"]);
-      case "slaw": return any(["pulled_pork","brisket","pmbe","ribs","brats","chicken_pulled","chicken_quarters","chicken_thighs","fish"]);
-      case "collards": return any(["pulled_pork","brisket","pmbe","ribs"]);
-      case "broccoli": return any(["fish","chicken_pulled","chicken_quarters","chicken_thighs","pulled_pork","brisket","pmbe","ribs"]);
-      case "cucumber": return any(["fish","chicken_pulled","chicken_quarters","chicken_thighs"]);
-      case "kraut": return active.has("brats");
-      case "beans": return false;
-      case "corn": return any(["chicken_pulled","chicken_quarters","chicken_thighs","fish","pulled_pork","brisket","pmbe","ribs"]);
-      case "cornbread": return active.size > 0;
-      case "rolls": return any(["pulled_pork","chicken_pulled","brisket"]);
-      case "greenbeans": return active.has("prime_rib");
-      case "asparagus": return active.has("prime_rib");
-      case "potatosalad": return active.size > 0;
-      case "pastasalad": return active.size > 0;
-      default: return false;
-    }
-  };
-
   // Whole-hog preparation is a presentation choice, but the calculation
   // itself remains entirely inside MeatEngine. Default preserves the original
   // Meatfest model: hanging weight with head + feet on.
@@ -167,17 +92,6 @@
     $("summary").textContent = rows.length
       ? `${rows.length} protein${rows.length > 1 ? "s" : ""} • ${MeatEngine.round1(t.eaters)} adult-equivalent eaters${planningMode === "family" ? " • 10–15% family cushion" : ""}`
       : "Select at least one protein.";
-
-    $("results").innerHTML = rows.length ? rows.map(({ key, m, option, row, buy, note }) => {
-      const excess = row.excess > 0.5 ? ` • Planned excess: <span class="excess">${MeatEngine.round1(row.excess)} lb</span>` : "";
-      const unit = key === "hog"
-        ? " • Purchase basis: hanging weight"
-        : (key !== "ribs" && key !== "brats" && option.mode === "units")
-          ? ` • Planning unit: ${key === "chicken" ? MeatEngine.ANCHORS.chickenLb : key === "pmbe" ? 4 : key === "pork" ? 8.5 : option.unitWeight} lb`
-          : "";
-      const yieldRate = key === "hog" ? row.finished / row.raw : (typeof option.yield === "number" ? option.yield : 1);
-      return `<div class="result"><div class="resultTop"><div><div class="resultTitle">${m.name}</div><span class="pill">${option.label}</span><span class="pill">${Math.round(yieldRate * 100)}% yield</span></div><div class="buy">${buy}</div></div><div class="details">Finished meat needed: <b>${MeatEngine.round1(row.finished)} lb</b> • Raw/hanging requirement: <b>${MeatEngine.round1(row.raw)} lb</b>${unit}${excess}</div>${note ? `<div class="purchaseNote">${note}</div>` : ""}</div>`;
-    }).join("") : "<p class='note'>Select at least one protein.</p>";
 
     calcSides();
   };
