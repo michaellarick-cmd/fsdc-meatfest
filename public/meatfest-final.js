@@ -5,34 +5,40 @@
   const printStyle = document.createElement("style");
   printStyle.media = "print";
   printStyle.textContent = `
-@page{size:letter portrait;margin:.35in}
+@page{size:letter landscape;margin:0}
 html,body{background:#fff!important;color:#000!important}
-body{padding:0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{padding:0!important;margin:0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 body>*{display:none!important}
-#printSheet{display:block!important;width:4in;height:10.3in;margin:0 auto 0 0;padding:.16in;position:relative;border:1px solid #000;background:#fff;color:#000;font-family:Arial,sans-serif}
-#printSheet .ps-title{font-size:18px;font-weight:900;margin:0 0 3px;color:#000}
-#printSheet .ps-sub{font-size:9px;color:#000;margin-bottom:6px}
-#printSheet .ps-grid{display:grid;grid-template-columns:1fr;gap:6px}
+#printSheet{display:block!important;width:11in;height:8.5in;margin:0;padding:.22in;position:relative;border:1px solid #000;background:#fff;color:#000;font-family:Arial,sans-serif;overflow:hidden}
+#printSheet .ps-title{font-size:22px;font-weight:900;margin:0 0 3px;color:#000}
+#printSheet .ps-sub{font-size:10px;color:#000;margin-bottom:8px}
+#printSheet .ps-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
 #printSheet .ps-grid>div{display:contents}
-#printSheet .ps-box{border:1px solid #000;border-radius:0;padding:6px;margin-bottom:6px;break-inside:avoid}
-#printSheet h3{font-size:10px;letter-spacing:.08em;margin:0 0 4px;color:#000}
-#printSheet .ps-headcount{display:flex;gap:10px;font-size:9px;color:#000}
-#printSheet .ps-big{font-size:15px;font-weight:900;color:#000}
-#printSheet .ps-row{display:grid;grid-template-columns:1fr auto;gap:6px;border-bottom:1px solid #000;padding:4px 0;break-inside:avoid}
+#printSheet .ps-box{border:1px solid #000;border-radius:0;padding:7px;margin:0 0 7px;break-inside:avoid}
+#printSheet h3{font-size:10px;letter-spacing:.08em;margin:0 0 5px;color:#000}
+#printSheet .ps-headcount{display:flex;gap:14px;font-size:9px;color:#000}
+#printSheet .ps-big{font-size:16px;font-weight:900;color:#000}
+#printSheet .ps-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;border-bottom:1px solid #000;padding:5px 0;break-inside:avoid}
 #printSheet .ps-row:last-child{border-bottom:0}
 #printSheet .ps-name{font-size:9px;font-weight:800;color:#000}
-#printSheet .ps-buy{font-size:9px;font-weight:900;text-align:right;color:#000}
+#printSheet .ps-buy{font-size:9px;font-weight:900;text-align:right;color:#000;max-width:2.05in}
 #printSheet .ps-detail{font-size:7.5px;color:#000;margin-top:1px}
 #printSheet .ps-note{font-size:8px;color:#000;line-height:1.2}
 #printSheet .pill{display:inline-block;border:1px solid #000;border-radius:0;padding:2px 4px;font-size:7.5px;color:#000;margin:1px 3px 1px 0}
-#printSheet .fold{position:absolute;left:0;right:0;top:50%;border-top:1px dashed #000}
-#printSheet .foldlabel{position:absolute;right:5px;top:calc(50% - 6px);font-size:7px;color:#000;background:#fff;padding:0 2px}
-#printSheet .ps-footer{position:absolute;bottom:4px;left:.16in;right:.16in;display:flex;justify-content:space-between;font-size:7px;color:#000}
-#printSheet .ps-grid>div:nth-child(1) .ps-box:nth-child(1){order:1}
-#printSheet .ps-grid>div:nth-child(1) .ps-box:nth-child(2){order:2}
-#printSheet .ps-grid>div:nth-child(2) .ps-box:nth-child(1){order:3}
-#printSheet .ps-grid>div:nth-child(2) .ps-box:nth-child(2){order:4}
-#printSheet .ps-grid>div:nth-child(1) .ps-box:nth-child(3){order:5}
+#printSheet .ps-side-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;border-bottom:1px solid #000;padding:5px 0;font-size:9px;line-height:1.15}
+#printSheet .ps-side-row:last-child{border-bottom:0}
+#printSheet .ps-side-name{font-weight:800}
+#printSheet .ps-side-amount{font-weight:900;text-align:right;max-width:2.15in}
+#printSheet .ps-sides-note{font-size:7.5px;color:#000;margin-top:5px;line-height:1.2}
+/* Left column = meat; right column = sides. */
+#printSheet .ps-grid>div:nth-child(1) .ps-box:nth-child(1){grid-column:1;grid-row:1}
+#printSheet .ps-grid>div:nth-child(1) .ps-box:nth-child(2){grid-column:1;grid-row:2}
+#printSheet .ps-grid>div:nth-child(2) .ps-box:nth-child(1){grid-column:1;grid-row:3}
+#printSheet .ps-grid>div:nth-child(2) .ps-box:nth-child(2){grid-column:1;grid-row:4}
+#printSheet .ps-grid>div:nth-child(1) .ps-box:nth-child(3){grid-column:2;grid-row:1 / span 4}
+#printSheet .fold{position:absolute;top:.16in;bottom:.16in;left:50%;border-left:1px dashed #000}
+#printSheet .foldlabel{position:absolute;left:calc(50% - 10px);top:50%;font-size:7px;color:#000;background:#fff;padding:2px 3px;transform:translateY(-50%)}
+#printSheet .ps-footer{position:absolute;bottom:4px;left:.22in;right:.22in;display:flex;justify-content:space-between;font-size:7px;color:#000}
   `;
   document.head.appendChild(printStyle);
 
@@ -56,7 +62,6 @@ body>*{display:none!important}
   if (!order.includes("turkey")) order.push("turkey");
   if (!choices.turkey) choices.turkey = meats.turkey.default;
 
-  // Turkey intentionally follows the chicken/poultry recommendation set.
   function proteinTagsForRecommendations() {
     const tags = new Set();
     selected.forEach(key => {
@@ -66,9 +71,7 @@ body>*{display:none!important}
         else if (prep === "legq") tags.add("chicken_quarters");
         else if (prep === "thigh") tags.add("chicken_thighs");
       } else if (key === "turkey") {
-        tags.add("chicken_pulled");
-        tags.add("chicken_quarters");
-        tags.add("chicken_thighs");
+        tags.add("chicken_pulled"); tags.add("chicken_quarters"); tags.add("chicken_thighs");
       } else if (key === "fish") tags.add("fish");
       else if (key === "pork") tags.add("pulled_pork");
       else if (key === "brisket") tags.add("brisket");
@@ -130,12 +133,7 @@ body>*{display:none!important}
     const choiceId = choices[key] || m.default;
     const option = m.options[choiceId];
     const engine = planningMode === "family" ? MeatEngine.familyRow : MeatEngine.canonicalRow;
-    const row = engine({
-      key,
-      eaters,
-      serving: portion(),
-      choice: { id: choiceId, unit: option?.unit, headFeet: option?.headFeet }
-    });
+    const row = engine({key,eaters,serving:portion(),choice:{id:choiceId,unit:option?.unit,headFeet:option?.headFeet}});
     if (!row) return null;
 
     let buy;
@@ -148,111 +146,70 @@ body>*{display:none!important}
         ? "Whole-hog target uses the validated Meatfest hanging-weight curve with a 7% adjustment for head + feet removed. No live-weight conversion is used."
         : "Whole-hog target uses the validated Meatfest hanging-weight curve. No live-weight conversion is used. This preserves the original head + feet-on model.";
     } else if (key === "ribs") {
-      if (family && row.units < 1) {
-        buy = "BUY 1 half-rack";
-      } else if (family && row.units % 1 !== 0) {
-        buy = `BUY ${row.units * 2} half-racks (${row.units} full racks total)`;
-      } else {
-        buy = `BUY ${row.units} rack${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
-      }
+      if (family && row.units < 1) buy = "BUY 1 half-rack";
+      else if (family && row.units % 1 !== 0) buy = `BUY ${row.units * 2} half-racks (${row.units} full racks total)`;
+      else buy = `BUY ${row.units} rack${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
       note = family
         ? "Family mode supports half-rack increments and applies a modest meat cushion before purchase rounding."
         : `Count-based planning: ${MeatEngine.round1(eaters * MeatEngine.ANCHORS.ribsTakeRate * (portion() / MeatEngine.STANDARD_SERVING))} takers × ${MeatEngine.ANCHORS.ribsPerTaker} ribs ÷ ${MeatEngine.ANCHORS.ribsPerRack} ribs/rack.`;
     } else if (key === "brats") {
       buy = `BUY ${row.units} half-lb link${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
-      note = family
-        ? "Family mode uses individual half-pound links after applying the family meat cushion."
-        : "Established Meatfest sausage planning unit: about one ½-lb link per six adult-equivalent eaters.";
+      note = family ? "Family mode uses individual half-pound links after applying the family meat cushion." : "Established Meatfest sausage planning unit: about one ½-lb link per six adult-equivalent eaters.";
     } else if (key === "brisket") {
-      if (family) {
-        buy = `ASK FOR ~${MeatEngine.round1(row.buyWeight)} lb brisket flat`;
-        note = "Family mode uses a small brisket-flat purchase rather than forcing a whole packer.";
-      } else if (choiceId === "packer") {
-        const askLb = Math.max(14, Math.round(row.buyWeight));
-        buy = `BUY 1 whole packer (~${MeatEngine.round1(row.buyWeight)} lb; ask for a packer around ${askLb} lb)`;
-        note = "Meatfest anchor: one practical whole packer sized to the calculated requirement; do not split the requirement into multiple small packers.";
-      } else {
-        buy = `BUY ${row.units} brisket flat${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
-        note = "Brisket-flat planning uses the established 55% cooked-yield assumption and 7-lb purchase unit.";
-      }
+      if (family) { buy = `ASK FOR ~${MeatEngine.round1(row.buyWeight)} lb brisket flat`; note = "Family mode uses a small brisket-flat purchase rather than forcing a whole packer."; }
+      else if (choiceId === "packer") { const askLb = Math.max(14, Math.round(row.buyWeight)); buy = `BUY 1 whole packer (~${MeatEngine.round1(row.buyWeight)} lb; ask for a packer around ${askLb} lb)`; note = "Meatfest anchor: one practical whole packer sized to the calculated requirement; do not split the requirement into multiple small packers."; }
+      else { buy = `BUY ${row.units} brisket flat${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`; note = "Brisket-flat planning uses the established 55% cooked-yield assumption and 7-lb purchase unit."; }
     } else if (key === "pmbe") {
-      buy = family
-        ? `ASK FOR ~${MeatEngine.round1(row.buyWeight)} lb chuck roast`
-        : `BUY ${row.units} chuck roast${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
-      note = family
-        ? "Family mode uses a small chuck roast and applies the family meat cushion before purchase rounding."
-        : "Meatfest PMBE anchor: four 4-lb chuck roasts at 48 adult-equivalent eaters.";
+      buy = family ? `ASK FOR ~${MeatEngine.round1(row.buyWeight)} lb chuck roast` : `BUY ${row.units} chuck roast${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
+      note = family ? "Family mode uses a small chuck roast and applies the family meat cushion before purchase rounding." : "Meatfest PMBE anchor: four 4-lb chuck roasts at 48 adult-equivalent eaters.";
     } else if (key === "pork") {
-      buy = family
-        ? `ASK FOR ~${MeatEngine.round1(row.buyWeight)} lb ${choiceId === "boneless" ? "boneless pork shoulder" : "pork butt"}`
-        : `BUY ${row.units} ${choiceId === "boneless" ? "boneless pork shoulder" : "bone-in butt"}${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
-      note = family
-        ? "Family mode uses a butcher-friendly small shoulder after applying the family meat cushion."
-        : choiceId === "boneless"
-          ? "Boneless pork shoulder uses the established 60% cooked-yield assumption and 8-lb purchase unit."
-          : "Meatfest pulled-pork anchor: two 8.5-lb bone-in butts at 48 adult-equivalent eaters.";
+      buy = family ? `ASK FOR ~${MeatEngine.round1(row.buyWeight)} lb ${choiceId === "boneless" ? "boneless pork shoulder" : "pork butt"}` : `BUY ${row.units} ${choiceId === "boneless" ? "boneless pork shoulder" : "bone-in butt"}${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
+      note = family ? "Family mode uses a butcher-friendly small shoulder after applying the family meat cushion." : choiceId === "boneless" ? "Boneless pork shoulder uses the established 60% cooked-yield assumption and 8-lb purchase unit." : "Meatfest pulled-pork anchor: two 8.5-lb bone-in butts at 48 adult-equivalent eaters.";
     } else if (key === "chicken") {
       buy = `BUY ${row.units} ${option.unit}${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
-      note = family
-        ? "Family mode uses the selected poultry purchase unit after applying the family meat cushion."
-        : choiceId === "whole"
-          ? "Meatfest whole-chicken anchor: four 5-lb fryers at 48 adult-equivalent eaters."
-          : "Poultry planning uses the selected cut's established cooked-yield and purchase unit.";
+      note = family ? "Family mode uses the selected poultry purchase unit after applying the family meat cushion." : choiceId === "whole" ? "Meatfest whole-chicken anchor: four 5-lb fryers at 48 adult-equivalent eaters." : "Poultry planning uses the selected cut's established cooked-yield and purchase unit.";
     } else if (key === "fish") {
       buy = `BUY ${row.units} filet${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
-      note = family
-        ? "Family mode uses individual fillets after applying the family meat cushion."
-        : "Fish planning uses individual fillets at about ⅓ lb each and a 76% planning yield.";
+      note = family ? "Family mode uses individual fillets after applying the family meat cushion." : "Fish planning uses individual fillets at about ⅓ lb each and a 76% planning yield.";
     } else if (key === "prime") {
-      buy = family
-        ? `ASK FOR ~${MeatEngine.round1(row.buyWeight)} lb ${choiceId === "bone" ? "bone-in standing rib roast" : "prime rib roast"}`
-        : `BUY ${row.units} ${choiceId === "bone" ? "bone-in roast" : "roast"}${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
-      note = family
-        ? "Family mode uses a butcher-friendly small roast after applying the family meat cushion."
-        : "Prime rib planning uses an 80% cooked-yield assumption and a 5-lb roast purchase unit.";
+      buy = family ? `ASK FOR ~${MeatEngine.round1(row.buyWeight)} lb ${choiceId === "bone" ? "bone-in standing rib roast" : "prime rib roast"}` : `BUY ${row.units} ${choiceId === "bone" ? "bone-in roast" : "roast"}${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
+      note = family ? "Family mode uses a butcher-friendly small roast after applying the family meat cushion." : "Prime rib planning uses an 80% cooked-yield assumption and a 5-lb roast purchase unit.";
     } else if (key === "turkey") {
       buy = `BUY ${row.units} ${option.unit}${row.units === 1 ? "" : "s"} (~${MeatEngine.round1(row.buyWeight)} lb total)`;
       note = "Turkey uses a dedicated yield and purchase-unit model; side recommendations follow the chicken/poultry pairing set.";
     }
-    return { key, m, option, row, buy, note };
+    return {key,m,option,row,buy,note};
   }
 
   window.calc = function () {
     const t = activeEaters();
     const rows = [...selected].map(key => rowFor(key, t.eaters)).filter(Boolean);
-    const total = rows.reduce((sum, item) => sum + item.row.buyWeight, 0);
-    $("statAdults").textContent = t.adults;
-    $("statKids").textContent = t.kids;
-    $("statEaters").textContent = MeatEngine.round1(t.eaters);
-    $("totalRaw").textContent = total ? `${MeatEngine.round1(total)} lb` : "0 lb";
-    $("summary").textContent = rows.length
-      ? `${rows.length} protein${rows.length > 1 ? "s" : ""} • ${MeatEngine.round1(t.eaters)} adult-equivalent eaters${planningMode === "family" ? " • 12.5% family cushion" : ""}`
-      : "Select at least one protein.";
-
-    const resultsBox = $("results");
-    if (resultsBox) {
-      resultsBox.innerHTML = rows.length ? rows.map(({ key, m, option, row, buy, note }) => {
-        const excess = row.excess > 0.5 ? ` • Planned excess: <span class="excess">${MeatEngine.round1(row.excess)} lb</span>` : "";
-        const unit = key === "hog"
-          ? " • Purchase basis: hanging weight"
-          : (key !== "ribs" && key !== "brats" && option.mode === "units")
-            ? ` • Planning unit: ${option.unitWeight} lb`
-            : "";
-        const yieldRate = key === "hog" ? row.finished / row.raw : (typeof option.yield === "number" ? option.yield : 1);
-        return `<div class="result"><div class="resultTop"><div><div class="resultTitle">${m.name}</div><span class="pill">${option.label}</span><span class="pill">${Math.round(yieldRate * 100)}% yield</span></div><div class="buy">${buy || ""}</div></div><div class="details">Finished meat needed: <b>${MeatEngine.round1(row.finished)} lb</b> • Raw/hanging requirement: <b>${MeatEngine.round1(row.raw)} lb</b>${unit}${planningMode === "family" ? " • Family purchase model" : ""}${excess}</div>${note ? `<div class="purchaseNote">${note}</div>` : ""}</div>`;
-      }).join("") : "<p class='note'>Select at least one protein.</p>";
-    }
-
+    const total = rows.reduce((sum,item)=>sum+item.row.buyWeight,0);
+    $("statAdults").textContent=t.adults;$("statKids").textContent=t.kids;$("statEaters").textContent=MeatEngine.round1(t.eaters);
+    $("totalRaw").textContent=total?`${MeatEngine.round1(total)} lb`:"0 lb";
+    $("summary").textContent=rows.length?`${rows.length} protein${rows.length>1?"s":""} • ${MeatEngine.round1(t.eaters)} adult-equivalent eaters${planningMode==="family"?" • 12.5% family cushion":""}`:"Select at least one protein.";
+    const resultsBox=$("results");
+    if(resultsBox)resultsBox.innerHTML=rows.length?rows.map(({key,m,option,row,buy,note})=>{const excess=row.excess>.5?` • Planned excess: <span class="excess">${MeatEngine.round1(row.excess)} lb</span>`:"";const unit=key==="hog"?" • Purchase basis: hanging weight":(key!=="ribs"&&key!=="brats"&&option.mode==="units")?` • Planning unit: ${option.unitWeight} lb`:"";const yieldRate=key==="hog"?row.finished/row.raw:(typeof option.yield==="number"?option.yield:1);return `<div class="result"><div class="resultTop"><div><div class="resultTitle">${m.name}</div><span class="pill">${option.label}</span><span class="pill">${Math.round(yieldRate*100)}% yield</span></div><div class="buy">${buy||""}</div></div><div class="details">Finished meat needed: <b>${MeatEngine.round1(row.finished)} lb</b> • Raw/hanging requirement: <b>${MeatEngine.round1(row.raw)} lb</b>${unit}${planningMode==="family"?" • Family purchase model":""}${excess}</div>${note?`<div class="purchaseNote">${note}</div>`:""}</div>`}).join(""):"<p class='note'>Select at least one protein.</p>";
     calcSides();
   };
 
-  window.buildSummary = function () {
-    const t = activeEaters();
-    const rows = [...selected].map(key => rowFor(key, t.eaters)).filter(Boolean);
-    return { adults: t.adults, kids: t.kids, eaters: t.eaters, rows, total: rows.reduce((s, r) => s + r.row.buyWeight, 0) };
+  window.buildSummary=function(){const t=activeEaters();const rows=[...selected].map(key=>rowFor(key,t.eaters)).filter(Boolean);return{adults:t.adults,kids:t.kids,eaters:t.eaters,rows,total:rows.reduce((s,r)=>s+r.row.buyWeight,0)}};
+
+  // One-sheet pocket print: meat remains the left-hand shopping column and
+  // sides become a compact name/amount checklist in the right-hand column.
+  window.populatePrint=function(){
+    const s=window.buildSummary(),ev=eventDetails();
+    $("psTitle").textContent=ev.name.toUpperCase();
+    $("psSub").textContent=`${ev.display}  |  ${s.rows.map(r=>r.m.name).join(" • ")}`;
+    $("psAdults").textContent=s.adults;$("psKids").textContent=s.kids;$("psEaters").textContent=Math.round(s.eaters*10)/10;
+    $("psProteins").innerHTML=s.rows.map(r=>`<span class="pill">${r.option.label}</span>`).join(" ");
+    $("psSides").innerHTML=selectedSides.size
+      ? [...selectedSides].sort((a,b)=>sideOrder.indexOf(a)-sideOrder.indexOf(b)).map(id=>`<div class="ps-side-row"><span class="ps-side-name">${sides[id].name}</span><span class="ps-side-amount">${sideBuyText(id,sideQty(id))}</span></div>`).join("")
+      : `<div class="ps-sides-note">No sides selected.</div>`;
+    $("psBuyRows").innerHTML=s.rows.map(r=>`<div class="ps-row"><div><div class="ps-name">${r.m.name}</div><div class="ps-detail">${r.option.label} • ${Math.round((r.key==="hog"?r.row.finished/r.row.raw:(typeof r.option.yield==="number"?r.option.yield:1))*100)}% yield • ${Math.round(r.row.raw*10)/10} lb raw</div></div><div class="ps-buy">${r.buy.replace(/^BUY /,"")}</div></div>`).join("");
+    $("psTotal").textContent=`${Math.ceil(s.total*10)/10} lb`;
+    return s;
   };
 
-  renderMeats();
-  renderSideCards();
-  window.calc();
+  renderMeats();renderSideCards();window.calc();
 })();
