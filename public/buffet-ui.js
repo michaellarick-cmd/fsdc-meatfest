@@ -4,6 +4,7 @@
   const B = window.BuffetEngine;
   const state = { supplementalIds: [], dessertIds: [], breadIds: ['hawaiian'], condimentIds: ['bbqSauce','pickles','mustard'], dessertLoad: 'moderate' };
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
   function ensureStyle(){
     if (document.getElementById('buffetUiStyle')) return;
     const style=document.createElement('style');style.id='buffetUiStyle';style.textContent=`
@@ -32,9 +33,46 @@
       @media(max-width:600px){#buffetServiceCard .buffetGrid{grid-template-columns:1fr;gap:16px}}
     `;document.head.appendChild(style);
   }
-  function ensureCard(){let card=document.getElementById('buffetServiceCard');if(card)return card;card=document.createElement('section');card.className='card';card.id='buffetServiceCard';const footer=document.querySelector('.footer');(footer?.parentNode||document.querySelector('.wrap')).insertBefore(card,footer||null);return card}
-  function choiceGroup(title,entries,selected,key){return `<div class="buffetSection"><div class="buffetGroupTitle">${title}</div><div class="buffetChoices">${entries.map(([id,name])=>`<button type="button" class="buffetChoice ${selected.includes(id)?'on':''}" aria-pressed="${selected.includes(id)}" data-buffet-key="${key}" data-buffet-id="${id}"><span class="buffetCheck">${selected.includes(id)?'✓':''}</span><span>${esc(name)}</span></button>`).join('')}</div></div>`}
-  function quantityText(item){const q=item.quantity;if(!q)return'—';const unit=q.unit;let amount=q.amount;if(unit==='tin'){const n=Math.round(Number(amount)*4)/4;const f=Math.floor(n+1e-9),r=Math.round((n-f)*4),parts=[];if(f)parts.push(`${f} full tin${f===1?'':'s'}`);if(r===1)parts.push('¼ tin');if(r===2)parts.push('½ tin');if(r===3)parts.push('¾ tin');return `${parts.join(' + ')||'0 tin'} • ${q.service.count} chafer${q.service.count===1?'':'s'}`}if(unit==='recipe')return `${amount} recipe${Number(amount)===1?'':'s'} • ${q.service.count} ${q.service.label}${q.service.count===1?'':'s'}`;if(unit==='ear')return `${amount} ear${Number(amount)===1?'':'s'} • ${q.service.count} chafer${q.service.count===1?'':'s'}`;return `${amount} ${unit} • ${q.service.count} ${q.service.label}${q.service.count===1?'':'s'}`}
+
+  function ensureCard(){
+    let card=document.getElementById('buffetServiceCard');
+    if(card)return card;
+    card=document.createElement('section');card.className='card';card.id='buffetServiceCard';
+    const footer=document.querySelector('.footer');(footer?.parentNode||document.querySelector('.wrap')).insertBefore(card,footer||null);
+    return card;
+  }
+
+  function choiceGroup(title,entries,selected,key){
+    return `<div class="buffetSection"><div class="buffetGroupTitle">${title}</div><div class="buffetChoices">${entries.map(([id,name])=>`<button type="button" class="buffetChoice ${selected.includes(id)?'on':''}" aria-pressed="${selected.includes(id)}" data-buffet-key="${key}" data-buffet-id="${id}"><span class="buffetCheck">${selected.includes(id)?'✓':''}</span><span>${esc(name)}</span></button>`).join('')}</div></div>`;
+  }
+
+  function quantityText(item){
+    const q=item.quantity;if(!q)return'—';
+    const unit=q.unit,amount=q.amount;
+    if(unit==='tin'){
+      const n=Math.round(Number(amount)*4)/4,f=Math.floor(n+1e-9),r=Math.round((n-f)*4),parts=[];
+      if(f)parts.push(`${f} full tin${f===1?'':'s'}`);
+      if(r===1)parts.push('¼ tin');if(r===2)parts.push('½ tin');if(r===3)parts.push('¾ tin');
+      return `${parts.join(' + ')||'0 tin'} • ${q.service.count} full chafer${q.service.count===1?'':'s'}`;
+    }
+    if(unit==='recipe')return `${amount} recipe${Number(amount)===1?'':'s'} • ${q.service.count} full chafer${q.service.count===1?'':'s'}`;
+    if(unit==='ear')return `${amount} ear${Number(amount)===1?'':'s'} • ${q.service.count} full chafer${q.service.count===1?'':'s'}`;
+    return `${amount} ${unit} • ${q.service.count} ${q.service.label}${q.service.count===1?'':'s'}`;
+  }
+
+  function wireChoiceButtons(card){
+    card.querySelectorAll('[data-buffet-key]').forEach(btn=>{
+      btn.onclick=e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        const key=btn.dataset.buffetKey,id=btn.dataset.buffetId,arr=state[key];
+        if(!Array.isArray(arr))return;
+        state[key]=arr.includes(id)?arr.filter(x=>x!==id):[...arr,id];
+        render();
+      };
+    });
+  }
+
   function render(){
     ensureStyle();
     const s=window.buildSummary(),proteinKeys=s.rows.map(r=>r.key),sideIds=s.sideRows.map(r=>r.id);
@@ -56,10 +94,11 @@
       <div class="buffetSection"><div class="buffetGrid"><div class="buffetPanel"><div class="buffetGroupTitle">MAIN BUFFET TABLES</div><div class="buffetMetric">${esc(mainTables)}</div><div class="buffetSubnote">${p.tables.linearRequired}" of service frontage required • ${p.tables.linearProvided}" provided</div></div><div class="buffetPanel"><div class="buffetGroupTitle">DESSERT TABLE</div><div class="buffetMetric">${esc(dessertTables)}</div>${dessertRows}</div></div></div>
       <div class="buffetSection"><div class="buffetGroupTitle">BUFFET SEQUENCE</div><div class="buffetSequence">${sequence}</div></div>
       <div class="buffetNotice">Supplemental grilling meats are appetite competitors to the core proteins; selecting them does not add meat to the core requirement.</div>`;
+    wireChoiceButtons(card);
     card.querySelector('#buffetDessertLoad')?.addEventListener('change',e=>{state.dessertLoad=e.target.value;render()});
   }
+
   const originalCalc=window.calc;
   window.calc=function(){const result=originalCalc.apply(this,arguments);render();return result};
-  document.addEventListener('click',e=>{const btn=e.target.closest?.('#buffetServiceCard [data-buffet-key]');if(!btn)return;e.preventDefault();const key=btn.dataset.buffetKey,id=btn.dataset.buffetId,arr=state[key];if(!Array.isArray(arr))return;state[key]=arr.includes(id)?arr.filter(x=>x!==id):[...arr,id];render()});
   render();
 })();
