@@ -17,15 +17,15 @@ test('side quantity is independent of the other sides selected',()=>{
   assert.deepEqual(first,second);
 });
 
-test('half quantity is a food quantity, not four quarter pans',()=>{
+test('half quantity is a food quantity and two halves share one chafer',()=>{
   const q=B.sideQuantity('cauliflowerMac',44); assert.equal(q.unit,'half'); assert.equal(q.amount,1); assert.equal(q.serviceVessels,1);
-  assert.equal(B.packFoodQuantity({unit:'quarter',amount:2}).serviceVessels,2);
+  assert.equal(B.packFoodQuantity({unit:'quarter',amount:2}).serviceVessels,1);
 });
 
 test('full chafer is one service unit and two halves share one chafer',()=>{
   assert.equal(B.chaferPacking([{unit:'full',amount:1}]).chafers,1);
   assert.equal(B.chaferPacking([{unit:'half',amount:2}]).chafers,1);
-  assert.equal(B.chaferPacking([{unit:'quarter',amount:4}]).chafers,4);
+  assert.equal(B.chaferPacking([{unit:'quarter',amount:4}]).chafers,1);
 });
 
 test('half quantities from different sides can share one physical chafer',()=>{
@@ -36,7 +36,9 @@ test('half quantities from different sides can share one physical chafer',()=>{
   assert.equal(groups.length,1); assert.equal(groups[0].linearIn,18); assert.equal(groups[0].items.length,2);
 });
 
-test('quarter quantities remain separate physical service units',()=>{
+test('four quarter quantities fit one physical chafer but remain four quarter tins',()=>{
+  const packing=B.chaferPacking([{unit:'quarter',amount:4}]);
+  assert.equal(packing.chafers,1); assert.equal(packing.quarter,4);
   const groups=B.physicalPlan([{type:'side',id:'q',quantity:{unit:'quarter',amount:4},vessel:B.VESSELS.chafer}]);
   assert.equal(groups.length,4); assert.ok(groups.every(g=>g.linearIn===18));
 });
