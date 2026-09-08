@@ -52,7 +52,7 @@ function fail(message) {
       const cauli = sideRows.find(r => r.id === 'cauli' || r.id === 'cauliflowerMac');
       const collards = sideRows.find(r => r.id === 'collards');
       const collardPlan = sidePlan.find(r => r.id === 'collards');
-      const table = buffet.tableRequirement(102, { tableLengths: [72, 48] });
+      const table = buffet.tableRequirement([{ linearIn: 102 }], { tableLengths: [72, 48] });
       const expectedCollardChafers = Math.max(1, Math.ceil((collards.q.amount * 0.75) - 1e-9));
       return {
         hasBuildSummary: typeof window.buildSummary === 'function',
