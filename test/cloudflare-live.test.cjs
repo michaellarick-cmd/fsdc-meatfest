@@ -21,6 +21,15 @@ function fail(message) {
 
     await page.locator('#buffetServiceCard').waitFor({ state: 'visible', timeout: 30000 });
 
+    const hotDogs = page.locator('button[data-buffet-key="supplementalIds"][data-buffet-id="hotdogs"]');
+    if (await hotDogs.count() !== 1) fail('Hot Dogs buffet control is missing.');
+    if (await hotDogs.getAttribute('aria-pressed') !== 'false') fail('Hot Dogs control did not start unselected.');
+    await hotDogs.click();
+    await page.waitForFunction(() => document.querySelector('button[data-buffet-key="supplementalIds"][data-buffet-id="hotdogs"]')?.getAttribute('aria-pressed') === 'true');
+    if (!(await hotDogs.innerText()).includes('✓')) fail('Hot Dogs control did not render its selected state.');
+    await hotDogs.click();
+    await page.waitForFunction(() => document.querySelector('button[data-buffet-key="supplementalIds"][data-buffet-id="hotdogs"]')?.getAttribute('aria-pressed') === 'false');
+
     const adults = page.locator('#adults');
     const kids = page.locator('#kids');
     await adults.fill('40');
@@ -33,15 +42,6 @@ function fail(message) {
       if (await protein.count() !== 1) fail(`Protein control is missing: ${key}`);
       if (!(await protein.evaluate(el => el.classList.contains('on')))) await protein.click();
     }
-
-    const hotDogs = page.locator('button[data-buffet-key="supplementalIds"][data-buffet-id="hotdogs"]');
-    if (await hotDogs.count() !== 1) fail('Hot Dogs buffet control is missing.');
-    if (await hotDogs.getAttribute('aria-pressed') !== 'false') fail('Hot Dogs control did not start unselected.');
-    await hotDogs.click();
-    await page.waitForFunction(() => document.querySelector('button[data-buffet-key="supplementalIds"][data-buffet-id="hotdogs"]')?.getAttribute('aria-pressed') === 'true');
-    if (!(await hotDogs.innerText()).includes('✓')) fail('Hot Dogs control did not render its selected state.');
-    await hotDogs.click();
-    await page.waitForFunction(() => document.querySelector('button[data-buffet-key="supplementalIds"][data-buffet-id="hotdogs"]')?.getAttribute('aria-pressed') === 'false');
 
     const cauliflower = page.locator('.sideCard').filter({ hasText: 'Cauliflower Mac' }).first();
     if (await cauliflower.count() !== 1) fail('Cauliflower Mac side control is missing.');
