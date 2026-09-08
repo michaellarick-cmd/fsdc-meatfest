@@ -8,6 +8,9 @@ on:
 permissions:
   contents: read
 
+env:
+  MEATFEST_LIVE_URL: https://fsdc-meatfest.michael-larick.workers.dev/
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -25,3 +28,12 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           preCommands: npm install --no-save wrangler@4.123.0
           command: deploy
+
+      - name: Install browser test runner
+        run: npm install --no-save playwright@1.52.0
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify deployed Cloudflare site
+        run: node test/cloudflare-live.test.cjs
