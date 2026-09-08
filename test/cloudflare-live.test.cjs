@@ -37,7 +37,7 @@ function fail(message) {
     await kids.fill('8');
     await kids.dispatchEvent('input');
 
-    for (const key of ['brisket', 'pmbe', 'ribs', 'pork']) {
+    for (const key of ['brisket', 'pmbe', 'ribs', 'pork', 'brats', 'chicken']) {
       const protein = page.locator(`.meat[data-k="${key}"]`);
       if (await protein.count() !== 1) fail(`Protein control is missing: ${key}`);
       if (!(await protein.evaluate(el => el.classList.contains('on')))) await protein.click();
@@ -84,7 +84,8 @@ function fail(message) {
 
     if (!liveState.hasBuildSummary || !liveState.hasBuffetEngine) fail('Required live Meatfest/Buffet globals are missing.');
     if (liveState.eaters !== 44) fail(`Live adult-equivalent eater count is wrong: ${liveState.eaters}`);
-    if (liveState.proteinCount !== 4 || !(liveState.purchaseWeight > 0)) fail(`Live protein calculation did not produce the expected four-protein plan: ${JSON.stringify(liveState)}`);
+    if (liveState.proteinCount !== 6) fail(`Live canonical protein selection did not produce six proteins: ${JSON.stringify(liveState)}`);
+    if (Math.abs(liveState.purchaseWeight - 86.1) > 0.001) fail(`Live canonical purchase weight is wrong: ${liveState.purchaseWeight}; expected 86.1 lb.`);
     if (!liveState.cauli || liveState.cauli.q.amount !== 0.75 || liveState.cauli.q.unit !== 'tin') fail(`Live Cauliflower Mac quantity is wrong: ${JSON.stringify(liveState.cauli)}`);
     if (!liveState.collards || !(liveState.collards.q.amount >= 1.25) || liveState.collards.q.unit !== 'recipe') fail(`Live Collard Greens quantity is wrong: ${JSON.stringify(liveState.collards)}`);
     if (!liveState.collardService || liveState.collardService.count !== liveState.expectedCollardChafers || liveState.collardService.label !== 'full chafer') {
