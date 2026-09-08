@@ -21,6 +21,19 @@ function fail(message) {
 
     await page.locator('#buffetServiceCard').waitFor({ state: 'visible', timeout: 30000 });
 
+    const adults = page.locator('#adults');
+    const kids = page.locator('#kids');
+    await adults.fill('40');
+    await adults.dispatchEvent('input');
+    await kids.fill('8');
+    await kids.dispatchEvent('input');
+
+    for (const key of ['brisket', 'pmbe', 'ribs', 'pork']) {
+      const protein = page.locator(`.meat[data-k="${key}"]`);
+      if (await protein.count() !== 1) fail(`Protein control is missing: ${key}`);
+      if (!(await protein.evaluate(el => el.classList.contains('on')))) await protein.click();
+    }
+
     const hotDogs = page.locator('button[data-buffet-key="supplementalIds"][data-buffet-id="hotdogs"]');
     if (await hotDogs.count() !== 1) fail('Hot Dogs buffet control is missing.');
     if (await hotDogs.getAttribute('aria-pressed') !== 'false') fail('Hot Dogs control did not start unselected.');
@@ -57,6 +70,9 @@ function fail(message) {
       return {
         hasBuildSummary: typeof window.buildSummary === 'function',
         hasBuffetEngine: !!buffet,
+        eaters: summary.eaters,
+        proteinCount: summary.rows.length,
+        purchaseWeight: summary.total,
         cauli,
         collards,
         collardService: collardPlan?.quantity?.service,
@@ -67,11 +83,10 @@ function fail(message) {
     });
 
     if (!liveState.hasBuildSummary || !liveState.hasBuffetEngine) fail('Required live Meatfest/Buffet globals are missing.');
-    if (!liveState.cauli) fail('Cauliflower Mac was not handed from the live calculator into buffet state.');
-    if (!liveState.collards) fail('Collard Greens were not handed from the live calculator into buffet state.');
-    if (!liveState.collards.q || typeof liveState.collards.q !== 'object' || typeof liveState.collards.q.amount !== 'number' || !liveState.collards.q.unit) {
-      fail(`Live Collard Greens quantity handoff is malformed: ${JSON.stringify(liveState.collards)}`);
-    }
+    if (liveState.eaters !== 44) fail(`Live adult-equivalent eater count is wrong: ${liveState.eaters}`);
+    if (liveState.proteinCount !== 4 || !(liveState.purchaseWeight > 0)) fail(`Live protein calculation did not produce the expected four-protein plan: ${JSON.stringify(liveState)}`);
+    if (!liveState.cauli || liveState.cauli.q.amount !== 0.75 || liveState.cauli.q.unit !== 'tin') fail(`Live Cauliflower Mac quantity is wrong: ${JSON.stringify(liveState.cauli)}`);
+    if (!liveState.collards || liveState.collards.q.amount !== 1.25 || liveState.collards.q.unit !== 'recipe') fail(`Live Collard Greens quantity is wrong: ${JSON.stringify(liveState.collards)}`);
     if (!liveState.collardService || liveState.collardService.count !== liveState.expectedCollardChafers || liveState.collardService.label !== 'full chafer') {
       fail(`Live Collard Greens service calculation is wrong: ${JSON.stringify(liveState.collardService)}; expected ${liveState.expectedCollardChafers} full chafer(s).`);
     }
@@ -89,6 +104,9 @@ function fail(message) {
     console.log(JSON.stringify({
       url: LIVE_URL,
       title,
+      eaters: liveState.eaters,
+      proteinCount: liveState.proteinCount,
+      purchaseWeight: liveState.purchaseWeight,
       cauliflowerMac: liveState.cauli.q,
       collards: liveState.collards.q,
       collardService: liveState.collardService,
