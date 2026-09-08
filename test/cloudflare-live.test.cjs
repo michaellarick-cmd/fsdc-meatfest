@@ -32,11 +32,11 @@ function fail(message) {
 
     const cauliflower = page.locator('.sideCard').filter({ hasText: 'Cauliflower Mac' }).first();
     if (await cauliflower.count() !== 1) fail('Cauliflower Mac side control is missing.');
-    if (!(await cauliflower.getAttribute('class') || '').includes('on')) await cauliflower.click();
+    if (!(await cauliflower.evaluate(el => el.classList.contains('on')))) await cauliflower.click();
 
     const collards = page.locator('.sideCard').filter({ hasText: 'Collard Greens' }).first();
     if (await collards.count() !== 1) fail('Collard Greens side control is missing.');
-    if (!(await collards.getAttribute('class') || '').includes('on')) await collards.click();
+    if (!(await collards.evaluate(el => el.classList.contains('on')))) await collards.click();
 
     await page.waitForTimeout(100);
 
