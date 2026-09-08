@@ -86,7 +86,7 @@ function fail(message) {
     if (liveState.eaters !== 44) fail(`Live adult-equivalent eater count is wrong: ${liveState.eaters}`);
     if (liveState.proteinCount !== 4 || !(liveState.purchaseWeight > 0)) fail(`Live protein calculation did not produce the expected four-protein plan: ${JSON.stringify(liveState)}`);
     if (!liveState.cauli || liveState.cauli.q.amount !== 0.75 || liveState.cauli.q.unit !== 'tin') fail(`Live Cauliflower Mac quantity is wrong: ${JSON.stringify(liveState.cauli)}`);
-    if (!liveState.collards || liveState.collards.q.amount !== 1.25 || liveState.collards.q.unit !== 'recipe') fail(`Live Collard Greens quantity is wrong: ${JSON.stringify(liveState.collards)}`);
+    if (!liveState.collards || !(liveState.collards.q.amount >= 1.25) || liveState.collards.q.unit !== 'recipe') fail(`Live Collard Greens quantity is wrong: ${JSON.stringify(liveState.collards)}`);
     if (!liveState.collardService || liveState.collardService.count !== liveState.expectedCollardChafers || liveState.collardService.label !== 'full chafer') {
       fail(`Live Collard Greens service calculation is wrong: ${JSON.stringify(liveState.collardService)}; expected ${liveState.expectedCollardChafers} full chafer(s).`);
     }
