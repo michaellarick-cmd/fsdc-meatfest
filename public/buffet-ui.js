@@ -100,5 +100,7 @@
 
   const originalCalc=window.calc;
   window.calc=function(){const result=originalCalc.apply(this,arguments);render();return result};
+  const originalSave=window.save;
+  if(typeof originalSave==='function')window.save=function(){const result=originalSave.apply(this,arguments);render();return result};
   render();
 })();
