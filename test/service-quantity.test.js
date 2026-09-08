@@ -40,7 +40,13 @@ test('four quarter quantities fit one physical chafer but remain four quarter ti
   const packing=B.chaferPacking([{unit:'quarter',amount:4}]);
   assert.equal(packing.chafers,1); assert.equal(packing.quarter,4);
   const groups=B.physicalPlan([{type:'side',id:'q',quantity:{unit:'quarter',amount:4},vessel:B.VESSELS.chafer}]);
-  assert.equal(groups.length,4); assert.ok(groups.every(g=>g.linearIn===18));
+  assert.equal(groups.length,1); assert.equal(groups[0].linearIn,18); assert.equal(groups[0].items.length,4); assert.ok(groups[0].items.every(item=>item.serviceFill==='quarter'));
+});
+
+test('five quarter quantities require two physical chafers',()=>{
+  const groups=B.physicalPlan([{type:'side',id:'q',quantity:{unit:'quarter',amount:5},vessel:B.VESSELS.chafer}]);
+  assert.equal(groups.length,2); assert.equal(groups[0].items.length,4); assert.equal(groups[1].items.length,1);
+  assert.ok(groups.every(g=>g.linearIn===18)); assert.ok(groups.flatMap(g=>g.items).every(item=>item.serviceFill==='quarter'));
 });
 
 test('44-eater side quantities follow the centralized practical rules',()=>{
