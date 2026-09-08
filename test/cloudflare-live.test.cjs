@@ -34,8 +34,8 @@ function fail(message) {
     if (await cauliflower.count() !== 1) fail('Cauliflower Mac side control is missing.');
     if (!(await cauliflower.getAttribute('class') || '').includes('on')) await cauliflower.click();
 
-    const collards = page.locator('.sideCard').filter({ hasText: 'Collards' }).first();
-    if (await collards.count() !== 1) fail('Collards side control is missing.');
+    const collards = page.locator('.sideCard').filter({ hasText: 'Collard Greens' }).first();
+    if (await collards.count() !== 1) fail('Collard Greens side control is missing.');
     if (!(await collards.getAttribute('class') || '').includes('on')) await collards.click();
 
     await page.waitForTimeout(100);
@@ -67,12 +67,12 @@ function fail(message) {
 
     if (!liveState.hasBuildSummary || !liveState.hasBuffetEngine) fail('Required live Meatfest/Buffet globals are missing.');
     if (!liveState.cauli) fail('Cauliflower Mac was not handed from the live calculator into buffet state.');
-    if (!liveState.collards) fail('Collards were not handed from the live calculator into buffet state.');
+    if (!liveState.collards) fail('Collard Greens were not handed from the live calculator into buffet state.');
     if (!liveState.collards.q || typeof liveState.collards.q !== 'object' || typeof liveState.collards.q.amount !== 'number' || !liveState.collards.q.unit) {
-      fail(`Live Collards quantity handoff is malformed: ${JSON.stringify(liveState.collards)}`);
+      fail(`Live Collard Greens quantity handoff is malformed: ${JSON.stringify(liveState.collards)}`);
     }
     if (!liveState.collardService || liveState.collardService.count !== liveState.expectedCollardChafers || liveState.collardService.label !== 'full chafer') {
-      fail(`Live Collards service calculation is wrong: ${JSON.stringify(liveState.collardService)}; expected ${liveState.expectedCollardChafers} full chafer(s).`);
+      fail(`Live Collard Greens service calculation is wrong: ${JSON.stringify(liveState.collardService)}; expected ${liveState.expectedCollardChafers} full chafer(s).`);
     }
     if (!liveState.table || liveState.table.linearRequired !== 102 || liveState.table.linearProvided !== 120 || JSON.stringify(liveState.table.tables) !== JSON.stringify([72, 48])) {
       fail(`Live table requirement calculation is wrong: ${JSON.stringify(liveState.table)}`);
@@ -80,7 +80,7 @@ function fail(message) {
 
     const buffetText = await page.locator('#buffetServiceCard').innerText();
     if (!buffetText.includes('Cauliflower Mac')) fail('Cauliflower Mac is missing from the live buffet presentation.');
-    if (!buffetText.includes('Collards')) fail('Collards are missing from the live buffet presentation.');
+    if (!buffetText.includes('Collard Greens')) fail('Collard Greens are missing from the live buffet presentation.');
 
     console.log('Cloudflare live smoke test passed.');
     console.log(JSON.stringify({
