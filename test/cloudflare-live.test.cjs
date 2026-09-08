@@ -61,7 +61,8 @@ function fail(message) {
         collards,
         collardService: collardPlan?.quantity?.service,
         expectedCollardChafers,
-        table
+        table,
+        buffetText: document.querySelector('#buffetServiceCard')?.innerText || ''
       };
     });
 
@@ -77,10 +78,12 @@ function fail(message) {
     if (!liveState.table || liveState.table.linearRequired !== 102 || liveState.table.linearProvided !== 120 || JSON.stringify(liveState.table.tables) !== JSON.stringify([72, 48])) {
       fail(`Live table requirement calculation is wrong: ${JSON.stringify(liveState.table)}`);
     }
-
-    const buffetText = await page.locator('#buffetServiceCard').innerText();
-    if (!buffetText.includes('Cauliflower Mac')) fail('Cauliflower Mac is missing from the live buffet presentation.');
-    if (!buffetText.includes('Collard Greens')) fail('Collard Greens are missing from the live buffet presentation.');
+    if (!liveState.buffetText.includes('Cauliflower Mac')) {
+      fail(`Cauliflower Mac is missing from the live buffet presentation. Live card text was: ${liveState.buffetText}`);
+    }
+    if (!liveState.buffetText.includes('Collard Greens')) {
+      fail(`Collard Greens are missing from the live buffet presentation. Live card text was: ${liveState.buffetText}`);
+    }
 
     console.log('Cloudflare live smoke test passed.');
     console.log(JSON.stringify({
