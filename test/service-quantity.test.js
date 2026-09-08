@@ -43,14 +43,14 @@ test('four quarter quantities fit one physical chafer but remain four quarter ti
   assert.equal(groups.length,4); assert.ok(groups.every(g=>g.linearIn===18));
 });
 
-test('44-eater Meatfest quantity recommendations preserve the 7.0 empirical baseline',()=>{
-  const expected={cucumber:1,broccoli:1,coleslaw:1,collards:1,corn:2,mac:2,cauliflowerMac:1,beans:2,sauerkraut:1};
+test('44-eater side quantities follow the centralized practical rules',()=>{
+  const expected={cucumber:2,broccoli:2,coleslaw:2,collards:2,corn:2,mac:2,cauliflowerMac:1,beans:2,sauerkraut:1};
   for(const [id,n] of Object.entries(expected)) assert.equal(B.sideQuantity(id,44).amount,n,id);
 });
 
 test('table planning chooses the least-overage standard table combination',()=>{
   const plan=B.tableRequirement([{items:[{id:'a'}],linearIn:54},{items:[{id:'b'}],linearIn:48}],{tableLengths:[72,48]});
-  assert.deepEqual(plan.tables,[72,48]); assert.equal(plan.linearRequired,102); assert.equal(plan.linearProvided,120);
+  assert.deepEqual(Array.from(plan.tables),[72,48]); assert.equal(plan.linearRequired,102); assert.equal(plan.linearProvided,120);
 });
 
 test('dessert load changes recommendation scale without changing dessert selection',()=>{
