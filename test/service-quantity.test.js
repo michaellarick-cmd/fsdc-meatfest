@@ -36,18 +36,9 @@ test('half quantities from different sides can share one physical chafer',()=>{
   assert.equal(groups.length,1); assert.equal(groups[0].linearIn,21); assert.equal(groups[0].items.length,2);
 });
 
-test('four quarter quantities fit one physical chafer but remain four quarter tins',()=>{
-  const packing=B.chaferPacking([{unit:'quarter',amount:4}]);
-  assert.equal(packing.chafers,1); assert.equal(packing.quarter,4);
-  const groups=B.physicalPlan([{type:'side',id:'q',quantity:{unit:'quarter',amount:4},vessel:B.VESSELS.chafer}]);
-  assert.equal(groups.length,1); assert.equal(groups[0].linearIn,21); assert.equal(groups[0].items.length,4); assert.ok(groups[0].items.every(item=>item.serviceFill==='quarter'));
-});
+test('quarter quantities do not assume four-to-a-chafer packing',()=>{const packing=B.chaferPacking([{unit:'quarter',amount:4}]);assert.equal(packing.quarter,4);assert.equal(packing.chafers,4);const groups=B.physicalPlan([{type:'side',id:'q',quantity:{unit:'quarter',amount:4},side:B.SIDES.mac,vessel:B.VESSELS.chafer}]);assert.equal(groups.length,4);assert.ok(groups.every(g=>g.items.length===1));assert.ok(groups.every(g=>g.items[0].serviceFill==='quarter'));});
 
-test('five quarter quantities require two physical chafers',()=>{
-  const groups=B.physicalPlan([{type:'side',id:'q',quantity:{unit:'quarter',amount:5},vessel:B.VESSELS.chafer}]);
-  assert.equal(groups.length,2); assert.equal(groups[0].items.length,4); assert.equal(groups[1].items.length,1);
-  assert.ok(groups.every(g=>g.linearIn===21)); assert.ok(groups.flatMap(g=>g.items).every(item=>item.serviceFill==='quarter'));
-});
+test('five quarter quantities require five physical chafers',()=>{const groups=B.physicalPlan([{type:'side',id:'q',quantity:{unit:'quarter',amount:5},side:B.SIDES.mac,vessel:B.VESSELS.chafer}]);assert.equal(groups.length,5);assert.ok(groups.every(g=>g.linearIn===21));assert.ok(groups.every(g=>g.items.length===1));assert.ok(groups.flatMap(g=>g.items).every(item=>item.serviceFill==='quarter'));});
 
 test('44-eater side quantities follow the centralized practical rules',()=>{
   const expected={cucumber:2,broccoli:2,coleslaw:2,collards:2,corn:2,mac:2,cauliflowerMac:1,beans:2,sauerkraut:1};
