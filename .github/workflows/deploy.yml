@@ -39,6 +39,8 @@ jobs:
           old = "for(const entry of chaferQuarter){for(let i=0;i<entry.count;i++)groups.push({items:[{...entry.item,serviceFill:'partial',fillFraction:entry.fill}],linearIn:VESSELS.chafer.linearIn,station:itemStation(entry.item)})}"
           new = "for(const entry of chaferQuarter){for(let i=0;i<entry.count;i++)groups.push({items:[{...entry.item,serviceFill:'quarter'}],linearIn:VESSELS.chafer.linearIn,station:itemStation(entry.item)})}"
           if old in s: s=s.replace(old,new)
+          old = "Math.ceil(quarters/4)"
+          if old in s: s=s.replace(old,"quarters")
           engine.write_text(s)
 
           ui = Path('public/buffet-ui.js')
@@ -49,7 +51,6 @@ jobs:
           elif new not in s: raise SystemExit('Expected buffet-ui tin wording not found')
           ui.write_text(s)
 
-          # Replace the obsolete quarter-packing assertions with the agreed physical model.
           p=Path('test/buffet-engine.test.js'); s=p.read_text()
           start=s.find("test('four quarter tins occupy one physical chafer")
           if start>=0:
