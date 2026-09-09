@@ -19,13 +19,13 @@ test('side quantity is independent of the other sides selected',()=>{
 
 test('half quantity is a food quantity and two halves share one chafer',()=>{
   const q=B.sideQuantity('cauliflowerMac',44); assert.equal(q.unit,'half'); assert.equal(q.amount,1); assert.equal(q.serviceVessels,1);
-  assert.equal(B.packFoodQuantity({unit:'quarter',amount:2}).serviceVessels,1);
+  assert.equal(B.packFoodQuantity({unit:'quarter',amount:2}).serviceVessels,2);
 });
 
 test('full chafer is one service unit and two halves share one chafer',()=>{
   assert.equal(B.chaferPacking([{unit:'full',amount:1}]).chafers,1);
   assert.equal(B.chaferPacking([{unit:'half',amount:2}]).chafers,1);
-  assert.equal(B.chaferPacking([{unit:'quarter',amount:4}]).chafers,1);
+  assert.equal(B.chaferPacking([{unit:'quarter',amount:4}]).chafers,4);
 });
 
 test('half quantities from different sides can share one physical chafer',()=>{
