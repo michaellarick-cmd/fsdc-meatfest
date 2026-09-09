@@ -30,49 +30,44 @@ jobs:
           s = engine.read_text()
           old = "const p=tinPacking(amount);for(let i=0;i<p.full;i++)chaferFull.push({item,count:1});if(p.partial>0)chaferQuarter.push({item,count:1,fill:p.partial});"
           new = "const p=tinPacking(amount);for(let i=0;i<p.full;i++)chaferFull.push({item,count:1});if(p.partial===.75)chaferFull.push({item,count:1,fill:.75});else if(p.partial===.5)chaferHalf.push({item,count:1});else if(p.partial===.25)chaferQuarter.push({item,count:1});"
-          if old in s:
-              s = s.replace(old, new)
-          elif new not in s:
-              raise SystemExit('Expected buffet-engine tin packing branch not found')
+          if old in s: s=s.replace(old,new)
+          elif new not in s: raise SystemExit('Expected buffet-engine tin packing branch not found')
           old = "serviceFill:'full'}],linearIn:VESSELS.chafer.linearIn,station:itemStation(x.item)})"
           new = "serviceFill:'full',...(x.fill?{fillFraction:x.fill}: {})}],linearIn:VESSELS.chafer.linearIn,station:itemStation(x.item)})"
-          if old in s:
-              s = s.replace(old, new)
-          elif new not in s:
-              raise SystemExit('Expected buffet-engine full-chafer mapping not found')
+          if old in s: s=s.replace(old,new)
+          elif new not in s: raise SystemExit('Expected buffet-engine full-chafer mapping not found')
+          old = "for(const entry of chaferQuarter){for(let i=0;i<entry.count;i++)groups.push({items:[{...entry.item,serviceFill:'partial',fillFraction:entry.fill}],linearIn:VESSELS.chafer.linearIn,station:itemStation(entry.item)})}"
+          new = "for(const entry of chaferQuarter){for(let i=0;i<entry.count;i++)groups.push({items:[{...entry.item,serviceFill:'quarter'}],linearIn:VESSELS.chafer.linearIn,station:itemStation(entry.item)})}"
+          if old in s: s=s.replace(old,new)
           engine.write_text(s)
 
           ui = Path('public/buffet-ui.js')
           s = ui.read_text()
           old = "if(r===1)parts.push('¼ tin');if(r===2)parts.push('½ tin');if(r===3)parts.push('¾ tin')"
           new = "if(r===1)parts.push('1 tin filled ¼ full');if(r===2)parts.push('1 tin filled ½ full');if(r===3)parts.push('1 tin filled ¾ full')"
-          if old in s:
-              s = s.replace(old, new)
-          elif new not in s:
-              raise SystemExit('Expected buffet-ui tin wording not found')
+          if old in s: s=s.replace(old,new)
+          elif new not in s: raise SystemExit('Expected buffet-ui tin wording not found')
           ui.write_text(s)
 
-          # Remove the obsolete assertion that treated four quarter tins as one chafer.
-          for path in ['test/buffet-engine.test.js','test/service-quantity.test.js']:
-              p = Path(path)
-              s = p.read_text()
-              s = s.replace(
-                  "test('four quarter tins occupy one physical chafer without becoming a full-tin quantity',()=>{const packing=B.chaferPacking([{unit:'quarter',amount:4}]);assert.equal(packing.chafers,1);assert.equal(packing.full,0);assert.equal(packing.half,0);assert.equal(packing.quarter,4);const groups=B.physicalPlan(Array.from({length:4},(_,i)=>({type:'side',id:`q${i}`,name:`Q${i}`,side:B.SIDES.mac,vessel:B.VESSELS.chafer,quantity:{amount:.25,unit:'tin'}})));assert.equal(groups.length,1);assert.equal(groups[0].items.length,4);assert.ok(Array.from(groups[0].items).every(x=>x.serviceFill==='quarter'));});",
-                  "test('three-quarter tin requirement uses one full-size tin filled three-quarters',()=>{const groups=B.physicalPlan([{type:'side',id:'q',name:'Q',side:B.SIDES.mac,vessel:B.VESSELS.chafer,quantity:{amount:.75,unit:'tin'}}]);assert.equal(groups.length,1);assert.equal(groups[0].items.length,1);assert.equal(groups[0].items[0].serviceFill,'full');assert.equal(groups[0].items[0].fillFraction,.75);});"
-              )
-              s = s.replace(
-                  "test('five quarter tins require two physical chafers',()=>{const groups=B.physicalPlan(Array.from({length:5},(_,i)=>({type:'side',id:`q${i}`,name:`Q${i}`,side:B.SIDES.mac,vessel:B.VESSELS.chafer,quantity:{amount:.25,unit:'tin'}})));assert.equal(groups.length,2);assert.equal(Array.from(groups).map(g=>g.items.length).join('|'),'4|1');});",
-                  "test('quarter tin requirements use quarter physical tins rather than four-to-a-chafer packing',()=>{const groups=B.physicalPlan([{type:'side',id:'q1',name:'Q1',side:B.SIDES.mac,vessel:B.VESSELS.chafer,quantity:{amount:.25,unit:'tin'}},{type:'side',id:'q2',name:'Q2',side:B.SIDES.mac,vessel:B.VESSELS.chafer,quantity:{amount:.25,unit:'tin'}}]);assert.equal(groups.length,2);assert.ok(groups.every(g=>g.items.length===1));assert.ok(groups.every(g=>g.items[0].serviceFill==='quarter'));});"
-              )
-              s = s.replace(
-                  "test('four quarter quantities fit one physical chafer but remain four quarter tins',()=>{const packing=B.chaferPacking([{unit:'quarter',amount:4}]);assert.equal(packing.chafers,1);assert.equal(packing.quarter,4);const groups=B.physicalPlan([{type:'side',id:'q',quantity:{unit:'quarter',amount:4},vessel:B.VESSELS.chafer}]);assert.equal(groups.length,1);assert.equal(groups[0].linearIn,21);assert.equal(groups[0].items.length,4);assert.ok(groups[0].items.every(item=>item.serviceFill==='quarter'));});",
-                  "test('quarter quantities remain quarter physical tins and do not assume four-to-a-chafer packing',()=>{const packing=B.chaferPacking([{unit:'quarter',amount:4}]);assert.equal(packing.quarter,4);assert.equal(packing.chafers,4);const groups=B.physicalPlan([{type:'side',id:'q',quantity:{unit:'quarter',amount:4},vessel:B.VESSELS.chafer}]);assert.equal(groups.length,4);assert.ok(groups.every(g=>g.items.length===1));assert.ok(groups.every(g=>g.items[0].serviceFill==='quarter'));});"
-              )
-              s = s.replace(
-                  "test('five quarter quantities require two physical chafers',()=>{const groups=B.physicalPlan([{type:'side',id:'q',quantity:{unit:'quarter',amount:5},vessel:B.VESSELS.chafer}]);assert.equal(groups.length,2);assert.equal(groups[0].items.length,4);assert.equal(groups[1].items.length,1);assert.ok(groups.every(g=>g.linearIn===21));assert.ok(groups.flatMap(g=>g.items).every(item=>item.serviceFill==='quarter'));});",
-                  "test('five quarter quantities require five physical chafers',()=>{const groups=B.physicalPlan([{type:'side',id:'q',quantity:{unit:'quarter',amount:5},vessel:B.VESSELS.chafer}]);assert.equal(groups.length,5);assert.ok(groups.every(g=>g.linearIn===21));assert.ok(groups.every(g=>g.items.length===1));assert.ok(groups.flatMap(g=>g.items).every(item=>item.serviceFill==='quarter'));});"
-              )
-              p.write_text(s)
+          # Replace the old quarter-packing assertions with the agreed physical model.
+          p=Path('test/buffet-engine.test.js'); s=p.read_text()
+          s=s.replace("test('four quarter tins occupy one physical chafer without becoming a full-tin quantity',()=>{const packing=B.chaferPacking([{unit:'quarter',amount:4}]);assert.equal(packing.chafers,1);assert.equal(packing.full,0);assert.equal(packing.half,0);assert.equal(packing.quarter,4);const groups=B.physicalPlan(Array.from({length:4},(_,i)=>({type:'side',id:`q${i}`,name:`Q${i}`,side:B.SIDES.mac,vessel:B.VESSELS.chafer,quantity:{amount:.25,unit:'tin'}})));assert.equal(groups.length,1);assert.equal(groups[0].items.length,4);assert.ok(Array.from(groups[0].items).every(x=>x.serviceFill==='quarter'));});","test('three-quarter tin requirement uses one full-size tin filled three-quarters',()=>{const groups=B.physicalPlan([{type:'side',id:'q',name:'Q',side:B.SIDES.mac,vessel:B.VESSELS.chafer,quantity:{amount:.75,unit:'tin'}}]);assert.equal(groups.length,1);assert.equal(groups[0].items.length,1);assert.equal(groups[0].items[0].serviceFill,'full');assert.equal(groups[0].items[0].fillFraction,.75);});")
+          s=s.replace("test('five quarter tins require two physical chafers',()=>{const groups=B.physicalPlan(Array.from({length:5},(_,i)=>({type:'side',id:`q${i}`,name:`Q${i}`,side:B.SIDES.mac,vessel:B.VESSELS.chafer,quantity:{amount:.25,unit:'tin'}})));assert.equal(groups.length,2);assert.equal(Array.from(groups).map(g=>g.items.length).join('|'),'4|1');});","test('quarter tin requirements use quarter physical tins rather than four-to-a-chafer packing',()=>{const groups=B.physicalPlan([{type:'side',id:'q1',name:'Q1',side:B.SIDES.mac,vessel:B.VESSELS.chafer,quantity:{amount:.25,unit:'tin'}},{type:'side',id:'q2',name:'Q2',side:B.SIDES.mac,vessel:B.VESSELS.chafer,quantity:{amount:.25,unit:'tin'}}]);assert.equal(groups.length,2);assert.ok(groups.every(g=>g.items.length===1));assert.ok(groups.every(g=>g.items[0].serviceFill==='quarter'));});")
+          p.write_text(s)
+
+          p=Path('test/service-quantity.test.js'); s=p.read_text()
+          s=s.replace("test('four quarter quantities fit one physical chafer but remain four quarter tins',()=>{const packing=B.chaferPacking([{unit:'quarter',amount:4}]);assert.equal(packing.chafers,1);assert.equal(packing.quarter,4);const groups=B.physicalPlan([{type:'side',id:'q',quantity:{unit:'quarter',amount:4},vessel:B.VESSELS.chafer}]);assert.equal(groups.length,1);assert.equal(groups[0].linearIn,21);assert.equal(groups[0].items.length,4);assert.ok(groups[0].items.every(item=>item.serviceFill==='quarter'));});","test('quarter quantities do not assume four-to-a-chafer packing',()=>{const packing=B.chaferPacking([{unit:'quarter',amount:4}]);assert.equal(packing.quarter,4);assert.equal(packing.chafers,4);const groups=B.physicalPlan([{type:'side',id:'q',quantity:{unit:'quarter',amount:4},side:B.SIDES.mac,vessel:B.VESSELS.chafer}]);assert.equal(groups.length,4);assert.ok(groups.every(g=>g.items.length===1));assert.ok(groups.every(g=>g.items[0].serviceFill==='quarter'));});")
+          s=s.replace("test('five quarter quantities require two physical chafers',()=>{const groups=B.physicalPlan([{type:'side',id:'q',quantity:{unit:'quarter',amount:5},vessel:B.VESSELS.chafer}]);assert.equal(groups.length,2);assert.equal(groups[0].items.length,4);assert.equal(groups[1].items.length,1);assert.ok(groups.every(g=>g.linearIn===21));assert.ok(groups.flatMap(g=>g.items).every(item=>item.serviceFill==='quarter'));});","test('five quarter quantities require five physical chafers',()=>{const groups=B.physicalPlan([{type:'side',id:'q',quantity:{unit:'quarter',amount:5},side:B.SIDES.mac,vessel:B.VESSELS.chafer}]);assert.equal(groups.length,5);assert.ok(groups.every(g=>g.linearIn===21));assert.ok(groups.every(g=>g.items.length===1));assert.ok(groups.flatMap(g=>g.items).every(item=>item.serviceFill==='quarter'));});")
+          p.write_text(s)
+
+          p=Path('test/buffet-followup.test.js'); s=p.read_text()
+          s=s.replace("assert.deepEqual(groups[0].items.map(x=>x.id),['mac','cauliflowerMac']);","assert.equal(groups[0].items.map(x=>x.id).join('|'),'mac|cauliflowerMac');")
+          s=s.replace("assert.deepEqual(groups[0].items.map(x=>x.serviceFill),['partial','partial']);","assert.equal(groups[0].items.map(x=>x.serviceFill).join('|'),'half|half');")
+          s=s.replace("assert.deepEqual(groups[0].items.map(x=>x.fillFraction),[.5,.5]);","assert.equal(groups[0].items.every(x=>x.serviceFill==='half'),true);")
+          s=s.replace("assert.equal(groups[0].items[0].serviceFill,'partial');","assert.equal(groups[0].items[0].serviceFill,'full');")
+          s=s.replace("assert.equal(groups[0].items[0].fillFraction,.75);","assert.equal(groups[0].items[0].fillFraction,.75);")
+          s=s.replace("assert.equal(groups[1].items[0].serviceFill,'partial');\n  assert.equal(groups[1].items[0].fillFraction,.25);","assert.equal(groups[1].items[0].serviceFill,'quarter');")
+          p.write_text(s)
           PY
 
       - name: Commit buffet terminology correction
@@ -82,7 +77,7 @@ jobs:
           else
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add public/buffet-engine.js public/buffet-ui.js test/buffet-engine.test.js test/service-quantity.test.js
+            git add public/buffet-engine.js public/buffet-ui.js test/buffet-engine.test.js test/service-quantity.test.js test/buffet-followup.test.js
             git commit -m "Correct buffet tin fill semantics"
             git push
           fi
