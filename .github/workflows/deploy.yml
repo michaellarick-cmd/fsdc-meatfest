@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   MEATFEST_LIVE_URL: https://fsdc-meatfest.michael-larick.workers.dev/
@@ -20,6 +20,45 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Correct buffet tin fill semantics
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          engine = Path('public/buffet-engine.js')
+          s = engine.read_text()
+          old = "serviceFill:entry.fill||'quarter'"
+          new = "serviceFill:'partial',fillFraction:entry.fill"
+          if old in s:
+              s = s.replace(old, new)
+          else:
+              raise SystemExit('Expected buffet-engine tin fill expression not found')
+          engine.write_text(s)
+
+          ui = Path('public/buffet-ui.js')
+          s = ui.read_text()
+          old = "if(r===1)parts.push('¼ tin');if(r===2)parts.push('½ tin');if(r===3)parts.push('¾ tin')"
+          new = "if(r===1)parts.push('1 tin filled ¼ full');if(r===2)parts.push('1 tin filled ½ full');if(r===3)parts.push('1 tin filled ¾ full')"
+          if old in s:
+              s = s.replace(old, new)
+          else:
+              raise SystemExit('Expected buffet-ui tin wording not found')
+          ui.write_text(s)
+          PY
+
+      - name: Commit buffet terminology correction
+        run: |
+          if git diff --quiet; then
+            echo "No buffet terminology changes needed."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add public/buffet-engine.js public/buffet-ui.js
+            git commit -m "Correct buffet tin fill terminology"
+            git push
+          fi
 
       - name: Run Meatfest calculation tests
         run: npm test
