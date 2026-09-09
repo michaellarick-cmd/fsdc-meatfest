@@ -66,7 +66,7 @@ function fail(message) {
       const collards = sideRows.find(r => r.id === 'collards');
       const collardPlan = sidePlan.find(r => r.id === 'collards');
       const table = buffet.tableRequirement([{ linearIn: 102 }], { tableLengths: [72, 48] });
-      const expectedCollardChafers = Math.max(1, Math.ceil((collards.q.amount * 0.75) - 1e-9));
+      const expectedCollardBowls = Math.max(1, Math.ceil(collards.q.amount - 1e-9));
       return {
         hasBuildSummary: typeof window.buildSummary === 'function',
         hasBuffetEngine: !!buffet,
@@ -76,7 +76,9 @@ function fail(message) {
         cauli,
         collards,
         collardService: collardPlan?.quantity?.service,
-        expectedCollardChafers,
+        collardVessel: collardPlan?.vessel,
+        collardMethod: collardPlan?.service?.method,
+        expectedCollardBowls,
         table,
         buffetText: document.querySelector('#buffetServiceCard')?.innerText || ''
       };
@@ -90,8 +92,14 @@ function fail(message) {
     }
     if (!liveState.cauli || liveState.cauli.q.amount !== 0.75 || liveState.cauli.q.unit !== 'tin') fail(`Live Cauliflower Mac quantity is wrong: ${JSON.stringify(liveState.cauli)}`);
     if (!liveState.collards || !(liveState.collards.q.amount >= 1.25) || liveState.collards.q.unit !== 'recipe') fail(`Live Collard Greens quantity is wrong: ${JSON.stringify(liveState.collards)}`);
-    if (!liveState.collardService || liveState.collardService.count !== liveState.expectedCollardChafers || liveState.collardService.label !== 'full chafer') {
-      fail(`Live Collard Greens service calculation is wrong: ${JSON.stringify(liveState.collardService)}; expected ${liveState.expectedCollardChafers} full chafer(s).`);
+    if (!liveState.collardService || liveState.collardService.count !== liveState.expectedCollardBowls || liveState.collardService.label !== 'serving bowl') {
+      fail(`Live Collard Greens service calculation is wrong: ${JSON.stringify(liveState.collardService)}; expected ${liveState.expectedCollardBowls} serving bowl(s).`);
+    }
+    if (!liveState.collardVessel || liveState.collardVessel.type !== 'bowl') {
+      fail(`Live Collard Greens vessel is wrong: ${JSON.stringify(liveState.collardVessel)}; expected serving bowl.`);
+    }
+    if (liveState.collardMethod !== 'tongs') {
+      fail(`Live Collard Greens service method is wrong: ${liveState.collardMethod}; expected tongs.`);
     }
     if (!liveState.table || liveState.table.linearRequired !== 102 || liveState.table.linearProvided !== 120 || JSON.stringify(liveState.table.tables) !== JSON.stringify([72, 48])) {
       fail(`Live table requirement calculation is wrong: ${JSON.stringify(liveState.table)}`);
@@ -113,6 +121,8 @@ function fail(message) {
       cauliflowerMac: liveState.cauli.q,
       collards: liveState.collards.q,
       collardService: liveState.collardService,
+      collardVessel: liveState.collardVessel,
+      collardMethod: liveState.collardMethod,
       tableRequirement: liveState.table
     }, null, 2));
   } finally {
