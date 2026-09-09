@@ -8,7 +8,7 @@ const context={globalThis:{}};
 vm.runInNewContext(source,context);
 const B=context.globalThis.BuffetEngine;
 
-test('two half tins share one physical chafer',()=>{
+test('two half-full standard tins share one physical chafer',()=>{
   const groups=B.physicalPlan([
     {type:'side',id:'mac',name:'Mac & Cheese',side:B.SIDES.mac,vessel:B.VESSELS.chafer,quantity:{amount:.5,unit:'tin'}},
     {type:'side',id:'cauliflowerMac',name:'Cauliflower Mac',side:B.SIDES.cauliflowerMac,vessel:B.VESSELS.chafer,quantity:{amount:.5,unit:'tin'}}
@@ -16,17 +16,31 @@ test('two half tins share one physical chafer',()=>{
   assert.equal(groups.length,1);
   assert.equal(groups[0].linearIn,21);
   assert.deepEqual(groups[0].items.map(x=>x.id),['mac','cauliflowerMac']);
-  assert.deepEqual(groups[0].items.map(x=>x.serviceFill),['quarter','quarter']);
+  assert.deepEqual(groups[0].items.map(x=>x.serviceFill),['partial','partial']);
+  assert.deepEqual(groups[0].items.map(x=>x.fillFraction),[.5,.5]);
 });
 
-test('three-quarter tin plus quarter tin share one physical chafer',()=>{
+test('a three-quarter-full standard tin is one physical tin, not three quarter tins',()=>{
   const groups=B.physicalPlan([
-    {type:'side',id:'mac',name:'Mac & Cheese',side:B.SIDES.mac,vessel:B.VESSELS.chafer,quantity:{amount:.75,unit:'tin'}},
-    {type:'side',id:'beans',name:'Baked Beans',side:B.SIDES.beans,vessel:B.VESSELS.chafer,quantity:{amount:.25,unit:'tin'}}
+    {type:'side',id:'mac',name:'Mac & Cheese',side:B.SIDES.mac,vessel:B.VESSELS.chafer,quantity:{amount:.75,unit:'tin'}}
   ]);
   assert.equal(groups.length,1);
   assert.equal(groups[0].linearIn,21);
-  assert.deepEqual(groups[0].items.map(x=>x.serviceFill),['quarter','quarter','quarter','quarter']);
+  assert.equal(groups[0].items.length,1);
+  assert.equal(groups[0].items[0].serviceFill,'partial');
+  assert.equal(groups[0].items[0].fillFraction,.75);
+});
+
+test('one full tin plus one quarter-full standard tin uses two physical chafers',()=>{
+  const groups=B.physicalPlan([
+    {type:'side',id:'mac',name:'Mac & Cheese',side:B.SIDES.mac,vessel:B.VESSELS.chafer,quantity:{amount:1.25,unit:'tin'}}
+  ]);
+  assert.equal(groups.length,2);
+  assert.equal(groups[0].items.length,1);
+  assert.equal(groups[0].items[0].serviceFill,'full');
+  assert.equal(groups[1].items.length,1);
+  assert.equal(groups[1].items[0].serviceFill,'partial');
+  assert.equal(groups[1].items[0].fillFraction,.25);
 });
 
 test('buffet bread selection is driven by Accompaniment selections',()=>{
