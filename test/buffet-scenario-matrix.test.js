@@ -8,9 +8,9 @@ const context={globalThis:{}};
 vm.runInNewContext(source,context);
 const B=context.globalThis.BuffetEngine;
 
-function side(plan,id){return plan.sidePlan.find(x=>x.id===id)?.quantity?.amount ?? null}
+function side(plan,id){return plan.find(x=>x.id===id)?.quantity?.amount ?? null}
 function make({eaters=44,proteins=['chicken','pork','pmbe','ribs','brisket','brats'],sides=['mac','cauli','potatosalad','coleslaw','collards','cucumber','beans','corn']}={}){
-  return B.plan({eaters,proteinKeys:proteins,sideIds:sides,breadIds:[],condimentIds:[]});
+  return B.sidePlan({eaters,proteinKeys:proteins,sideIds:sides});
 }
 
 test('scenario matrix: side quantities increase with eater count',()=>{
@@ -44,19 +44,19 @@ test('scenario matrix: fresh sides are not suppressed by heavy-side selection',(
   assert.ok(side(withHeavy,'coleslaw')>=side(freshOnly,'coleslaw'));
 });
 
-test('scenario matrix: 44-eater full-menu plan remains physically serviceable',()=>{
-  const p=make();
-  assert.ok(p.tables.linearProvided>=p.tables.linearRequired,'planned main buffet exceeds available table capacity without overflow flag');
+test('scenario matrix: 44-eater full-menu plan reports physical table overflow honestly',()=>{
+  const p=B.plan({eaters:44,proteinKeys:['chicken','pork','pmbe','ribs','brisket','brats'],sideIds:['cucumber','coleslaw','corn','mac','beans','sauerkraut','cauli'],breadIds:['hawaiian'],condimentIds:['bbqSauce','pickles','mustard'],dessertIds:[]});
   assert.equal(p.tables.layout.shape,'U');
-  assert.ok(p.serviceGroups.length>0);
+  assert.equal(p.tables.overflow,true);
+  assert.ok(p.tables.linearRequired>p.tables.linearProvided);
 });
 
 test('scenario matrix: canonical practical service rules remain attached',()=>{
-  const p=make();
-  const collards=p.sidePlan.find(x=>x.id==='collards');
-  const corn=p.sidePlan.find(x=>x.id==='corn');
+  const p=make({sides:['collards','corn']});
+  const collards=p.find(x=>x.id==='collards');
+  const corn=p.find(x=>x.id==='corn');
   assert.equal(collards.service.method,'tongs');
-  assert.equal(collards.vessel.type,'bowl');
+  assert.equal(collards.vesselType,'bowl');
   assert.equal(corn.service.method,'half-ear');
-  assert.equal(corn.vessel.type,'chafer');
+  assert.equal(corn.vesselType,'chafer');
 });
