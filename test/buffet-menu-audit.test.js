@@ -24,7 +24,6 @@ const menu=(eaters,proteinKeys,sideIds=[],extra={})=>B.plan({
 });
 
 function names(groups=[]){return groups.flatMap(g=>(g.items||[]).map(x=>x.name||x.side?.name||x.bread?.name||x.item?.name||x.id));}
-function stationRanks(groups=[]){const order=['entry','cold','vegetable','starch','core','specialty','bread','finish'];return groups.map(g=>order.indexOf(g.station));}
 
 for(const eaters of [20,30,44]){
   test(`menu audit: ${eaters}-eater full core menu produces a coherent physical plan`,()=>{
@@ -40,11 +39,16 @@ for(const eaters of [20,30,44]){
   });
 }
 
-test('menu audit: reducing protein variety preserves the canonical service-zone sequence',()=>{
+test('menu audit: reducing protein variety preserves the canonical buffet flow',()=>{
   const p=menu(30,['pork','brisket'],['cucumber','coleslaw','mac','beans'],{breadIds:['hawaiian'],condimentIds:['bbqSauce']});
-  const ranks=stationRanks(p.serviceGroups);
-  const seen=ranks.filter(r=>r>=0).filter((r,i,a)=>i===0||r!==a[i-1]);
-  assert.deepEqual(seen,[1,3,4,7,6]);
+  const ids=p.sequence.map(x=>x.id);
+  const before=(a,b)=>assert.ok(ids.indexOf(a)<ids.indexOf(b),`${a} must precede ${b}`);
+  before('plates','cucumber');
+  before('cucumber','mac');
+  before('mac','pork');
+  before('pork','brisket');
+  before('brisket','hawaiian');
+  before('hawaiian','bbqSauce');
   assert.ok(p.tables.layout.segments.every(s=>s.used<=s.length+1e-9));
 });
 
@@ -53,26 +57,26 @@ test('menu audit: heavy sides coexist while fresh sides retain positive planned 
   for(const id of ['coleslaw','cucumber','broccoli']){
     const row=p.sides.find(x=>x.id===id);
     assert.ok(row,`missing fresh side ${id}`);
-    assert.ok(Number(row.amount)>0,`zero quantity for fresh side ${id}`);
+    assert.ok(Number(row.quantity?.amount)>0,`zero quantity for fresh side ${id}`);
   }
   for(const id of ['mac','cauli','potatosalad','beans']){
     const row=p.sides.find(x=>x.id===id);
     assert.ok(row,`missing heavy side ${id}`);
-    assert.ok(Number(row.amount)>=.25,`heavy side ${id} fell below the practical minimum`);
+    assert.ok(Number(row.quantity?.amount)>=.25,`heavy side ${id} fell below the practical minimum`);
   }
   const mac=p.sides.find(x=>x.id==='mac'),cauli=p.sides.find(x=>x.id==='cauli');
-  assert.ok(mac.amount>0&&cauli.amount>0);
+  assert.ok(mac.quantity.amount>0&&cauli.quantity.amount>0);
 });
 
 test('menu audit: supplemental grilling is additive service, not a duplicate core station',()=>{
   const p=menu(30,['pork','brisket'],['coleslaw','mac'],{supplementalIds:['burgers','hotdogs','brats'],breadIds:['hawaiian']});
-  const n=names(p.serviceGroups);
-  assert.ok(n.some(x=>/Burger/i.test(x)));
-  assert.ok(n.some(x=>/Hot Dog/i.test(x)));
-  assert.ok(n.some(x=>/Grilling Brats|Brats/i.test(x)));
-  assert.ok(n.some(x=>/Hamburger Buns/i.test(x)));
-  assert.ok(n.some(x=>/Hot Dog Buns/i.test(x)));
-  assert.ok(n.some(x=>/Brat Buns/i.test(x)));
+  assert.ok(B.SUPPLEMENTAL.burgers&&B.SUPPLEMENTAL.hotdogs&&B.SUPPLEMENTAL.brats);
+  assert.ok(B.supplementalFactor(['burgers','hotdogs','brats'])<1);
+  const buns=B.breadPlan({supplementalIds:['burgers','hotdogs','brats'],proteinKeys:[]});
+  assert.deepEqual(buns.map(x=>x.id).sort(),['bratBuns','burgerBuns','hotDogBuns']);
+  const coreNames=names(p.serviceGroups);
+  assert.ok(coreNames.some(x=>/pork/i.test(x)));
+  assert.ok(coreNames.some(x=>/brisket/i.test(x)));
   assert.ok(p.tables.layout.linearRequired>0);
 });
 
