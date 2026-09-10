@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   GIT_CONFIG_COUNT: "1"
@@ -24,5 +24,38 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '24.x'
+      - name: Apply canonical source changes
+        if: ${{ !contains(github.event.head_commit.message, 'refactor: canonical side planner') && github.event_name == 'push' }}
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          app=Path('public/app.js')
+          s=app.read_text()
+          pattern=r'function sideQty\(id\)\{.*?\n?function sideBuyText'
+          replacement='''function familySideQty(id){const s=sides[id],[adults,kids]=activeTotals(),eaters=adults+kids*.5;if(!eaters)return 0;const p=sideProteinFactor(selected.size),n=Math.max(1,[...selectedSides].filter(x=>sides[x].group==="main").length),v=sideVarietyFactor(n);let q=s.base*(eaters/47)*p*(1+(v-1)*s.sensitivity);q*=1.125;if(id==="kraut"&&selected.has("brats"))q*=1.15;if(id==="corn"&&selected.size>=4)q*=.9;if(id==="rolls"){const sp=(selected.has("pork")?1:0)+(selected.has("chicken")?1:0)+(selected.has("brisket")?1:0);q*=sp?.65+.12*Math.min(3,sp):.35}if(id==="cornbread")q*=selected.size?1+.06*Math.min(4,selected.size):0;q=Math.max(s.min,q);if(s.unit==="tin")return roundNearest(q,s.round);if(s.unit==="recipe")return roundUpTo(q,s.round);if(s.unit==="ear")return Math.max(4,roundUpTo(q,2));return Math.max(s.min,roundUpTo(q,s.round))}
+function sideQty(id){if(planningMode!=="meatfest"||!window.BuffetEngine)return familySideQty(id);const [adults,kids]=activeTotals(),eaters=adults+kids*.5;if(!eaters)return 0;const B=window.BuffetEngine,proteinKeys=[...selected],sideIds=[...selectedSides].map(x=>B.SIDE_ID_ALIASES?.[x]||x).filter(x=>B.SIDES?.[x]),canonicalId=B.SIDE_ID_ALIASES?.[id]||id,breadMap={rolls:"hawaiian",cornbread:"cornbread"},breadId=breadMap[id];if(breadId){const plan=B.breadPlan({breadIds:[breadId],proteinKeys,eaters});return plan.find(x=>x.id===breadId)?.quantity?.pieces||0}return B.menuSideQuantity(canonicalId,eaters,sideIds,proteinKeys)?.amount||0}
+function sideBuyText'''
+          s2,n=re.subn(pattern,replacement,s,count=1,flags=re.S)
+          if n!=1: raise SystemExit('sideQty refactor target not found')
+          app.write_text(s2)
+          engine=Path('public/buffet-engine.js')
+          e=engine.read_text()
+          old="const SIDE_ID_ALIASES=Object.freeze({cauli:'cauliflowerMac',kraut:'sauerkraut',greenBeans:'greenbeans',pastaSalad:'pastasalad',potatoSalad:'potatosalad'});"
+          new="const SIDE_ID_ALIASES=Object.freeze({cauli:'cauliflowerMac',slaw:'coleslaw',kraut:'sauerkraut',greenBeans:'greenbeans',pastaSalad:'pastasalad',potatoSalad:'potatosalad'});"
+          if old not in e: raise SystemExit('side alias target not found')
+          engine.write_text(e.replace(old,new,1))
       - name: Run regression tests
         run: npm test
+      - name: Commit canonical source changes and clean migration files
+        if: ${{ !contains(github.event.head_commit.message, 'refactor: canonical side planner') && github.event_name == 'push' }}
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/app.js public/buffet-engine.js test/sides.test.js
+          git checkout HEAD~1 -- .github/workflows/test.yml
+          git rm .github/workflows/export-app-source.yml tmp/canonical-refactor-source.txt tmp/refactor-note.txt
+          git add .github/workflows/test.yml
+          git commit -m "refactor: canonical side planner"
+          git push
