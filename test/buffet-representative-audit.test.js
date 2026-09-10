@@ -13,6 +13,7 @@ const B=window.BuffetEngine;
 
 const STATION_RANK={entry:0,cold:0,vegetable:1,starch:1,core:2,specialty:2,bread:3,finish:3};
 function names(seg){return seg.items.flatMap(g=>g.items||[]).map(x=>x.name||x.side?.name||x.bread?.name||x.item?.name||x.id)}
+function groupWidth(g){return g.items?.[0]?.vessel?.type==='jar'?4:Math.max(0,Number(g.linearIn)||0)}
 function audit(name,input){
   const p=B.plan(input),a=p.tables.layout;
   const placed=new Set();
@@ -25,7 +26,8 @@ function audit(name,input){
       assert.ok(seg.table-1>=Math.min(preferred,a.segments.length-1),`${name}: ${g.station} group moved backward from its preferred zone`);
     }
   }
-  assert.equal(a.linearRequired,a.segments.reduce((s,x)=>s+x.used,0)+a.overflowGroups.reduce((s,g)=>s+(g.linearIn||0),0));
+  const accounted=a.segments.reduce((s,x)=>s+x.used,0)+a.overflowGroups.reduce((s,g)=>s+groupWidth(g),0);
+  assert.equal(a.linearRequired,accounted,`${name}: physical linear inches are not fully accounted for`);
   console.log(JSON.stringify({name,required:a.linearRequired,provided:a.linearProvided,overflowIn:a.overflowIn,recommended:a.recommendedTables,overflowItems:a.overflowItems,tables:a.segments.map(s=>({table:s.table,length:s.length,used:s.used,stations:s.stations,items:names(s)}))},null,2));
   return p;
 }
