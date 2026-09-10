@@ -28,7 +28,7 @@ function audit(name,input){
   }
   const accounted=a.segments.reduce((s,x)=>s+x.used,0)+a.overflowGroups.reduce((s,g)=>s+groupWidth(g),0);
   assert.equal(a.linearRequired,accounted,`${name}: physical linear inches are not fully accounted for`);
-  console.log(JSON.stringify({name,required:a.linearRequired,provided:a.linearProvided,overflowIn:a.overflowIn,recommended:a.recommendedTables,overflowItems:a.overflowItems,tables:a.segments.map(s=>({table:s.table,length:s.length,used:s.used,stations:s.stations,items:names(s)}))},null,2));
+  console.log(JSON.stringify({name,required:a.linearRequired,provided:a.linearProvided,overflowIn:a.overflowIn,recommended:Array.from(a.recommendedTables),overflowItems:a.overflowItems,tables:a.segments.map(s=>({table:s.table,length:s.length,used:s.used,stations:Array.from(s.stations),items:names(s)}))},null,2));
   return p;
 }
 
@@ -52,11 +52,11 @@ const menus=[
 
 for(const [name,input] of menus)test(`representative buffet audit: ${name}`,()=>{
   const p=audit(name,input);
-  assert.deepEqual(p.tables.layout.tableLengths,[72,72,72,48]);
+  assert.deepEqual(Array.from(p.tables.layout.tableLengths),[72,72,72,48]);
 });
 
 test('representative buffet audit: full menu is the only canonical case expected to require the fifth table',()=>{
   const p=B.plan({eaters:44,proteinKeys:['chicken','pork','pmbe','ribs','brisket','brats'],sideIds:['cucumber','coleslaw','corn','mac','beans','sauerkraut','cauli'],breadIds:['hawaiian'],condimentIds:['bbqSauce','pickles','mustard'],dessertIds:[]});
   assert.equal(p.tables.overflow,true);
-  assert.deepEqual(p.tables.layout.recommendedTables,[72,72,72,48,48]);
+  assert.deepEqual(Array.from(p.tables.layout.recommendedTables),[72,72,72,48,48]);
 });
