@@ -25,10 +25,10 @@
   const SIDE_RULES=Object.freeze({cucumber:{perEaters:32,unitSize:1},broccoli:{perEaters:32,unitSize:1},coleslaw:{perEaters:32,unitSize:1},collards:{perEaters:32,unitSize:1},corn:{perEaters:24,unitSize:1},mac:{perEaters:24,unitSize:1},cauliflowerMac:{perEaters:48,unitSize:1},beans:{perEaters:24,unitSize:1},sauerkraut:{perEaters:48,unitSize:1}});
   const SIDE_DEMAND=Object.freeze({
     asparagus:{participation:.30,initial:1,returnRate:.08,unitPerEater:.045},beans:{participation:.34,initial:1,returnRate:.06,unitPerEater:.154},broccoli:{participation:.48,initial:.72,returnRate:.22,unitPerEater:.040},
-    cauliflowerMac:{participation:.50,initial:.82,returnRate:.10,unitPerEater:.063},coleslaw:{participation:.55,initial:.58,returnRate:.32,unitPerEater:.032},collards:{participation:.42,initial:.62,returnRate:.22,unitPerEater:.031},
+    cauliflowerMac:{participation:.50,initial:.82,returnRate:.10,unitPerEater:.063,heavy:true,competitionGroup:'mac'},coleslaw:{participation:.55,initial:.58,returnRate:.32,unitPerEater:.032},collards:{participation:.42,initial:.62,returnRate:.22,unitPerEater:.031},
     corn:{participation:.18,initial:1,returnRate:.01,unitPerEater:1.25},cucumber:{participation:.42,initial:.52,returnRate:.34,unitPerEater:.031},greenbeans:{participation:.32,initial:.72,returnRate:.12,unitPerEater:.045},
-    mac:{participation:.78,initial:1,returnRate:.10,unitPerEater:.12},pastasalad:{participation:.42,initial:.62,returnRate:.28,unitPerEater:.032},
-    potatosalad:{participation:.48,initial:.58,returnRate:.14,unitPerEater:.032},sauerkraut:{participation:.30,initial:.48,returnRate:.10,unitPerEater:.17}
+    mac:{participation:.78,initial:1,returnRate:.10,unitPerEater:.12,heavy:true,competitionGroup:'mac'},pastasalad:{participation:.42,initial:.62,returnRate:.28,unitPerEater:.032},
+    potatosalad:{participation:.48,initial:.58,returnRate:.14,unitPerEater:.032,heavy:true},sauerkraut:{participation:.30,initial:.48,returnRate:.10,unitPerEater:.17}
   });
   const HEAVY_SIDES=new Set(['mac','cauliflowerMac','potatosalad','beans']);
   const FRESH_SIDES=new Set(['cucumber','coleslaw','broccoli','pastasalad']);
