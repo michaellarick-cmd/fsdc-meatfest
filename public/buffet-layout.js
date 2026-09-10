@@ -22,11 +22,11 @@
     function solve(idx,t,used){
       if(idx>=n)return{overflow:0,spill:0,tables:1,waste:Math.max(0,(lengths[t]||0)-used),choices:[]};
       const key=`${idx}|${t}|${used}`;if(memo.has(key))return memo.get(key);
-      const x=ordered[idx],c=[];
-      if(t<lengths.length&&x.w<=lengths[t]-used+1e-9){
+      const x=ordered[idx],c=[],minPreferred=Math.min(x.p,lengths.length-1);
+      if(t>=minPreferred&&t<lengths.length&&x.w<=lengths[t]-used+1e-9){
         const next=solve(idx+1,t,used+x.w);c.push({overflow:next.overflow,spill:next.spill,tables:next.tables,waste:next.waste,choices:[{idx,table:t,overflow:false},...next.choices]});
       }
-      const minNext=Math.max(t+1,Math.min(x.p,lengths.length));
+      const minNext=Math.max(t+1,minPreferred);
       for(let nt=minNext;nt<lengths.length;nt++)if(x.w<=lengths[nt]+1e-9){
         const next=solve(idx+1,nt,x.w);c.push({overflow:next.overflow,spill:next.spill+(nt-x.p),tables:next.tables+1,waste:next.waste+(lengths[t]-used),choices:[{idx,table:nt,overflow:false},...next.choices]});
       }
