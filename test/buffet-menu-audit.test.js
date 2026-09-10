@@ -73,7 +73,7 @@ test('menu audit: supplemental grilling is additive service, not a duplicate cor
   assert.ok(B.SUPPLEMENTAL.burgers&&B.SUPPLEMENTAL.hotdogs&&B.SUPPLEMENTAL.brats);
   assert.ok(B.supplementalFactor(['burgers','hotdogs','brats'])<1);
   const buns=B.breadPlan({supplementalIds:['burgers','hotdogs','brats'],proteinKeys:[]});
-  assert.deepEqual(buns.map(x=>x.id).sort(),['bratBuns','burgerBuns','hotDogBuns']);
+  assert.equal(Array.from(buns.map(x=>x.id)).sort().join('|'),'bratBuns|burgerBuns|hotDogBuns');
   const coreNames=names(p.serviceGroups);
   assert.ok(coreNames.some(x=>/pork/i.test(x)));
   assert.ok(coreNames.some(x=>/brisket/i.test(x)));
