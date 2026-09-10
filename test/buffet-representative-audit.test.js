@@ -58,9 +58,10 @@ for(const [name,input] of menus)test(`representative buffet audit: ${name}`,()=>
   if(name==='normal Meatfest / 32 eaters'||name==='normal menu + supplemental grilling / 32 eaters'||name==='Mac + Cauli + fresh sides / 44 eaters')assert.equal(p.tables.overflow,false,`${name}: should fit the canonical four-table footprint`);
 });
 
-test('representative buffet audit: full menu is the only canonical case expected to require the fifth table',()=>{
+test('representative buffet audit: full menu reports only physically unplaceable vessel space',()=>{
   const p=B.plan({eaters:44,proteinKeys:['chicken','pork','pmbe','ribs','brisket','brats'],sideIds:['cucumber','coleslaw','corn','mac','beans','sauerkraut','cauli'],breadIds:['hawaiian'],condimentIds:['bbqSauce','pickles','mustard'],dessertIds:[]});
   assert.equal(p.tables.overflow,true);
-  assert.equal(p.tables.layout.overflowIn,40);
+  assert.equal(p.tables.layout.overflowIn,54);
+  assert.equal(p.tables.layout.linearRequired-p.tables.layout.overflowIn,250);
   assert.deepEqual(Array.from(p.tables.layout.recommendedTables),[72,72,72,48,48]);
 });
