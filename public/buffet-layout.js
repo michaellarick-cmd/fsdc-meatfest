@@ -9,16 +9,14 @@
 
   // Normal menus get an optimizer that treats the preferred zone as soft guidance,
   // preventing false overflow when total demand fits. Once demand exceeds the four
-  // tables, the allocator returns to the canonical zone packing so the physical
-  // shortfall is honest and the extra surface is attached to the right service zone.
+  // tables, pack by service zone first and vessel width second so the shortfall is
+  // minimized without putting a later service zone ahead of an earlier one.
   function allocate(groups,tableLengths=B0.TABLE_GEOMETRY.main){
     const lengths=tableLengths.map(Number).filter(n=>Number.isFinite(n)&&n>0);
     const segments=lengths.map((length,i)=>({table:i+1,length,items:[],used:0,remaining:length,stations:[],overflow:false}));
     const required=(groups||[]).reduce((s,g)=>s+width(g),0),provided=lengths.reduce((s,n)=>s+n,0);
     const source=(groups||[]).map((g,i)=>({g,i,w:width(g),p:preferred(g),r:rank(g?.station)})).filter(x=>x.w>0);
-    const ordered=required>provided
-      ?source.sort((a,b)=>a.p-b.p||b.w-a.w||a.i-b.i)
-      :source.sort((a,b)=>a.r-b.r||b.w-a.w||a.i-b.i);
+    const ordered=source.sort((a,b)=>a.r-b.r||b.w-a.w||a.i-b.i);
     const n=ordered.length,memo=new Map();
     const better=(a,b)=>a.overflow!==b.overflow?(a.overflow<b.overflow?-1:1):a.pref!==b.pref?(a.pref<b.pref?-1:1):a.tables!==b.tables?(a.tables<b.tables?-1:1):a.waste!==b.waste?(a.waste<b.waste?-1:1):0;
     function solve(idx,t,used){
@@ -31,18 +29,15 @@
       let best=choices[0];for(let i=1;i<choices.length;i++)if(better(choices[i],best)<0)best=choices[i];memo.set(key,best);return best;
     }
     let result=n?solve(0,0,0):{overflow:0,pref:0,tables:0,waste:0,choices:[]};
-    // For menus whose total physical demand exceeds the canonical footprint, use
-    // the deterministic preferred-zone packer. It intentionally reports only the
-    // physical shortfall rather than inventing a better-than-real packing layout.
     if(required>provided){
       for(const s of segments){s.items=[];s.used=0;s.remaining=s.length;s.stations=[]}
       const overflow=[];
       for(const x of ordered){let placed=false;for(let i=Math.min(x.p,segments.length-1);i<segments.length;i++){const s=segments[i];if(x.w<=s.remaining+1e-9){s.items.push(x.g);s.used+=x.w;s.remaining-=x.w;if(!s.stations.includes(x.g.station))s.stations.push(x.g.station);placed=true;break}}if(!placed)overflow.push(x.g)}
-      result={overflow:overflow.reduce((s,g)=>s+width(g),0),choices:ordered.map((x,i)=>({idx:i,table:segments.findIndex(s=>s.items.includes(x.g)),overflow:overflow.includes(x.g)}))};
+      result={overflow:overflow.reduce((s,g)=>s+width(g),0),choices:ordered.map(x=>({idx:x.i,table:segments.findIndex(s=>s.items.includes(x.g)),overflow:overflow.includes(x.g)}))};
     }
     const byIndex=new Map(result.choices.map(c=>[c.idx,c]));
     if(required<=provided)for(let i=0;i<n;i++){const x=ordered[i],choice=byIndex.get(i);if(!choice||choice.overflow)continue;const s=segments[choice.table];s.items.push(x.g);s.used+=x.w;s.remaining-=x.w;if(!s.stations.includes(x.g.station))s.stations.push(x.g.station)}
-    const overflow=required>provided?ordered.filter((x,i)=>result.choices[i]?.overflow).map(x=>x.g):ordered.filter((x,i)=>{const c=byIndex.get(i);return !c||c.overflow}).map(x=>x.g);
+    const overflow=required>provided?ordered.filter(x=>result.choices.some(c=>c.idx===x.i&&c.overflow)).map(x=>x.g):ordered.filter((x,i)=>{const c=byIndex.get(i);return !c||c.overflow}).map(x=>x.g);
     const overflowIn=overflow.reduce((s,g)=>s+width(g),0);
     let recommended=[];try{recommended=B0.tableRequirement(groups?.map(g=>({...g,linearIn:width(g)})),{tableLengths:[72,48]}).tables}catch{}
     return{shape:'U',tableLengths:lengths,linearRequired:required,linearProvided:provided,overflow:overflow.length>0||required>provided,overflowIn,overflowGroups:overflow,overflowItems:overflow.flatMap(g=>(g.items||[]).map(itemName)),overflowStations:[...new Set(overflow.map(g=>g.station))].sort((a,b)=>rank(a)-rank(b)),segments,recommendedTables:recommended};
