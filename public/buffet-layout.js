@@ -7,11 +7,9 @@
   const preferred=g=>{if((g?.items||[]).some(x=>x.id==='sauerkraut'))return 2;return ({entry:0,cold:0,vegetable:1,starch:1,core:2,specialty:2,bread:3,finish:3}[g?.station]??3)};
   const width=g=>g?.items?.[0]?.vessel?.type==='jar'?4:Math.max(0,Number(g?.linearIn)||0);
 
-  // Pack service groups efficiently without allowing guest flow to move
-  // backward. Within one station, groups may fill any table at or after the
-  // station's current boundary. When the station changes, the boundary can
-  // only move forward. This preserves service sequence while still allowing
-  // complementary vessel sizes to fill gaps on earlier tables.
+  // Pack service groups efficiently without allowing guest flow to move backward.
+  // Groups within one station may fill earlier gaps. When the station changes,
+  // the next station starts after the furthest table used by the prior station.
   function allocate(groups,tableLengths=B0.TABLE_GEOMETRY.main){
     const lengths=tableLengths.map(Number).filter(n=>Number.isFinite(n)&&n>0);
     const segments=lengths.map((length,i)=>({table:i+1,length,items:[],used:0,remaining:length,stations:[],overflow:false}));
@@ -20,22 +18,24 @@
     const ordered=source.sort((a,b)=>a.r-b.r||b.w-a.w||a.i-b.i);
     const n=ordered.length,memo=new Map();
     const better=(a,b)=>a.overflow!==b.overflow?(a.overflow<b.overflow?-1:1):a.pref!==b.pref?(a.pref<b.pref?-1:1):a.tables!==b.tables?(a.tables<b.tables?-1:1):0;
-    function solve(idx,minTable,stationRank,used){
+    function solve(idx,startTable,stationRank,stationMax,used){
       if(idx>=n)return{overflow:0,pref:0,tables:0,choices:[]};
-      const key=`${idx}|${minTable}|${stationRank}|${used.join(',')}`;if(memo.has(key))return memo.get(key);
-      const x=ordered[idx],newStation=x.r!==stationRank,baseTable=newStation?minTable:minTable,choices=[];
-      for(let t=baseTable;t<lengths.length;t++)if(x.w<=lengths[t]-used[t]+1e-9){
+      const key=`${idx}|${startTable}|${stationRank}|${stationMax}|${used.join(',')}`;if(memo.has(key))return memo.get(key);
+      const x=ordered[idx],newStation=x.r!==stationRank,choices=[];
+      for(let t=startTable;t<lengths.length;t++)if(x.w<=lengths[t]-used[t]+1e-9){
         const nextUsed=used.slice();nextUsed[t]+=x.w;
-        const next=solve(idx+1,newStation?t:minTable,x.r,nextUsed);
+        const nextStart=newStation?t:startTable;
+        const nextMax=newStation?t:Math.max(stationMax,t);
+        const next=solve(idx+1,nextStart,x.r,nextMax,nextUsed);
         const tables=next.tables+(used[t]<=1e-9?1:0);
         choices.push({overflow:next.overflow,pref:next.pref+Math.abs(t-x.p),tables,choices:[{idx,table:t,overflow:false},...next.choices]});
       }
-      const next=solve(idx+1,minTable,stationRank,used.slice());
+      const next=solve(idx+1,startTable,stationRank,stationMax,used.slice());
       choices.push({overflow:next.overflow+x.w,pref:next.pref+Math.abs(x.p),tables:next.tables,choices:[{idx,table:-1,overflow:true},...next.choices]});
       let best=choices[0];for(let i=1;i<choices.length;i++)if(better(choices[i],best)<0)best=choices[i];
       memo.set(key,best);return best;
     }
-    const result=n?solve(0,0,-1,lengths.map(()=>0)):{overflow:0,pref:0,tables:0,choices:[]};
+    const result=n?solve(0,0,-1,-1,lengths.map(()=>0)):{overflow:0,pref:0,tables:0,choices:[]};
     const byIndex=new Map(result.choices.map(c=>[c.idx,c]));
     for(let i=0;i<n;i++){
       const x=ordered[i],choice=byIndex.get(i);
