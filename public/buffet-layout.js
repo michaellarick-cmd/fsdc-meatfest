@@ -7,9 +7,9 @@
   const preferred=g=>{if((g?.items||[]).some(x=>x.id==='sauerkraut'))return 2;return ({entry:0,cold:0,vegetable:1,starch:1,core:2,specialty:2,bread:3,finish:3}[g?.station]??3)};
   const width=g=>g?.items?.[0]?.vessel?.type==='jar'?4:Math.max(0,Number(g?.linearIn)||0);
 
-  // Pack service groups efficiently without allowing guest flow to move backward.
-  // Groups within one station may fill earlier gaps. When the station changes,
-  // the next station starts after the furthest table used by the prior station.
+  // Pack service groups efficiently while preserving one-way guest flow.
+  // A station may fill unused capacity on any table at or after its start table.
+  // The next station cannot begin before the furthest table used by the prior station.
   function allocate(groups,tableLengths=B0.TABLE_GEOMETRY.main){
     const lengths=tableLengths.map(Number).filter(n=>Number.isFinite(n)&&n>0);
     const segments=lengths.map((length,i)=>({table:i+1,length,items:[],used:0,remaining:length,stations:[],overflow:false}));
@@ -18,30 +18,36 @@
     const ordered=source.sort((a,b)=>a.r-b.r||b.w-a.w||a.i-b.i);
     const n=ordered.length,memo=new Map();
     const better=(a,b)=>a.overflow!==b.overflow?(a.overflow<b.overflow?-1:1):a.pref!==b.pref?(a.pref<b.pref?-1:1):a.tables!==b.tables?(a.tables<b.tables?-1:1):0;
+
     function solve(idx,startTable,stationRank,stationMax,used){
       if(idx>=n)return{overflow:0,pref:0,tables:0,choices:[]};
-      const key=`${idx}|${startTable}|${stationRank}|${stationMax}|${used.join(',')}`;if(memo.has(key))return memo.get(key);
+      const key=`${idx}|${startTable}|${stationRank}|${stationMax}|${used.join(',')}`;
+      if(memo.has(key))return memo.get(key);
       const x=ordered[idx],newStation=x.r!==stationRank,choices=[];
+
       for(let t=startTable;t<lengths.length;t++)if(x.w<=lengths[t]-used[t]+1e-9){
         const nextUsed=used.slice();nextUsed[t]+=x.w;
+        // Same-station groups retain the station's start boundary so they can
+        // fill gaps on earlier tables. A new station starts at the furthest
+        // table reached by the preceding station.
         const nextStart=newStation?t:startTable;
         const nextMax=newStation?t:Math.max(stationMax,t);
         const next=solve(idx+1,nextStart,x.r,nextMax,nextUsed);
         const tables=next.tables+(used[t]<=1e-9?1:0);
         choices.push({overflow:next.overflow,pref:next.pref+Math.abs(t-x.p),tables,choices:[{idx,table:t,overflow:false},...next.choices]});
       }
+
       const next=solve(idx+1,startTable,stationRank,stationMax,used.slice());
       choices.push({overflow:next.overflow+x.w,pref:next.pref+Math.abs(x.p),tables:next.tables,choices:[{idx,table:-1,overflow:true},...next.choices]});
       let best=choices[0];for(let i=1;i<choices.length;i++)if(better(choices[i],best)<0)best=choices[i];
       memo.set(key,best);return best;
     }
+
     const result=n?solve(0,0,-1,-1,lengths.map(()=>0)):{overflow:0,pref:0,tables:0,choices:[]};
     const byIndex=new Map(result.choices.map(c=>[c.idx,c]));
     for(let i=0;i<n;i++){
-      const x=ordered[i],choice=byIndex.get(i);
-      if(!choice||choice.overflow)continue;
-      const s=segments[choice.table];
-      s.items.push(x.g);s.used+=x.w;s.remaining-=x.w;
+      const x=ordered[i],choice=byIndex.get(i);if(!choice||choice.overflow)continue;
+      const s=segments[choice.table];s.items.push(x.g);s.used+=x.w;s.remaining-=x.w;
       if(!s.stations.includes(x.g.station))s.stations.push(x.g.station);
     }
     const overflow=ordered.filter((x,i)=>{const c=byIndex.get(i);return !c||c.overflow}).map(x=>x.g);
@@ -53,7 +59,7 @@
   const B=Object.freeze({...B0,plan});window.BuffetEngine=B;window.BuffetAllocation=Object.freeze({allocate,itemName,preferred});
   const STYLE_ID='buffetLayoutVisualStyle';let obs=null;const esc=v=>String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
   function selectedIds(key){return [...document.querySelectorAll(`[data-buffet-key="${key}"].on`)].map(x=>x.dataset.buffetId).filter(Boolean)}
-  function currentPlan(){if(!window.buildSummary)return null;const s=window.buildSummary(),p=B.plan({proteinKeys:s.rows.map(r=>r.key),sideIds:s.sideRows.map(r=>r.id),sideRows:s.sideRows,eaters:s.eaters,breadIds:selectedIds('breadIds'),supplementalIds:selectedIds('supplementalIds'),condimentIds:selectedIds('condimentIds'),dessertIds:selectedIds('dessertIds'),load:document.getElementById('buffetDessertLoad')?.value||'moderate',sausageMode:document.querySelector('[data-buffet-sausage].on')?.dataset.buffetSausage||'polish'}),layout=p.tables.layout;void layout.overflowIn;return p}
+  function currentPlan(){if(!window.buildSummary)return null;const s=window.buildSummary(),p=B.plan({proteinKeys:s.rows.map(r=>r.key),sideIds:s.sideRows.map(r=>r.id),sideRows:s.sideRows,eaters:s.eaters,breadIds:selectedIds('breadIds'),supplementalIds:selectedIds('supplementalIds'),condimentIds:selectedIds('condimentIds'),dessertIds:selectedIds('dessertIds'),load:document.getElementById('buffetDessertLoad')?.value||'moderate',sausageMode:document.querySelector('[data-buffet-sausage].on')?.dataset.buffetSausage||'polish'});return p}
   function style(){if(document.getElementById(STYLE_ID))return;const s=document.createElement('style');s.id=STYLE_ID;s.textContent=`#buffetLayoutCard .visualLayout{margin-top:14px;border:1px solid #30353b;border-radius:14px;background:#101214;padding:14px}#buffetLayoutCard .visualLayoutHead{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;margin-bottom:12px}#buffetLayoutCard .visualLayoutTitle{font-size:11px;font-weight:900;letter-spacing:.12em;color:#c9cdd2}#buffetLayoutCard .visualLayoutMeta{font-size:10px;color:#aeb3b9;text-align:right}#buffetLayoutCard .uMap{display:grid;grid-template-columns:74px 1fr 74px;grid-template-rows:92px 92px 58px;gap:8px}#buffetLayoutCard .uTable{border:2px solid #575d64;border-radius:9px;background:#20242a;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:7px;text-align:center;min-width:0;overflow:hidden}#buffetLayoutCard .uTable b{font-size:11px}.uTable small{font-size:8px;color:#aeb3b9;margin-top:3px;line-height:1.25}#buffetLayoutCard .uTable.t1{grid-column:1;grid-row:1 / span 2}.uTable.t2{grid-column:2;grid-row:1}.uTable.t3{grid-column:3;grid-row:1 / span 2}.uTable.t4{grid-column:2;grid-row:2 / span 2}#buffetLayoutCard .uOpen,#buffetLayoutCard .uEntry{display:flex;align-items:center;justify-content:center;color:#626971;font-size:8px;text-transform:uppercase;letter-spacing:.08em}#buffetLayoutCard .uOpen{grid-column:1;grid-row:3}#buffetLayoutCard .uEntry{grid-column:3;grid-row:3}#buffetLayoutCard .uItems{display:flex;flex-wrap:wrap;justify-content:center;gap:3px;margin-top:5px}.uItem{font-size:7px;color:#d9dde1;border:1px solid #3a4047;border-radius:999px;padding:3px 4px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.layoutOverflow{border-color:#8d4b35!important;background:#281b17!important}#buffetLayoutCard .allocationNotice{margin-top:10px;padding:9px 10px;border-left:3px solid #f39a32;background:#1d1914;color:#d9c7ae;font-size:10px;line-height:1.4;border-radius:0 7px 7px 0}#printSheet .ps-bAlloc{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;height:2.42in}#printSheet .ps-bAllocTable{border:1.5px solid #555;border-radius:4px;padding:5px;display:flex;flex-direction:column;overflow:hidden}.ps-bAllocTable.over{border-color:#8d4b35;background:#fff5f1}.ps-bAllocTable b{font-size:8.5px}.ps-bAllocTable small{font-size:6.5px;color:#444;line-height:1.2}.ps-bAllocItems{display:flex;flex-wrap:wrap;gap:2px;margin-top:4px}.ps-bAllocItems span{font-size:6px;border:1px solid #aaa;border-radius:7px;padding:2px 3px}.ps-bOverflow{font-size:7px;color:#7b3927;margin-top:4px;font-weight:800}`;document.head.appendChild(s)}
   function names(seg){const out=[];for(const g of seg.items||[])for(const x of g.items||[]){const n=itemName(x);if(n&&!out.includes(n))out.push(n)}return out}
   function syncBaseLayout(p){const card=document.getElementById('buffetLayoutCard'),wrap=card?.querySelector('.layoutTables');if(!wrap||!p?.tables?.layout)return;const layout=p.tables.layout;wrap.innerHTML=layout.segments.map(seg=>`<div class="layoutTable ${seg.overflow?'layoutOverflow':''}"><div class="layoutTableTitle"><span>Table ${seg.table}</span><span>${seg.length/12}'</span></div><div class="layoutBar"><div class="layoutFill" style="width:${Math.min(100,seg.used/seg.length*100)}%"></div></div><div class="layoutItems">${names(seg).map(n=>`<span class="layoutItem">${esc(n)}</span>`).join('')||'<span class="layoutItem">Service space</span>'}</div><div class="layoutStation">${seg.stations.map(k=>B.STATION_LABELS?.[k]||k).join(' • ')||'Service space'} • ${Math.max(0,seg.used)}" used</div></div>`).join('');card.querySelector('.allocationNotice')?.remove();if(layout.overflow){const n=document.createElement('div');n.className='allocationNotice';n.textContent=`OVERFLOW: ${layout.overflowIn}" does not fit the four-table main footprint. Recommended table set: ${layout.recommendedTables.map(x=>x/12+"'").join(' + ')||'additional service surface'}.`;wrap.after(n)}}
