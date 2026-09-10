@@ -9,17 +9,14 @@ vm.runInNewContext(source,context);
 const B=context.globalThis.BuffetEngine;
 
 function side(plan,id){return plan.sidePlan.find(x=>x.id===id)?.quantity?.amount ?? null}
-
 function make({eaters=44,proteins=['chicken','pork','pmbe','ribs','brisket','brats'],sides=['mac','cauli','potatosalad','coleslaw','collards','cucumber','beans','corn']}={}){
-  return B.plan({proteinKeys:proteins,sideIds:sides,breadIds:[],condimentIds:[]});
+  return B.plan({eaters,proteinKeys:proteins,sideIds:sides,breadIds:[],condimentIds:[]});
 }
 
 test('scenario matrix: side quantities increase with eater count',()=>{
   const small=make({eaters:44});
   const large=make({eaters:88});
-  for(const id of ['mac','cauli','potatosalad','coleslaw','collards','cucumber','beans','corn']){
-    assert.ok(side(large,id)>=side(small,id),`${id} decreased from 44 to 88 eaters`);
-  }
+  for(const id of ['mac','cauli','potatosalad','coleslaw','collards','cucumber','beans','corn']) assert.ok(side(large,id)>=side(small,id),`${id} decreased from 44 to 88 eaters`);
 });
 
 test('scenario matrix: more selected proteins do not increase side demand',()=>{
