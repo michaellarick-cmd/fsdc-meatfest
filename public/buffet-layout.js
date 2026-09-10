@@ -28,9 +28,10 @@
       for(let t=startTable;t<lengths.length;t++)if(x.w<=lengths[t]-used[t]+1e-9){
         const nextUsed=used.slice();nextUsed[t]+=x.w;
         // Same-station groups retain the station's start boundary so they can
-        // fill gaps on earlier tables. A new station starts at the furthest
-        // table reached by the preceding station.
-        const nextStart=newStation?t:startTable;
+        // fill gaps on earlier tables. A new station starts after the furthest
+        // table reached by the preceding station, not merely the table chosen
+        // for the immediately preceding group.
+        const nextStart=newStation?Math.max(stationMax,t):startTable;
         const nextMax=newStation?t:Math.max(stationMax,t);
         const next=solve(idx+1,nextStart,x.r,nextMax,nextUsed);
         const tables=next.tables+(used[t]<=1e-9?1:0);
