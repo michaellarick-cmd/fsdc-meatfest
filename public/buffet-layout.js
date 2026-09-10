@@ -7,16 +7,16 @@
   const preferred=g=>{if((g?.items||[]).some(x=>x.id==='sauerkraut'))return 2;return ({entry:0,cold:0,vegetable:1,starch:1,core:2,specialty:2,bread:3,finish:3}[g?.station]??3)};
   const width=g=>g?.items?.[0]?.vessel?.type==='jar'?4:Math.max(0,Number(g?.linearIn)||0);
 
-  // Pack the actual service groups in sequence. The optimizer's first priority is
-  // always minimum physical overflow; preferred zones are secondary guidance.
-  // This is important when the four-table footprint is genuinely over capacity:
-  // placement must use every available inch before declaring overflow.
+  // Optimize physical placement before applying presentation preferences.  The
+  // service sequence is represented by station rank; within a station, smaller
+  // vessels are considered first so the exact-fit DP has the best chance to use
+  // otherwise stranded inches.  Overflow is always the primary objective.
   function allocate(groups,tableLengths=B0.TABLE_GEOMETRY.main){
     const lengths=tableLengths.map(Number).filter(n=>Number.isFinite(n)&&n>0);
     const segments=lengths.map((length,i)=>({table:i+1,length,items:[],used:0,remaining:length,stations:[],overflow:false}));
     const required=(groups||[]).reduce((s,g)=>s+width(g),0),provided=lengths.reduce((s,n)=>s+n,0);
     const source=(groups||[]).map((g,i)=>({g,i,w:width(g),p:preferred(g),r:rank(g?.station)})).filter(x=>x.w>0);
-    const ordered=source.sort((a,b)=>a.r-b.r||b.w-a.w||a.i-b.i);
+    const ordered=source.sort((a,b)=>a.r-b.r||a.w-b.w||a.i-b.i);
     const n=ordered.length,memo=new Map();
     const better=(a,b)=>a.overflow!==b.overflow?(a.overflow<b.overflow?-1:1):a.pref!==b.pref?(a.pref<b.pref?-1:1):a.tables!==b.tables?(a.tables<b.tables?-1:1):a.waste!==b.waste?(a.waste<b.waste?-1:1):0;
     function solve(idx,t,used){
