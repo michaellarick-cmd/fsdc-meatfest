@@ -1,6 +1,7 @@
 /* FSDC Meatfest — visual buffet layout presentation. Calculation remains in BuffetEngine. */
 (() => {
   const STYLE_ID = 'buffetLayoutVisualStyle';
+  let obs = null;
   const esc = v => String(v ?? '').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
   function style(){
     if(document.getElementById(STYLE_ID)) return;
@@ -22,27 +23,26 @@
       @media(max-width:600px){#buffetLayoutCard .uMap{grid-template-columns:58px 1fr 58px;grid-template-rows:82px 82px 52px}.uItem{font-size:6px;padding:2px 3px}.visualLayout{padding:10px!important}}
     `; document.head.appendChild(s);
   }
-  function itemsFromTable(table){
-    return [...table.querySelectorAll('.layoutItem')].map(x=>x.textContent.trim()).filter(Boolean);
-  }
+  function itemsFromTable(table){return [...table.querySelectorAll('.layoutItem')].map(x=>x.textContent.trim()).filter(Boolean)}
   function render(){
     const card=document.getElementById('buffetLayoutCard');
     if(!card) return;
     style();
+    if(obs) obs.disconnect();
     const old=card.querySelector('.visualLayout'); if(old) old.remove();
     const tables=[...card.querySelectorAll('.layoutTable')];
-    if(!tables.length) return;
-    const data=tables.map((t,i)=>({length:(t.querySelector('.layoutTableTitle span:last-child')?.textContent||'').trim(),items:itemsFromTable(t),station:(t.querySelector('.layoutStation')?.textContent||'').trim(),overflow:t.classList.contains('layoutOverflow')}));
-    const order=[data[0],data[1],data[2],data[3]].filter(Boolean);
+    if(!tables.length){if(obs)obs.observe(card,{childList:true,subtree:true});return}
+    const data=tables.map(t=>({length:(t.querySelector('.layoutTableTitle span:last-child')?.textContent||'').trim(),items:itemsFromTable(t),station:(t.querySelector('.layoutStation')?.textContent||'').trim(),overflow:t.classList.contains('layoutOverflow')}));
+    const order=data.slice(0,4);
     const table=(d,cls)=>d?`<div class="uTable ${cls} ${d.overflow?'layoutOverflow':''}"><b>Table ${order.indexOf(d)+1} • ${esc(d.length)}</b><small>${esc(d.station||'Service space')}</small><div class="uItems">${d.items.slice(0,8).map(x=>`<span class="uItem">${esc(x)}</span>`).join('')}</div></div>`:'';
     const flow=[...card.querySelectorAll('.buffetRow')].map(r=>r.querySelector('span')?.textContent?.trim()).filter(Boolean);
     const v=document.createElement('div'); v.className='visualLayout';
     v.innerHTML=`<div class="visualLayoutHead"><div><div class="visualLayoutTitle">MAIN BUFFET — U-SHAPE</div><div class="note">Guests move left-to-right through the meal, with the center/right side reserved for the core BBQ proteins.</div></div><div class="visualLayoutMeta">3 × 6' + 1 × 4'<br>66 sq ft main surface</div></div><div class="uMap">${table(order[0],'t1')}${table(order[1],'t2')}${table(order[2],'t3')}${table(order[3],'t4')}<div class="uOpen">guest approach</div><div class="uEntry">entry / exit</div></div><div class="visualLegend"><span>LEFT: cold + fresh</span><span>CENTER: vegetables + starches</span><span>RIGHT: BBQ proteins</span><span>END: bread + sauces</span></div>${flow.length?`<div class="flowStrip">${flow.slice(0,12).map((x,i)=>`<span>${i+1}. ${esc(x)}</span>`).join('')}</div>`:''}</div>`;
     card.insertBefore(v,card.firstChild?.nextSibling||null);
+    if(obs) obs.observe(card,{childList:true,subtree:true});
   }
-  let queued=false;
-  const schedule=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;render()})};
-  const obs=new MutationObserver(schedule);
+  const schedule=()=>requestAnimationFrame(render);
+  obs=new MutationObserver(schedule);
   function start(){const card=document.getElementById('buffetLayoutCard');if(!card){setTimeout(start,100);return}obs.observe(card,{childList:true,subtree:true});render()}
   start();
 })();
