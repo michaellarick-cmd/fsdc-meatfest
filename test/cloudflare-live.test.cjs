@@ -67,6 +67,10 @@ function fail(message) {
       const collardPlan = sidePlan.find(r => r.id === 'collards');
       const table = buffet.tableRequirement([{ linearIn: 102 }], { tableLengths: [72, 48] });
       const expectedCollardBowls = Math.max(1, Math.ceil(collards.q.amount - 1e-9));
+      if (typeof window.populatePrint === 'function') window.populatePrint();
+      const printBuffet = document.querySelector('#psBuffet');
+      const printTables = printBuffet ? [...printBuffet.querySelectorAll('.ps-bTable')] : [];
+      const printText = printBuffet?.innerText || '';
       return {
         hasBuildSummary: typeof window.buildSummary === 'function',
         hasBuffetEngine: !!buffet,
@@ -80,7 +84,11 @@ function fail(message) {
         collardMethod: collardPlan?.service?.method,
         expectedCollardBowls,
         table,
-        buffetText: document.querySelector('#buffetServiceCard')?.innerText || ''
+        buffetText: document.querySelector('#buffetServiceCard')?.innerText || '',
+        visualLayout: !!document.querySelector('#buffetLayoutCard .visualLayout'),
+        printBuffet: !!printBuffet,
+        printTableCount: printTables.length,
+        printBuffetText: printText
       };
     });
 
@@ -110,6 +118,13 @@ function fail(message) {
     if (!liveState.buffetText.includes('Collard Greens')) {
       fail(`Collard Greens are missing from the live buffet presentation. Live card text was: ${liveState.buffetText}`);
     }
+    if (!liveState.visualLayout) fail('Live visual U-shaped buffet layout did not render.');
+    if (!liveState.printBuffet || liveState.printTableCount !== 4) {
+      fail(`Printable buffet layout is missing or incomplete: ${JSON.stringify({printBuffet: liveState.printBuffet, printTableCount: liveState.printTableCount})}`);
+    }
+    if (!liveState.printBuffetText.includes("3 × 6'") || !liveState.printBuffetText.includes('66 sq ft') || !liveState.printBuffetText.includes("4' • END")) {
+      fail(`Printable buffet layout metadata is wrong: ${liveState.printBuffetText}`);
+    }
 
     console.log('Cloudflare live smoke test passed.');
     console.log(JSON.stringify({
@@ -123,7 +138,10 @@ function fail(message) {
       collardService: liveState.collardService,
       collardVessel: liveState.collardVessel,
       collardMethod: liveState.collardMethod,
-      tableRequirement: liveState.table
+      tableRequirement: liveState.table,
+      visualLayout: liveState.visualLayout,
+      printBuffet: liveState.printBuffet,
+      printTableCount: liveState.printTableCount
     }, null, 2));
   } finally {
     await browser.close();
