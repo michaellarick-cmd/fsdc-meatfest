@@ -8,43 +8,58 @@ const app=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
 const appStart=app.indexOf('function selectedProteinTags()');
 const appEnd=app.indexOf('const order=');
 assert.ok(appStart>=0&&appEnd>appStart,'production side planner not found in app.js');
+const sideSource=app.slice(appStart,appEnd).replace('let selectedSides=new Set();','var selectedSides=globalThis.selectedSides||new Set();');
 
-const context={selected:new Set(),selectedSides:new Set(),planningMode:'meatfest',activeTotals:()=>[44,0],window:null};
-context.window=context;
-vm.createContext(context);
-vm.runInContext(engine,context);
-vm.runInContext(`${app.slice(appStart,appEnd)}\nglobalThis.__sideTest={sideQty};`,context);
-const {sideQty}=context.__sideTest;
+function makeContext({adults=44,kids=0,proteins=[],sides=[],mode='meatfest'}={}){
+  const context={selected:new Set(proteins),selectedSides:new Set(sides),planningMode:mode,activeTotals:()=>[adults,kids]};
+  context.window=context;
+  vm.createContext(context);
+  vm.runInContext(engine,context);
+  vm.runInContext(`${sideSource}\nglobalThis.__sideTest={sideQty};`,context);
+  return context;
+}
 
-function setPlan({adults=44,kids=0,proteins=[],sides=[],mode='meatfest'}){context.activeTotals=()=>[adults,kids];context.selected=new Set(proteins);context.selectedSides=new Set(sides);context.planningMode=mode}
+function canonicalSide(context,id){
+  const eaters=context.activeTotals()[0]+context.activeTotals()[1]*.5;
+  const proteins=[...context.selected];
+  const sideIds=[...context.selectedSides].map(x=>context.BuffetEngine.SIDE_ID_ALIASES?.[x]||x).filter(x=>context.BuffetEngine.SIDES?.[x]);
+  const canonical=context.BuffetEngine.SIDE_ID_ALIASES?.[id]||id;
+  return context.BuffetEngine.menuSideQuantity(canonical,eaters,sideIds,proteins);
+}
+
+function canonicalBread(context,id){
+  const map={rolls:'hawaiian',cornbread:'cornbread'};
+  const breadId=map[id];
+  const eaters=context.activeTotals()[0]+context.activeTotals()[1]*.5;
+  const plan=context.BuffetEngine.breadPlan({breadIds:[breadId],proteinKeys:[...context.selected],eaters});
+  return plan.find(x=>x.id===breadId)?.quantity?.pieces;
+}
 
 test('app Meatfest side quantities delegate to BuffetEngine',()=>{
-  const ids=Object.keys(context.BuffetEngine.SIDES);
-  const proteins=['chicken','pork','pmbe','ribs','brisket','brats'];
-  setPlan({adults:44,proteins,sides:ids});
-  for(const id of ids){
-    const appQty=sideQty(id);
-    const engineQty=context.BuffetEngine.menuSideQuantity(id,44,ids,proteins).amount;
+  const context=makeContext({adults:44,proteins:['chicken','pork','pmbe','ribs','brisket','brats'],sides:Object.keys(contextSafeSides())});
+  for(const id of Object.keys(context.BuffetEngine.SIDES)){
+    const appQty=context.__sideTest.sideQty(id);
+    const engineQty=context.BuffetEngine.menuSideQuantity(id,44,Object.keys(context.BuffetEngine.SIDES),['chicken','pork','pmbe','ribs','brisket','brats']).amount;
     assert.equal(appQty,engineQty,`${id}: app and BuffetEngine disagree`);
   }
 });
 
+function contextSafeSides(){return {asparagus:1,beans:1,broccoli:1,cauliflowerMac:1,coleslaw:1,collards:1,corn:1,cucumber:1,greenbeans:1,mac:1,pastasalad:1,potatosalad:1,sauerkraut:1}}
+
 test('app bread quantities delegate to BuffetEngine',()=>{
-  const proteins=['chicken','pork','brisket'];
-  setPlan({adults:44,proteins,sides:['rolls','cornbread']});
+  const context=makeContext({adults:44,proteins:['chicken','pork','brisket'],sides:['rolls','cornbread']});
   for(const [id,breadId] of [['rolls','hawaiian'],['cornbread','cornbread']]){
-    const appQty=sideQty(id);
-    const engineQty=context.BuffetEngine.breadPlan({breadIds:[breadId],proteinKeys:proteins,eaters:44}).find(x=>x.id===breadId).quantity.pieces;
-    assert.equal(appQty,engineQty,`${id}: app and BuffetEngine disagree`);
+    assert.equal(context.__sideTest.sideQty(id),canonicalBread(context,id),`${id}: app and BuffetEngine disagree`);
   }
 });
 
 test('family mode retains its dedicated presentation planner',()=>{
-  setPlan({adults:24,proteins:['brisket'],sides:['slaw'],mode:'family'});
-  assert.ok(Number.isFinite(sideQty('slaw')));
+  const context=makeContext({adults:24,proteins:['brisket'],sides:['slaw'],mode:'family'});
+  assert.ok(Number.isFinite(context.__sideTest.sideQty('slaw')));
 });
 
 test('approved side catalog remains represented in the UI layer',()=>{
+  const context=makeContext();
   const expected=['asparagus','beans','broccoli','cauli','slaw','collards','corn','cucumber','greenbeans','mac','pastasalad','potatosalad','kraut','cornbread','rolls'];
   for(const id of expected){
     const canonical=context.BuffetEngine.SIDE_ID_ALIASES?.[id]||id;
