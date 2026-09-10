@@ -7,35 +7,29 @@
   const preferred=g=>{if((g?.items||[]).some(x=>x.id==='sauerkraut'))return 2;return ({entry:0,cold:0,vegetable:1,starch:1,core:2,specialty:2,bread:3,finish:3}[g?.station]??3)};
   const width=g=>g?.items?.[0]?.vessel?.type==='jar'?4:Math.max(0,Number(g?.linearIn)||0);
 
-  // Groups are ordered by guest-flow zone. Table breaks are optimized independently:
-  // a group may use an earlier table than its preferred zone when that avoids wasted
-  // capacity, but service zones never reverse as a guest moves through the buffet.
+  // Guest flow is ordered by service zone. Within a zone, larger service groups are
+  // placed first so they do not strand table space. Preferred zones are soft guidance:
+  // a group may start earlier when that produces a better physical fit, but zones never
+  // reverse as guests move through the buffet.
   function allocate(groups,tableLengths=B0.TABLE_GEOMETRY.main){
     const lengths=tableLengths.map(Number).filter(n=>Number.isFinite(n)&&n>0);
     const segments=lengths.map((length,i)=>({table:i+1,length,items:[],used:0,remaining:length,stations:[],overflow:false}));
     const ordered=(groups||[]).map((g,i)=>({g,i,w:width(g),p:preferred(g),r:rank(g?.station)})).filter(x=>x.w>0)
-      .sort((a,b)=>a.r-b.r||a.i-b.i);
+      .sort((a,b)=>a.r-b.r||b.w-a.w||a.i-b.i);
     const n=ordered.length,memo=new Map();
     const better=(a,b)=>a.overflow!==b.overflow?(a.overflow<b.overflow?-1:1):a.pref!==b.pref?(a.pref<b.pref?-1:1):a.tables!==b.tables?(a.tables<b.tables?-1:1):a.waste!==b.waste?(a.waste<b.waste?-1:1):0;
     function solve(idx,t,used){
       if(idx>=n)return{overflow:0,pref:0,tables:1,waste:Math.max(0,(lengths[t]||0)-used),choices:[]};
       const key=`${idx}|${t}|${used}`;if(memo.has(key))return memo.get(key);
       const x=ordered[idx],choices=[];
-      if(t<lengths.length&&x.w<=lengths[t]-used+1e-9){
-        const next=solve(idx+1,t,used+x.w);choices.push({overflow:next.overflow,pref:next.pref+Math.abs(t-x.p),tables:next.tables,waste:next.waste,choices:[{idx,table:t,overflow:false},...next.choices]});
-      }
-      for(let nt=t+1;nt<lengths.length;nt++)if(x.w<=lengths[nt]+1e-9){
-        const next=solve(idx+1,nt,x.w);choices.push({overflow:next.overflow,pref:next.pref+Math.abs(nt-x.p),tables:next.tables+1,waste:next.waste+(lengths[t]-used),choices:[{idx,table:nt,overflow:false},...next.choices]});
-      }
+      if(t<lengths.length&&x.w<=lengths[t]-used+1e-9){const next=solve(idx+1,t,used+x.w);choices.push({overflow:next.overflow,pref:next.pref+Math.abs(t-x.p),tables:next.tables,waste:next.waste,choices:[{idx,table:t,overflow:false},...next.choices]})}
+      for(let nt=t+1;nt<lengths.length;nt++)if(x.w<=lengths[nt]+1e-9){const next=solve(idx+1,nt,x.w);choices.push({overflow:next.overflow,pref:next.pref+Math.abs(nt-x.p),tables:next.tables+1,waste:next.waste+(lengths[t]-used),choices:[{idx,table:nt,overflow:false},...next.choices]})}
       const next=solve(idx+1,t,used);choices.push({overflow:next.overflow+x.w,pref:next.pref+Math.abs(t-x.p),tables:next.tables,waste:next.waste,choices:[{idx,table:-1,overflow:true},...next.choices]});
       let best=choices[0];for(let i=1;i<choices.length;i++)if(better(choices[i],best)<0)best=choices[i];memo.set(key,best);return best;
     }
     const result=n?solve(0,0,0):{overflow:0,pref:0,tables:0,waste:0,choices:[]};
     const byIndex=new Map(result.choices.map(c=>[c.idx,c]));
-    for(let i=0;i<n;i++){
-      const x=ordered[i],choice=byIndex.get(i);if(!choice||choice.overflow)continue;
-      const s=segments[choice.table];s.items.push(x.g);s.used+=x.w;s.remaining-=x.w;if(!s.stations.includes(x.g.station))s.stations.push(x.g.station);
-    }
+    for(let i=0;i<n;i++){const x=ordered[i],choice=byIndex.get(i);if(!choice||choice.overflow)continue;const s=segments[choice.table];s.items.push(x.g);s.used+=x.w;s.remaining-=x.w;if(!s.stations.includes(x.g.station))s.stations.push(x.g.station)}
     const overflow=ordered.filter((x,i)=>{const c=byIndex.get(i);return !c||c.overflow}).map(x=>x.g);
     const required=(groups||[]).reduce((s,g)=>s+width(g),0),provided=lengths.reduce((s,n)=>s+n,0),overflowIn=overflow.reduce((s,g)=>s+width(g),0);
     let recommended=[];try{recommended=B0.tableRequirement(groups?.map(g=>({...g,linearIn:width(g)})),{tableLengths:[72,48]}).tables}catch{}
