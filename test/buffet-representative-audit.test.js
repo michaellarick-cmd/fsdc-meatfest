@@ -17,6 +17,7 @@ function groupWidth(g){return g.items?.[0]?.vessel?.type==='jar'?4:Math.max(0,Nu
 function audit(name,input){
   const p=B.plan(input),a=p.tables.layout;
   const placed=new Set();
+  let previousRank=-1;
   for(const seg of a.segments){
     assert.ok(seg.used<=seg.length+1e-9,`${name}: Table ${seg.table} exceeds capacity`);
     for(const g of seg.items){
@@ -24,6 +25,9 @@ function audit(name,input){
       placed.add(g);
       const preferred=g.items?.some(x=>x.id==='sauerkraut')?2:(STATION_RANK[g.station]??3);
       assert.ok(seg.table-1>=Math.min(preferred,a.segments.length-1),`${name}: ${g.station} group moved backward from its preferred zone`);
+      const r=STATION_RANK[g.station]??3;
+      assert.ok(r>=previousRank,`${name}: guest-flow station order moved backward`);
+      previousRank=r;
     }
   }
   const accounted=a.segments.reduce((s,x)=>s+x.used,0)+a.overflowGroups.reduce((s,g)=>s+groupWidth(g),0);
@@ -53,10 +57,12 @@ const menus=[
 for(const [name,input] of menus)test(`representative buffet audit: ${name}`,()=>{
   const p=audit(name,input);
   assert.deepEqual(Array.from(p.tables.layout.tableLengths),[72,72,72,48]);
+  if(name==='normal Meatfest / 32 eaters'||name==='normal menu + supplemental grilling / 32 eaters'||name==='Mac + Cauli + fresh sides / 44 eaters')assert.equal(p.tables.overflow,false,`${name}: should fit the canonical four-table footprint`);
 });
 
 test('representative buffet audit: full menu is the only canonical case expected to require the fifth table',()=>{
   const p=B.plan({eaters:44,proteinKeys:['chicken','pork','pmbe','ribs','brisket','brats'],sideIds:['cucumber','coleslaw','corn','mac','beans','sauerkraut','cauli'],breadIds:['hawaiian'],condimentIds:['bbqSauce','pickles','mustard'],dessertIds:[]});
   assert.equal(p.tables.overflow,true);
+  assert.equal(p.tables.layout.overflowIn,40);
   assert.deepEqual(Array.from(p.tables.layout.recommendedTables),[72,72,72,48,48]);
 });
