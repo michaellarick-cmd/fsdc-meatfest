@@ -1,12 +1,24 @@
-/* FSDC Meatfest — visual buffet layout presentation. Calculation remains in BuffetEngine. */
+/* FSDC Meatfest — visual buffet layout and shared allocation presentation. */
 (() => {
-  const STYLE_ID = 'buffetLayoutVisualStyle';
-  let obs = null;
-  const esc = v => String(v ?? '').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
+  const STYLE_ID='buffetLayoutVisualStyle';
+  let obs=null;
+  const esc=v=>String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
+  const B=window.BuffetEngine;
+  function selectedIds(key){return [...document.querySelectorAll(`[data-buffet-key="${key}"].on`)].map(x=>x.dataset.buffetId).filter(Boolean)}
+  function currentPlan(){
+    if(!B||typeof B.plan!=='function'||typeof window.buildSummary!=='function')return null;
+    const s=window.buildSummary();
+    const sausage=document.querySelector('[data-buffet-sausage].on')?.dataset.buffetSausage||'polish';
+    const load=document.getElementById('buffetDessertLoad')?.value||'moderate';
+    return B.plan({
+      proteinKeys:s.rows.map(r=>r.key),sideIds:s.sideRows.map(r=>r.id),sideRows:s.sideRows,eaters:s.eaters,
+      breadIds:selectedIds('breadIds'),supplementalIds:selectedIds('supplementalIds'),condimentIds:selectedIds('condimentIds'),
+      dessertIds:selectedIds('dessertIds'),load,sausageMode:sausage
+    });
+  }
   function style(){
-    if(document.getElementById(STYLE_ID)) return;
-    const s=document.createElement('style'); s.id=STYLE_ID;
-    s.textContent=`
+    if(document.getElementById(STYLE_ID))return;
+    const s=document.createElement('style');s.id=STYLE_ID;s.textContent=`
       #buffetLayoutCard .visualLayout{margin-top:14px;border:1px solid #30353b;border-radius:14px;background:#101214;padding:14px}
       #buffetLayoutCard .visualLayoutHead{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;margin-bottom:12px}
       #buffetLayoutCard .visualLayoutTitle{font-size:11px;font-weight:900;letter-spacing:.12em;color:#c9cdd2}
@@ -20,29 +32,41 @@
       #buffetLayoutCard .uItems{display:flex;flex-wrap:wrap;justify-content:center;gap:3px;margin-top:5px}.uItem{font-size:7px;color:#d9dde1;border:1px solid #3a4047;border-radius:999px;padding:3px 4px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       #buffetLayoutCard .visualLegend{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.visualLegend span{font-size:8px;color:#aeb3b9;border:1px solid #30353b;border-radius:999px;padding:4px 6px}
       #buffetLayoutCard .flowStrip{display:flex;gap:5px;overflow:auto;margin-top:12px;padding-bottom:2px}.flowStrip span{flex:0 0 auto;border:1px solid #3a4047;border-radius:999px;padding:5px 7px;font-size:8px;color:#d9dde1}
+      #printSheet .ps-buffet .ps-bAlloc{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;height:2.42in}
+      #printSheet .ps-buffet .ps-bAllocTable{border:1.5px solid #555;border-radius:4px;padding:5px;display:flex;flex-direction:column;overflow:hidden}
+      #printSheet .ps-buffet .ps-bAllocTable.over{border-color:#8d4b35;background:#fff5f1}
+      #printSheet .ps-buffet .ps-bAllocTable b{font-size:8.5px;line-height:1.1}.ps-bAllocTable small{font-size:6.5px;color:#444;line-height:1.2;margin-top:2px}
+      #printSheet .ps-bAllocItems{display:flex;flex-wrap:wrap;gap:2px;margin-top:4px}.ps-bAllocItems span{font-size:6px;border:1px solid #aaa;border-radius:7px;padding:2px 3px;line-height:1.05}
+      #printSheet .ps-bOverflow{font-size:7px;color:#7b3927;margin-top:4px;font-weight:800}
       @media(max-width:600px){#buffetLayoutCard .uMap{grid-template-columns:58px 1fr 58px;grid-template-rows:82px 82px 52px}.uItem{font-size:6px;padding:2px 3px}.visualLayout{padding:10px!important}}
-    `; document.head.appendChild(s);
+    `;document.head.appendChild(s)
   }
   function itemsFromTable(table){return [...table.querySelectorAll('.layoutItem')].map(x=>x.textContent.trim()).filter(Boolean)}
   function render(){
-    const card=document.getElementById('buffetLayoutCard');
-    if(!card) return;
-    style();
-    if(obs) obs.disconnect();
-    const old=card.querySelector('.visualLayout'); if(old) old.remove();
-    const tables=[...card.querySelectorAll('.layoutTable')];
-    if(!tables.length){if(obs)obs.observe(card,{childList:true,subtree:true});return}
+    const card=document.getElementById('buffetLayoutCard');if(!card)return;style();if(obs)obs.disconnect();
+    const old=card.querySelector('.visualLayout');if(old)old.remove();
+    const tables=[...card.querySelectorAll('.layoutTable')];if(!tables.length){if(obs)obs.observe(card,{childList:true,subtree:true});return}
     const data=tables.map(t=>({length:(t.querySelector('.layoutTableTitle span:last-child')?.textContent||'').trim(),items:itemsFromTable(t),station:(t.querySelector('.layoutStation')?.textContent||'').trim(),overflow:t.classList.contains('layoutOverflow')}));
     const order=data.slice(0,4);
     const table=(d,cls)=>d?`<div class="uTable ${cls} ${d.overflow?'layoutOverflow':''}"><b>Table ${order.indexOf(d)+1} • ${esc(d.length)}</b><small>${esc(d.station||'Service space')}</small><div class="uItems">${d.items.slice(0,8).map(x=>`<span class="uItem">${esc(x)}</span>`).join('')}</div></div>`:'';
     const flow=[...card.querySelectorAll('.buffetRow')].map(r=>r.querySelector('span')?.textContent?.trim()).filter(Boolean);
-    const v=document.createElement('div'); v.className='visualLayout';
-    v.innerHTML=`<div class="visualLayoutHead"><div><div class="visualLayoutTitle">MAIN BUFFET — U-SHAPE</div><div class="note">Guests move left-to-right through the meal, with the center/right side reserved for the core BBQ proteins.</div></div><div class="visualLayoutMeta">3 × 6' + 1 × 4'<br>66 sq ft main surface</div></div><div class="uMap">${table(order[0],'t1')}${table(order[1],'t2')}${table(order[2],'t3')}${table(order[3],'t4')}<div class="uOpen">guest approach</div><div class="uEntry">entry / exit</div></div><div class="visualLegend"><span>LEFT: cold + fresh</span><span>CENTER: vegetables + starches</span><span>RIGHT: BBQ proteins</span><span>END: bread + sauces</span></div>${flow.length?`<div class="flowStrip">${flow.slice(0,12).map((x,i)=>`<span>${i+1}. ${esc(x)}</span>`).join('')}</div>`:''}</div>`;
-    card.insertBefore(v,card.firstChild?.nextSibling||null);
-    if(obs) obs.observe(card,{childList:true,subtree:true});
+    const v=document.createElement('div');v.className='visualLayout';v.innerHTML=`<div class="visualLayoutHead"><div><div class="visualLayoutTitle">MAIN BUFFET — U-SHAPE</div><div class="note">Guests move left-to-right through the meal, with the center/right side reserved for the core BBQ proteins.</div></div><div class="visualLayoutMeta">3 × 6' + 1 × 4'<br>66 sq ft main surface</div></div><div class="uMap">${table(order[0],'t1')}${table(order[1],'t2')}${table(order[2],'t3')}${table(order[3],'t4')}<div class="uOpen">guest approach</div><div class="uEntry">entry / exit</div></div><div class="visualLegend"><span>LEFT: cold + fresh</span><span>CENTER: vegetables + starches</span><span>RIGHT: BBQ proteins</span><span>END: bread + sauces</span></div>${flow.length?`<div class="flowStrip">${flow.slice(0,12).map((x,i)=>`<span>${i+1}. ${esc(x)}</span>`).join('')}</div>`:''}</div>`;card.insertBefore(v,card.firstChild?.nextSibling||null);if(obs)obs.observe(card,{childList:true,subtree:true})
   }
-  const schedule=()=>requestAnimationFrame(render);
+  function renderPrintAllocation(){
+    const box=document.getElementById('psBuffet');if(!box)return;const p=currentPlan();if(!p?.tables?.layout)return;
+    const layout=p.tables.layout,segments=layout.segments||[],fmt=n=>`${Number(n)/12}'`;
+    const names=g=>[...new Set((g?.items||[]).map(x=>x.name||x.side?.name||x.bread?.name||x.item?.name||x.id).filter(Boolean))];
+    const station=k=>B.STATION_LABELS?.[k]||k||'Service';
+    box.innerHTML=`<div class="ps-buffetHead"><div class="ps-buffetTitle">BUFFET LAYOUT &amp; SERVICE FLOW</div><div class="ps-buffetMeta">Main footprint: 3 × 6' + 1 × 4' • 66 sq ft • dessert separate<br>${layout.linearRequired}" required / ${layout.linearProvided}" provided${layout.overflow?` • OVERFLOW ${layout.overflowIn}"`:''}</div></div><div class="ps-bAlloc">${segments.map(seg=>`<div class="ps-bAllocTable ${seg.overflow?'over':''}"><b>TABLE ${seg.table} • ${fmt(seg.length)}</b><small>${seg.stations.map(station).join(' • ')||'Service space'} • ${Math.max(0,seg.used)}" used</small><div class="ps-bAllocItems">${seg.items.flatMap(names).slice(0,12).map(x=>`<span>${esc(x)}</span>`).join('')||'<span>Service space</span>'}</div></div>`).join('')}</div>${layout.overflow?`<div class="ps-bOverflow">OVERFLOW — ${layout.overflowIn}" of service space does not fit the four-table main footprint. Move these items to an additional service surface: ${layout.overflowItems.slice(0,8).map(esc).join(' • ')}${layout.overflowItems.length>8?' • …':''}</div>`:''}`;
+  }
+  function wrapPrint(){
+    if(typeof window.populatePrint!=='function'||window.populatePrint.__buffetLayoutWrapped)return;
+    const original=window.populatePrint;
+    const wrapped=function(){original.apply(this,arguments);requestAnimationFrame(renderPrintAllocation)};
+    wrapped.__buffetLayoutWrapped=true;window.populatePrint=wrapped;
+  }
+  const schedule=()=>requestAnimationFrame(()=>{render();wrapPrint()});
   obs=new MutationObserver(schedule);
-  function start(){const card=document.getElementById('buffetLayoutCard');if(!card){setTimeout(start,100);return}obs.observe(card,{childList:true,subtree:true});render()}
+  function start(){const card=document.getElementById('buffetLayoutCard');if(!card){setTimeout(start,100);return}obs.observe(card,{childList:true,subtree:true});render();wrapPrint()}
   start();
 })();
