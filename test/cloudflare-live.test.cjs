@@ -43,6 +43,10 @@ function fail(message) {
       if (!(await protein.evaluate(el => el.classList.contains('on')))) await protein.click();
     }
 
+    const mac = page.locator('.sideCard').filter({ hasText: 'Mac & Cheese' }).first();
+    if (await mac.count() !== 1) fail('Mac & Cheese side control is missing.');
+    if (!(await mac.evaluate(el => el.classList.contains('on')))) await mac.click();
+
     const cauliflower = page.locator('.sideCard').filter({ hasText: 'Cauliflower Mac' }).first();
     if (await cauliflower.count() !== 1) fail('Cauliflower Mac side control is missing.');
     if (!(await cauliflower.evaluate(el => el.classList.contains('on')))) await cauliflower.click();
