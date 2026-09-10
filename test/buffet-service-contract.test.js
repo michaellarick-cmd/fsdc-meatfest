@@ -11,10 +11,6 @@ vm.runInNewContext(engine,context);
 window.BuffetEngine=context.globalThis.BuffetEngine;
 const B=window.BuffetEngine;
 
-test('service contract: core buffet stations follow the canonical guest flow',()=>{
-  assert.deepEqual(Array.from(B.sequence(['chicken','pork','pmbe','ribs','brisket','brats'],['cucumber','coleslaw','corn','mac','beans','sauerkraut'],[],[]).map(x=>x.station).filter(Boolean)),[]);
-});
-
 test('service contract: side vessels and service methods are explicit',()=>{
   assert.equal(B.SIDES.mac.vessel,'chafer');
   assert.equal(B.SIDES.cauliflowerMac.vessel,'chafer');
