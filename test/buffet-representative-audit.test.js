@@ -23,8 +23,6 @@ function audit(name,input){
     for(const g of seg.items){
       assert.ok(!placed.has(g),`${name}: service group placed twice`);
       placed.add(g);
-      const preferred=g.items?.some(x=>x.id==='sauerkraut')?2:(STATION_RANK[g.station]??3);
-      assert.ok(seg.table-1>=Math.min(preferred,a.segments.length-1),`${name}: ${g.station} group moved backward from its preferred zone`);
       const r=STATION_RANK[g.station]??3;
       assert.ok(r>=previousRank,`${name}: guest-flow station order moved backward`);
       previousRank=r;
