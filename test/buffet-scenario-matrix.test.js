@@ -56,7 +56,7 @@ test('scenario matrix: canonical practical service rules remain attached',()=>{
   const collards=p.find(x=>x.id==='collards');
   const corn=p.find(x=>x.id==='corn');
   assert.equal(collards.service.method,'tongs');
-  assert.equal(collards.vesselType,'bowl');
+  assert.equal(collards.vessel.type,'bowl');
   assert.equal(corn.service.method,'half-ear');
-  assert.equal(corn.vesselType,'chafer');
+  assert.equal(corn.vessel.type,'chafer');
 });
