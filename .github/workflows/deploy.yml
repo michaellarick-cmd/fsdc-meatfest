@@ -27,21 +27,19 @@ jobs:
           from pathlib import Path
           p=Path('public/buffet-ui.js')
           s=p.read_text()
-          old="const state = { supplementalIds: [], dessertIds: [], breadIds: [], condimentIds: ['bbqSauce','pickles','mustard'], dessertLoad: 'moderate', sausageMode: 'polish' };"
-          new="const state = { supplementalIds: [], dessertIds: [], breadIds: [], condimentIds: [], dessertLoad: 'moderate', sausageMode: 'polish' };"
-          old_render="function render(){ensureStyle();state.breadIds=accompanimentBreadIds();const s=window.buildSummary(),proteinKeys=s.rows.map(r=>r.key),sideIds=s.sideRows.map(r=>r.id);"
-          new_render="function render(){if(typeof planningMode!=='undefined'&&planningMode==='family'){document.getElementById('buffetServiceCard')?.remove();document.getElementById('buffetLayoutCard')?.remove();return}ensureStyle();state.breadIds=accompanimentBreadIds();const s=window.buildSummary(),proteinKeys=s.rows.map(r=>r.key),sideIds=s.sideRows.map(r=>r.id);if(!proteinKeys.length&&!sideIds.length){state.supplementalIds=[];state.dessertIds=[];state.condimentIds=[];state.dessertLoad='moderate';state.sausageMode='polish';}"
-          if old in s and old_render in s:
-            s=s.replace(old,new,1).replace(old_render,new_render,1)
+          old="if(typeof planningMode!=='undefined'&&planningMode==='family'){document.getElementById('buffetServiceCard')?.remove();document.getElementById('buffetLayoutCard')?.remove();return}"
+          new="if(document.querySelector('.modeSwitch.family')){document.getElementById('buffetServiceCard')?.remove();document.getElementById('buffetLayoutCard')?.remove();return}"
+          if old in s:
+            s=s.replace(old,new,1)
             p.write_text(s)
           else:
-            print('Source already corrected; no source commit needed.')
+            print('Mode gate already refined; no source commit needed.')
           PY
           if ! git diff --quiet -- public/buffet-ui.js; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add public/buffet-ui.js
-            git commit -m "fix: correct buffet defaults and family mode"
+            git commit -m "fix: gate buffet sections from family mode"
             git push
           fi
 
