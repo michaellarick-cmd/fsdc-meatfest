@@ -27,19 +27,28 @@ jobs:
           from pathlib import Path
           p=Path('public/buffet-ui.js')
           s=p.read_text()
-          old="if(typeof planningMode!=='undefined'&&planningMode==='family'){document.getElementById('buffetServiceCard')?.remove();document.getElementById('buffetLayoutCard')?.remove();return}"
-          new="if(document.querySelector('.modeSwitch.family')){document.getElementById('buffetServiceCard')?.remove();document.getElementById('buffetLayoutCard')?.remove();return}"
+          old="if(document.querySelector('.modeSwitch.family')){document.getElementById('buffetServiceCard')?.remove();document.getElementById('buffetLayoutCard')?.remove();return}"
+          new="if(window.getPlanningMode?.()==='family'){document.getElementById('buffetServiceCard')?.remove();document.getElementById('buffetLayoutCard')?.remove();return}"
           if old in s:
             s=s.replace(old,new,1)
             p.write_text(s)
           else:
-            print('Mode gate already refined; no source commit needed.')
+            print('Buffet mode gate already stabilized; no buffet source change needed.')
+          q=Path('public/meatfest-final.js')
+          t=q.read_text()
+          old2='let selected=new Set(),choices={},guests=[],mode="manual",planningMode="meatfest";'
+          new2='let selected=new Set(),choices={},guests=[],mode="manual",planningMode="meatfest";window.getPlanningMode=()=>planningMode;'
+          if old2 in t:
+            t=t.replace(old2,new2,1)
+            q.write_text(t)
+          else:
+            print('Planning-mode getter already present; no mode source change needed.')
           PY
-          if ! git diff --quiet -- public/buffet-ui.js; then
+          if ! git diff --quiet -- public/buffet-ui.js public/meatfest-final.js; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add public/buffet-ui.js
-            git commit -m "fix: gate buffet sections from family mode"
+            git add public/buffet-ui.js public/meatfest-final.js
+            git commit -m "fix: expose stable buffet mode state"
             git push
           fi
 
