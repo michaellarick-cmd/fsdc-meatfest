@@ -12,7 +12,7 @@ const fail = message => { throw new Error(message); };
       ['supplementalIds','burgers','Burgers'],
       ['supplementalIds','hotdogs','Hot Dogs'],
       ['supplementalIds','brats','Grilling Brats'],
-      ['condimentIds','bbq','BBQ Sauce'],
+      ['condimentIds','bbqSauce','BBQ Sauce'],
       ['dessertIds','cobbler','Cobbler / Crisp'],
       ['dessertIds','pudding','Pudding / Cream Dessert'],
       ['dessertIds','pie','Pie'],
