@@ -40,3 +40,4 @@ jobs:
           git add public/buffet-ui.js
           git commit -m 'fix: make buffet interaction fast and persistent'
           git push
+# trigger
