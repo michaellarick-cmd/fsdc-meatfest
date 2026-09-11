@@ -38,7 +38,7 @@ const fail = message => { throw new Error(message); };
     if(state.capacity.linearRequired!==140||state.capacity.linearProvided!==120||!state.capacity.overflow||state.capacity.overflowIn!==20)fail(`Live buffet overflow capacity calculation is wrong: ${JSON.stringify(state.capacity)}`);
     if(JSON.stringify(state.capacity.recommendedTables)!==JSON.stringify([72,72]))fail(`Live buffet overflow recommendation is wrong: ${JSON.stringify(state.capacity.recommendedTables)}`);
     if(!state.capacity.recommendedLayout||state.capacity.recommendedLayout.linearProvided!==144||state.capacity.recommendedLayout.linearRequired!==140||state.capacity.recommendedLayout.overflow)fail(`Live recommended expanded buffet layout is not a valid full-menu fit: ${JSON.stringify(state.capacity.recommendedLayout)}`);
-    if(state.capacity.overflowItems.length!==1||!state.capacity.overflowItems.includes('Specialty A'))fail(`Live buffet overflow did not identify the displaced service group: ${JSON.stringify(state.capacity.overflowItems)}`);
+    if(state.capacity.overflowItems.length!==1||!state.capacity.overflowItems.includes('Protein B'))fail(`Live buffet overflow did not identify the displaced service group: ${JSON.stringify(state.capacity.overflowItems)}`);
     if(!state.print||state.printTables!==4)fail(`Printable buffet layout is missing or incomplete: ${JSON.stringify({print:state.print,printTables:state.printTables})}`);
     if(!state.printText.includes("3 × 6'")||!state.printText.includes('66 sq ft')||!state.printText.includes("4' • END"))fail(`Printable buffet layout metadata is wrong: ${state.printText}`);
     console.log('Cloudflare live smoke test passed.');
