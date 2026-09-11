@@ -21,21 +21,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Align live test wait
+      - name: Apply buffet reset correction
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          p=Path('test/cloudflare-live.test.cjs')
+          p=Path('public/buffet-ui.js')
           s=p.read_text()
-          old="await page.locator('#buffetServiceCard').waitFor({state:'visible',timeout:30000});"
-          new="await page.locator('#buffetServiceCard').waitFor({state:'attached',timeout:30000});await page.waitForTimeout(500);"
-          if old not in s: raise SystemExit('Expected live buffet wait assertion not found')
-          p.write_text(s.replace(old,new,1))
+          old_clear="if(!proteinKeys.length&&!sideIds.length){state.supplementalIds=[];state.dessertIds=[];state.condimentIds=[];state.dessertLoad='moderate';state.sausageMode='polish';}"
+          if old_clear not in s: raise SystemExit('Expected broad buffet reset heuristic not found')
+          s=s.replace(old_clear,'',1)
+          marker="function wireChoiceButtons(card){card.querySelectorAll('[data-buffet-key]').forEach(wireButton)}"
+          insert="function wireChoiceButtons(card){card.querySelectorAll('[data-buffet-key]').forEach(wireButton)}\n  let resetWired=false;function wireReset(){if(resetWired)return;const btn=[...document.querySelectorAll('button')].find(x=>/^reset$/i.test(x.textContent.trim()));if(!btn)return;resetWired=true;btn.addEventListener('click',()=>{state.supplementalIds=[];state.dessertIds=[];state.breadIds=[];state.condimentIds=[];state.dessertLoad='moderate';state.sausageMode='polish'},{capture:true})}"
+          if marker not in s: raise SystemExit('Expected buffet choice wiring marker not found')
+          s=s.replace(marker,insert,1)
+          old_render="function render(){if(document.querySelector('.modeBtn.active')?.textContent.trim().toLowerCase()==='family'){document.getElementById('buffetServiceCard')?.remove();document.getElementById('buffetLayoutCard')?.remove();return}ensureStyle();"
+          new_render="function render(){wireReset();if(document.querySelector('.modeBtn.active')?.textContent.trim().toLowerCase()==='family'){document.getElementById('buffetServiceCard')?.remove();document.getElementById('buffetLayoutCard')?.remove();return}ensureStyle();"
+          if old_render not in s: raise SystemExit('Expected buffet render mode gate not found')
+          s=s.replace(old_render,new_render,1)
+          p.write_text(s)
           PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add test/cloudflare-live.test.cjs
-          git commit -m "test: align buffet card lifecycle wait"
+          git add public/buffet-ui.js
+          git commit -m "fix: make buffet reset explicit"
           git push
 
       - name: Run Meatfest calculation tests
@@ -60,3 +68,22 @@ jobs:
 
       - name: Verify deployed Cloudflare site
         run: node test/cloudflare-live.test.cjs
+
+      - name: Verify requested UI corrections live
+        run: |
+          node <<'NODE'
+          const { chromium } = require('playwright');
+          (async()=>{
+            const b=await chromium.launch({headless:true});
+            const p=await b.newPage();
+            await p.goto(process.env.MEATFEST_LIVE_URL,{waitUntil:'networkidle'});
+            await p.waitForTimeout(500);
+            if(await p.locator('#buffetServiceCard,#buffetLayoutCard').count()!==2) throw new Error('Buffet sections are not present in Meatfest mode');
+            for(const t of ['BBQ Sauce','Pickles','Mustard']){const btn=p.getByRole('button',{name:new RegExp('^'+t+'$','i')});if(await btn.getAttribute('aria-pressed')==='true')throw new Error(`Condiment incorrectly selected by default: ${t}`);await btn.click();}
+            const reset=p.getByRole('button',{name:/reset/i});if(await reset.count()!==1)throw new Error('Reset control not found');await reset.click();await p.waitForTimeout(200);
+            for(const t of ['BBQ Sauce','Pickles','Mustard']){const btn=p.getByRole('button',{name:new RegExp('^'+t+'$','i')});if(await btn.getAttribute('aria-pressed')==='true')throw new Error(`Reset failed to clear condiment: ${t}`);}
+            const family=p.getByRole('button',{name:/family/i});if(await family.count()!==1)throw new Error('Family Mode control not found');await family.click();await p.waitForTimeout(200);
+            if(await p.locator('#buffetServiceCard,#buffetLayoutCard').count()!==0)throw new Error('Sections 6 and 7 are still rendered in Family Mode');
+            console.log('Requested buffet UI corrections: PASS');await b.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
