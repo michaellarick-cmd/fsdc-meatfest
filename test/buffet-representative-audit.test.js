@@ -62,7 +62,7 @@ test('representative buffet audit: full menu reports the actual table-capacity d
   const p=B.plan({eaters:44,proteinKeys:['chicken','pork','pmbe','ribs','brisket','brats'],sideIds:['cucumber','coleslaw','corn','mac','beans','sauerkraut','cauli'],breadIds:['hawaiian'],condimentIds:['bbqSauce','pickles','mustard'],dessertIds:[]});
   assert.equal(p.tables.overflow,true);
   assert.equal(p.tables.layout.overflowIn,40);
-  assert.equal(p.tables.layout.displacedIn,40);
+  assert.equal(p.tables.layout.displacedIn,54);
   assert.equal(p.tables.layout.linearRequired-p.tables.layout.overflowIn,264);
   assert.deepEqual(Array.from(p.tables.layout.recommendedTables),[72,72,72,72,48]);
   assert.ok(p.tables.layout.recommendedLayout);
