@@ -5,5 +5,9 @@
   Cache-Control: no-store
 /meatfest-final.js
   Cache-Control: no-store
+/buffet-engine.js
+  Cache-Control: no-store
+/buffet-ui.js
+  Cache-Control: no-store
 /buffet-layout.js
   Cache-Control: no-store
