@@ -1,163 +1,141 @@
 /* FSDC Meatfest — physical buffet allocation + service plan presentation. */
 (() => {
-  const B0=window.BuffetEngine;
-  if(!B0||typeof B0.plan!=='function')return;
-  const stationOrder=['entry','cold','vegetable','starch','core','specialty','bread','finish'];
-  const rank=k=>Math.max(0,stationOrder.indexOf(k));
-  const itemName=x=>x?.name||x?.side?.name||x?.bread?.name||x?.item?.name||x?.id||'Service item';
-  const preferred=g=>{if((g?.items||[]).some(x=>x.id==='sauerkraut'))return 2;return ({entry:0,cold:0,vegetable:1,starch:1,core:2,specialty:2,bread:3,finish:3}[g?.station]??3)};
-  const width=g=>g?.items?.[0]?.vessel?.type==='jar'?4:Math.max(0,Number(g?.linearIn)||0);
-  const recommendationCache=new Map();
-  const layoutCache=new Map();
-  const groupSignature=groups=>(groups||[]).map(g=>`${g?.station||''}:${width(g)}:${(g?.items||[]).map(x=>x?.id||x?.name||'').join(',')}`).join('|');
+  const B0 = window.BuffetEngine;
+  if (!B0 || typeof B0.plan !== 'function') return;
 
-  function fitsPhysically(groups,tableLengths){
-    const lengths=tableLengths.map(Number).filter(n=>Number.isFinite(n)&&n>0);
-    const ordered=(groups||[]).map((g,i)=>({i,w:width(g),r:rank(g?.station)})).filter(x=>x.w>0).sort((a,b)=>a.r-b.r||b.w-a.w||a.i-b.i);
-    const memo=new Map();
-    function solve(idx,startTable,stationRank,stationMax,used){
-      if(idx>=ordered.length)return true;
-      const key=`${idx}|${startTable}|${stationRank}|${stationMax}|${used.join(',')}`;
-      if(memo.has(key))return memo.get(key);
-      const x=ordered[idx],newStation=x.r!==stationRank;
-      for(let t=startTable;t<lengths.length;t++)if(x.w<=lengths[t]-used[t]+1e-9){
-        const nextUsed=used.slice();nextUsed[t]+=x.w;
-        const nextStart=newStation?Math.max(stationMax,t):startTable;
-        const nextMax=newStation?t:Math.max(stationMax,t);
-        if(solve(idx+1,nextStart,x.r,nextMax,nextUsed)){memo.set(key,true);return true;}
+  const STATIONS = ['entry','cold','vegetable','starch','core','specialty','bread','finish'];
+  const rank = k => Math.max(0, STATIONS.indexOf(k));
+  const itemName = x => x?.name || x?.side?.name || x?.bread?.name || x?.item?.name || x?.id || 'Service item';
+  const preferred = g => {
+    if ((g?.items || []).some(x => x.id === 'sauerkraut')) return 2;
+    return ({entry:0,cold:0,vegetable:1,starch:1,core:2,specialty:2,bread:3,finish:3}[g?.station] ?? 3);
+  };
+  const width = g => g?.items?.[0]?.vessel?.type === 'jar' ? 4 : Math.max(0, Number(g?.linearIn) || 0);
+  const stationLabel = k => B0.STATION_LABELS?.[k] || k;
+
+  function fits(groups, lengths) {
+    const sizes = lengths.map(Number).filter(n => Number.isFinite(n) && n > 0);
+    const ordered = (groups || []).map((g,i) => ({i,w:width(g),r:rank(g.station)})).filter(x => x.w > 0).sort((a,b) => a.r-b.r || b.w-a.w || a.i-b.i);
+    const memo = new Map();
+    function solve(i,start,sr,max,used) {
+      if (i >= ordered.length) return true;
+      const key = `${i}|${start}|${sr}|${max}|${used.join(',')}`;
+      if (memo.has(key)) return memo.get(key);
+      const x=ordered[i], changed=x.r!==sr;
+      for (let t=start;t<sizes.length;t++) {
+        if (x.w > sizes[t]-used[t]+1e-9) continue;
+        const nextUsed=used.slice(); nextUsed[t]+=x.w;
+        const nextStart=changed ? Math.max(max,t) : start;
+        const nextMax=changed ? t : Math.max(max,t);
+        if (solve(i+1,nextStart,x.r,nextMax,nextUsed)) { memo.set(key,true); return true; }
       }
-      memo.set(key,false);return false;
+      memo.set(key,false); return false;
     }
-    return solve(0,0,-1,-1,lengths.map(()=>0));
+    return solve(0,0,-1,-1,sizes.map(()=>0));
   }
 
-  function physicalRecommendation(groups,required,currentLengths){
-    const baseline=currentLengths.length?currentLengths:[72,48];
-    const cacheKey=`${required}|${groupSignature(groups)}`;
-    if(recommendationCache.has(cacheKey))return recommendationCache.get(cacheKey);
+  function recommend(groups,required,current) {
     const candidates=[];
-    for(let count=1;count<=6;count++)for(let short=0;short<=count;short++){
+    for (let count=1;count<=6;count++) for (let short=0;short<=count;short++) {
       const lengths=Array.from({length:count-short},()=>72).concat(Array.from({length:short},()=>48));
-      const provided=lengths.reduce((sum,n)=>sum+n,0);
-      if(provided>=required)candidates.push(lengths);
+      if (lengths.reduce((a,b)=>a+b,0)>=required && fits(groups,lengths)) candidates.push(lengths);
     }
-    candidates.sort((a,b)=>{
-      const areaA=a.reduce((sum,n)=>sum+n,0),areaB=b.reduce((sum,n)=>sum+n,0);
-      return areaA-areaB||a.length-b.length||b.filter(n=>n===72).length-a.filter(n=>n===72).length;
-    });
-    const result=candidates.find(candidate=>fitsPhysically(groups,candidate))||baseline;
-    recommendationCache.set(cacheKey,result);
-    return result;
+    candidates.sort((a,b)=>a.reduce((x,y)=>x+y,0)-b.reduce((x,y)=>x+y,0)||a.length-b.length||b.filter(x=>x===72).length-a.filter(x=>x===72).length);
+    return candidates[0] || current;
   }
 
-  function allocate(groups,tableLengths=B0.TABLE_GEOMETRY.main,options={}){
-    const lengths=tableLengths.map(Number).filter(n=>Number.isFinite(n)&&n>0);
-    const segments=lengths.map((length,i)=>({table:i+1,length,items:[],used:0,remaining:length,stations:[],overflow:false}));
-    const required=(groups||[]).reduce((s,g)=>s+width(g),0),provided=lengths.reduce((s,n)=>s+n,0);
-    const source=(groups||[]).map((g,i)=>({g,i,w:width(g),p:preferred(g),r:rank(g?.station)})).filter(x=>x.w>0);
-    const ordered=source.sort((a,b)=>a.r-b.r||b.w-a.w||a.i-b.i);
-    const n=ordered.length,memo=new Map();
-    const better=(a,b)=>a.overflow!==b.overflow?(a.overflow<b.overflow?-1:1):a.pref!==b.pref?(a.pref<b.pref?-1:1):a.tables!==b.tables?(a.tables<b.tables?-1:1):0;
-    function solve(idx,startTable,stationRank,stationMax,used){
-      if(idx>=n)return{overflow:0,pref:0,tables:0,choices:[]};
-      const key=`${idx}|${startTable}|${stationRank}|${stationMax}|${used.join(',')}`;
-      if(memo.has(key))return memo.get(key);
-      const x=ordered[idx],newStation=x.r!==stationRank,choices=[];
-      for(let t=startTable;t<lengths.length;t++)if(x.w<=lengths[t]-used[t]+1e-9){
-        const nextUsed=used.slice();nextUsed[t]+=x.w;
-        const nextStart=newStation?Math.max(stationMax,t):startTable;
-        const nextMax=newStation?t:Math.max(stationMax,t);
-        const next=solve(idx+1,nextStart,x.r,nextMax,nextUsed);
-        const tables=next.tables+(used[t]<=1e-9?1:0);
-        choices.push({overflow:next.overflow,pref:next.pref+Math.abs(t-x.p),tables,choices:[{idx,table:t,overflow:false},...next.choices]});
-      }
-      const next=solve(idx+1,startTable,stationRank,stationMax,used.slice());
-      choices.push({overflow:next.overflow+x.w,pref:next.pref+Math.abs(x.p),tables:next.tables,choices:[{idx,table:-1,overflow:true},...next.choices]});
-      let best=choices[0];for(let i=1;i<choices.length;i++)if(better(choices[i],best)<0)best=choices[i];
-      memo.set(key,best);return best;
-    }
-    const result=n?solve(0,0,-1,-1,lengths.map(()=>0)):{overflow:0,pref:0,tables:0,choices:[]};
-    const byIndex=new Map(result.choices.map(c=>[c.idx,c]));
-    for(let i=0;i<n;i++){
-      const x=ordered[i],choice=byIndex.get(i);if(!choice||choice.overflow)continue;
-      const s=segments[choice.table];s.items.push(x.g);s.used+=x.w;s.remaining-=x.w;
-      if(!s.stations.includes(x.g.station))s.stations.push(x.g.station);
-    }
-    const overflow=ordered.filter((x,i)=>{const c=byIndex.get(i);return !c||c.overflow}).map(x=>x.g);
-    const overflowIn=overflow.reduce((s,g)=>s+width(g),0);
-    const recommended=options.resolveRecommendation===false?lengths:physicalRecommendation(groups,required,lengths);
-    const output={shape:'U',tableLengths:lengths,linearRequired:required,linearProvided:provided,overflow:overflow.length>0||required>provided,overflowIn,overflowGroups:overflow,overflowItems:overflow.flatMap(g=>(g.items||[]).map(itemName)),overflowStations:[...new Set(overflow.map(g=>g.station))].sort((a,b)=>rank(a)-rank(b)),segments,recommendedTables:recommended};
-    output.stationPlan=stationPlan(output);
-    if(options.includeRecommended!==false&&output.overflow&&recommended.length>lengths.length){
-      const key=`${groupSignature(groups)}|${recommended.join(',')}`;
-      output.recommendedLayout=layoutCache.get(key)||allocate(groups,recommended,{includeRecommended:false,resolveRecommendation:false});
-      layoutCache.set(key,output.recommendedLayout);
-    }
-    return output;
+  function serviceText(x) {
+    if (x?.service?.method) return x.service.method + (x.service.note ? ` — ${x.service.note}` : '');
+    if (x?.type === 'bread') return x.service?.note || 'Serve in a bread basket.';
+    if (x?.type === 'condiment') return 'Serve in jar/bottle at the finish station.';
+    if (x?.serviceFill === 'half') return 'Half-chafer service.';
+    if (x?.serviceFill === 'quarter') return 'Quarter quantity; conservative single-chafer service.';
+    if (x?.vessel?.type === 'chafer') return 'Full chafer service.';
+    return x?.vessel?.label ? `${x.vessel.label}.` : 'Standard service.';
   }
 
-  function itemService(x){
-    const service=x?.service;
-    if(service?.method)return service.method+(service.note?` — ${service.note}`:'');
-    if(x?.type==='protein'&&x.id==='brats')return x.service?.note||'Serve according to selected sausage mode.';
-    if(x?.type==='bread')return x.service?.note||'Serve in a bread basket.';
-    if(x?.type==='condiment')return 'Serve in jar/bottle at the finish station.';
-    if(x?.serviceFill==='half')return 'Half-chafer service.';
-    if(x?.serviceFill==='quarter')return 'Quarter quantity; conservative single-chafer service.';
-    if(x?.vessel?.type==='chafer')return 'Full chafer service.';
-    if(x?.vessel?.label)return x.vessel.label+'.';
-    return 'Standard service.';
-  }
-  function itemQuantity(x){
+  function productionText(x) {
     const q=x?.quantity||x?.side?.quantity||x?.bread?.quantity;
-    if(!q)return '';
-    if(q.unit)return `${q.amount} ${q.unit}`;
-    if(q.packages)return `${q.packages} package${q.packages===1?'':'s'}`;
-    if(q.recipes)return `${q.recipes} recipe${q.recipes===1?'':'s'}`;
-    if(q.pieces)return `${q.pieces} pieces`;
-    return '';
+    if (!q) return '';
+    if (q.unit==='tin') return `${q.amount} tin${q.amount===1?'':'s'} to produce`;
+    if (q.unit==='recipe') return `${q.amount} recipe${q.amount===1?'':'s'} to produce`;
+    if (q.unit==='ear') return `${q.amount} ear${q.amount===1?'':'s'} to prepare`;
+    if (q.pieces) return `${q.pieces} pieces to prepare`;
+    if (q.packages) return `${q.packages} package${q.packages===1?'':'s'}`;
+    return q.amount==null?'':`${q.amount} to produce`;
   }
-  function itemProduction(x){
-    const q=x?.quantity||x?.side?.quantity||x?.bread?.quantity;
-    if(!q)return '';
-    if(q.unit==='tin')return `${q.amount} tin${q.amount===1?'':'s'} to produce`;
-    if(q.unit==='recipe')return `${q.amount} recipe${q.amount===1?'':'s'} to produce`;
-    if(q.unit==='ear')return `${q.amount} ear${q.amount===1?'':'s'} to prepare`;
-    if(q.pieces)return `${q.pieces} pieces to prepare`;
-    if(q.packages)return `${q.packages} package${q.packages===1?'':'s'}`;
-    if(q.recipes)return `${q.recipes} recipe${q.recipes===1?'':'s'} to produce`;
-    return `${q.amount} to produce`;
-  }
-  function stationPlan(layout){
-    return(layout?.segments||[]).map(seg=>({
+
+  function stationPlan(layout) {
+    return (layout?.segments||[]).map(seg=>({
       table:seg.table,length:seg.length,used:seg.used,remaining:Math.max(0,seg.remaining),
-      stations:seg.stations.map(k=>({id:k,label:B?.STATION_LABELS?.[k]||k})),
-      items:(seg.items||[]).flatMap(g=>(g.items||[]).map(x=>({
-        id:x.id||x.side?.id||x.bread?.id||x.item?.id||x.name,name:itemName(x),station:g.station,
-        vessel:x.vessel?.label||x.vessel?.type||'',quantity:itemQuantity(x),production:itemProduction(x),service:itemService(x)
-      })))
+      stations:seg.stations.map(id=>({id,label:stationLabel(id)})),
+      items:(seg.items||[]).flatMap(g=>(g.items||[]).map(x=>({id:x.id||x.name,name:itemName(x),station:g.station,vessel:x.vessel?.label||x.vessel?.type||'',service:serviceText(x),production:productionText(x)})))
     }));
   }
 
-  function plan(input={}){
-    const p=B0.plan(input),layout=allocate(p.serviceGroups,input.mainTableLengths||B0.TABLE_GEOMETRY.main);
-    return{...p,tables:{...p.tables,tables:layout.tableLengths,linearRequired:layout.linearRequired,linearProvided:layout.linearProvided,layout,overflow:layout.overflow}};
+  function allocate(groups,tableLengths=B0.TABLE_GEOMETRY.main,options={}) {
+    const lengths=tableLengths.map(Number).filter(n=>Number.isFinite(n)&&n>0);
+    const segments=lengths.map((length,i)=>({table:i+1,length,items:[],used:0,remaining:length,stations:[],overflow:false}));
+    const required=(groups||[]).reduce((s,g)=>s+width(g),0),provided=lengths.reduce((s,n)=>s+n,0);
+    const ordered=(groups||[]).map((g,i)=>({g,i,w:width(g),p:preferred(g),r:rank(g.station)})).filter(x=>x.w>0).sort((a,b)=>a.r-b.r||b.w-a.w||a.i-b.i);
+    const memo=new Map();
+    const better=(a,b)=>a.overflow!==b.overflow?(a.overflow<b.overflow?-1:1):a.pref!==b.pref?(a.pref<b.pref?-1:1):a.tables-b.tables;
+    function solve(i,start,sr,max,used){
+      if(i>=ordered.length)return{overflow:0,pref:0,tables:0,choices:[]};
+      const key=`${i}|${start}|${sr}|${max}|${used.join(',')}`;
+      if(memo.has(key))return memo.get(key);
+      const x=ordered[i],changed=x.r!==sr,choices=[];
+      for(let t=start;t<lengths.length;t++){
+        if(x.w>lengths[t]-used[t]+1e-9)continue;
+        const nextUsed=used.slice();nextUsed[t]+=x.w;
+        const nextStart=changed?Math.max(max,t):start,nextMax=changed?t:Math.max(max,t);
+        const next=solve(i+1,nextStart,x.r,nextMax,nextUsed);
+        choices.push({overflow:next.overflow,pref:next.pref+Math.abs(t-x.p),tables:next.tables+(used[t]===0?1:0),choices:[{idx:i,table:t,overflow:false},...next.choices]});
+      }
+      const next=solve(i+1,start,sr,max,used);
+      choices.push({overflow:next.overflow+x.w,pref:next.pref+Math.abs(x.p),tables:next.tables,choices:[{idx:i,table:-1,overflow:true},...next.choices]});
+      let best=choices[0];for(let j=1;j<choices.length;j++)if(better(choices[j],best)<0)best=choices[j];
+      memo.set(key,best);return best;
+    }
+    const result=ordered.length?solve(0,0,-1,-1,lengths.map(()=>0)):{overflow:0,pref:0,tables:0,choices:[]};
+    const choices=new Map(result.choices.map(c=>[c.idx,c]));
+    ordered.forEach((x,i)=>{const c=choices.get(i);if(!c||c.overflow)return;const s=segments[c.table];s.items.push(x.g);s.used+=x.w;s.remaining-=x.w;if(!s.stations.includes(x.g.station))s.stations.push(x.g.station);});
+    const overflowGroups=ordered.filter((x,i)=>!choices.get(i)||choices.get(i).overflow).map(x=>x.g),overflowIn=overflowGroups.reduce((s,g)=>s+width(g),0);
+    const recommended=options.resolveRecommendation===false?lengths:recommend(groups,required,lengths);
+    const out={shape:'U',tableLengths:lengths,linearRequired:required,linearProvided:provided,overflow:overflowGroups.length>0||required>provided,overflowIn,overflowGroups,overflowItems:overflowGroups.flatMap(g=>(g.items||[]).map(itemName)),overflowStations:[...new Set(overflowGroups.map(g=>g.station))].sort((a,b)=>rank(a)-rank(b)),segments,recommendedTables:recommended};
+    out.stationPlan=stationPlan(out);
+    if(options.includeRecommended!==false&&out.overflow&&recommended.length>lengths.length)out.recommendedLayout=allocate(groups,recommended,{includeRecommended:false,resolveRecommendation:false});
+    return out;
   }
+
+  function plan(input={}) { const p=B0.plan(input),layout=allocate(p.serviceGroups,input.mainTableLengths||B0.TABLE_GEOMETRY.main); return {...p,tables:{...p.tables,tables:layout.tableLengths,linearRequired:layout.linearRequired,linearProvided:layout.linearProvided,layout,overflow:layout.overflow}}; }
   const B=Object.freeze({...B0,plan});
   window.BuffetEngine=B;
+  window.BuffetAllocation=Object.freeze({allocate,itemName,preferred,stationPlan});
 
-  const STYLE_ID='buffetLayoutVisualStyle';let obs=null;
-  const esc=v=>String(v??'').replace(/[&<>\\\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\\\"':'&quot;',"'":'&#39;'}[c]));
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function selectedIds(key){return [...document.querySelectorAll(`[data-buffet-key="${key}"].on`)].map(x=>x.dataset.buffetId).filter(Boolean)}
   function currentPlan(){if(!window.buildSummary)return null;const s=window.buildSummary();return B.plan({proteinKeys:s.rows.map(r=>r.key),sideIds:s.sideRows.map(r=>r.id),sideRows:s.sideRows,eaters:s.eaters,breadIds:selectedIds('breadIds'),supplementalIds:selectedIds('supplementalIds'),condimentIds:selectedIds('condimentIds'),dessertIds:selectedIds('dessertIds'),load:document.getElementById('buffetDessertLoad')?.value||'moderate',sausageMode:document.querySelector('[data-buffet-sausage].on')?.dataset.buffetSausage||'polish'})}
-  function style(){if(document.getElementById(STYLE_ID))return;const s=document.createElement('style');s.id=STYLE_ID;s.textContent=`#buffetLayoutCard .visualLayout{margin-top:14px;border:1px solid #30353b;border-radius:14px;background:#101214;padding:14px}#buffetLayoutCard .visualLayoutHead{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;margin-bottom:12px}#buffetLayoutCard .visualLayoutTitle{font-size:11px;font-weight:900;letter-spacing:.12em;color:#c9cdd2}#buffetLayoutCard .visualLayoutMeta{font-size:10px;color:#aeb3b9;text-align:right}#buffetLayoutCard .uMap{display:grid;grid-template-columns:74px 1fr 74px;grid-template-rows:92px 92px 58px;gap:8px}#buffetLayoutCard .uTable{border:2px solid #575d64;border-radius:9px;background:#20242a;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:7px;text-align:center;min-width:0;overflow:hidden}#buffetLayoutCard .uTable b{font-size:11px}.uTable small{font-size:8px;color:#aeb3b9;margin-top:3px;line-height:1.25}#buffetLayoutCard .uTable.t1{grid-column:1;grid-row:1 / span 2}.uTable.t2{grid-column:2;grid-row:1}.uTable.t3{grid-column:3;grid-row:1 / span 2}.uTable.t4{grid-column:2;grid-row:2 / span 2}#buffetLayoutCard .uOpen,#buffetLayoutCard .uEntry{display:flex;align-items:center;justify-content:center;color:#626971;font-size:8px;text-transform:uppercase;letter-spacing:.08em}#buffetLayoutCard .uOpen{grid-column:1;grid-row:3}#buffetLayoutCard .uEntry{grid-column:3;grid-row:3}#buffetLayoutCard .uItems{display:flex;flex-wrap:wrap;justify-content:center;gap:3px;margin-top:5px}.uItem{font-size:7px;color:#d9dde1;border:1px solid #3a4047;border-radius:999px;padding:3px 4px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.layoutOverflow{border-color:#8d4b35!important;background:#281b17!important}#buffetLayoutCard .layoutServiceList{margin-top:7px;border-top:1px solid #30353b;padding-top:6px;display:grid;gap:4px;text-align:left}#buffetLayoutCard .layoutServiceList div{font-size:8px;line-height:1.2;color:#d9dde1}#buffetLayoutCard .layoutServiceList small{display:block;color:#8f969d;font-size:7px;line-height:1.2;margin-top:1px}#buffetLayoutCard .layoutServicePlan{margin-top:14px;border-top:1px solid #30353b;padding-top:12px}#buffetLayoutCard .layoutPlanHead{display:flex;justify-content:space-between;gap:10px;align-items:baseline;margin-bottom:8px}#buffetLayoutCard .layoutPlanTitle{font-size:11px;font-weight:900;letter-spacing:.1em}#buffetLayoutCard .layoutPlanSub{font-size:9px;color:#8f969d}#buffetLayoutCard .layoutPlanTable{border:1px solid #30353b;border-radius:10px;padding:9px;margin:7px 0;background:#14171a}#buffetLayoutCard .layoutPlanTableHead{display:flex;justify-content:space-between;gap:8px;font-size:10px;font-weight:900}#buffetLayoutCard .layoutPlanStation{font-size:9px;color:#aeb3b9;margin:3px 0 7px}#buffetLayoutCard .layoutPlanItem{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.9fr);gap:8px;padding:6px 0;border-top:1px solid #272c31}#buffetLayoutCard .layoutPlanItem b{font-size:9px}.layoutPlanItem small{display:block;color:#9ca3aa;font-size:7.5px;line-height:1.25;margin-top:2px}#buffetLayoutCard .layoutPlanRight{font-size:7.5px;color:#d0d4d8;line-height:1.3}.layoutPlanRight span{display:block}#buffetLayoutCard .allocationNotice{margin-top:10px;padding:9px 10px;border-left:3px solid #f39a32;background:#1d1914;color:#d9c7ae;font-size:10px;line-height:1.4;border-radius:0 7px 7px 0}#printSheet .ps-bAlloc{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;height:2.42in}#printSheet .ps-bAllocTable{border:1.5px solid #555;border-radius:4px;padding:5px;display:flex;flex-direction:column;overflow:hidden}.ps-bAllocTable.over{border-color:#8d4b35;background:#fff5f1}.ps-bAllocTable b{font-size:8.5px}.ps-bAllocTable small{font-size:6.5px;color:#444;line-height:1.2}.ps-bAllocItems{display:flex;flex-wrap:wrap;gap:2px;margin-top:4px}.ps-bAllocItems span{font-size:6px;border:1px solid #aaa;border-radius:7px;padding:2px 3px}.ps-bOverflow{font-size:7px;color:#7b3927;margin-top:4px;font-weight:800}`;document.head.appendChild(s)}
-  function names(seg){const out=[];for(const g of seg.items||[])for(const x of g.items||[]){const n=itemName(x);if(n&&!out.includes(n))out.push(n)}return out}
-  function syncBaseLayout(p){const card=document.getElementById('buffetLayoutCard'),wrap=card?.querySelector('.layoutTables');if(!wrap||!p?.tables?.layout)return;const layout=p.tables.layout;wrap.innerHTML=layout.segments.map(seg=>`<div class="layoutTable ${seg.overflow?'layoutOverflow':''}"><div class="layoutTableTitle"><span>Table ${seg.table}</span><span>${seg.length/12}'</span></div><div class="layoutBar"><div class="layoutFill" style="width:${Math.min(100,seg.used/seg.length*100)}%"></div></div><div class="layoutItems">${names(seg).map(n=>`<span class="layoutItem">${esc(n)}</span>`).join('')||'<span class="layoutItem">Service space</span>'}</div><div class="layoutStation">${seg.stations.map(k=>B.STATION_LABELS?.[k]||k).join(' • ')||'Service space'} • ${Math.max(0,seg.used)}" used</div><div class="layoutServiceList">${(seg.items||[]).flatMap(g=>(g.items||[]).map(x=>`<div><b>${esc(itemName(x))}</b><small>${esc(x.vessel?.label||x.vessel?.type||'')} · ${esc(itemService(x))}</small></div>`)).join('')}</div></div>`).join('');card.querySelector('.allocationNotice')?.remove();if(layout.overflow){const n=document.createElement('div');n.className='allocationNotice';n.textContent=`OVERFLOW: ${layout.overflowIn}" does not fit the four-table main footprint. Recommended table set: ${layout.recommendedTables.map(x=>x/12+"'").join(' + ')||'additional service surface'}.`;wrap.after(n)}}
-  function render(){const card=document.getElementById('buffetLayoutCard');if(!card)return;style();if(obs)obs.disconnect();const p=currentPlan();if(p)syncBaseLayout(p);card.querySelector('.visualLayout')?.remove();card.querySelector('.layoutServicePlan')?.remove();const tables=[...card.querySelectorAll('.layoutTable')],order=tables.slice(0,4);if(!tables.length){if(obs)obs.observe(card,{childList:true,subtree:true});return}const table=(d,cls)=>`<div class="uTable ${cls} ${d.classList.contains('layoutOverflow')?'layoutOverflow':''}"><b>${esc(d.querySelector('.layoutTableTitle')?.textContent||'Table')}</b><small>${esc(d.querySelector('.layoutStation')?.textContent||'Service space')}</small><div class="uItems">${[...d.querySelectorAll('.layoutItem')].slice(0,10).map(x=>`<span class="uItem">${esc(x.textContent)}</span>`).join('')}</div></div>`;const flow=[...card.querySelectorAll('.buffetRow')].map(r=>r.querySelector('span')?.textContent?.trim()).filter(Boolean),v=document.createElement('div');v.className='visualLayout';v.innerHTML=`<div class="visualLayoutHead"><div><div class="visualLayoutTitle">MAIN BUFFET — U-SHAPE</div><div class="note">Physical allocation follows service-vessel space and the established buffet sequence.</div></div><div class="visualLayoutMeta">3 × 6' + 1 × 4'<br>66 sq ft main surface${p?.tables?.overflow?'<br><b>OVER CAPACITY</b>':''}</div></div><div class="uMap">${order.map((d,i)=>table(d,'t'+(i+1))).join('')}<div class="uOpen">guest approach</div><div class="uEntry">entry / exit</div></div><div class="visualLegend"><span>LEFT: cold + fresh</span><span>CENTER: vegetables + starches</span><span>RIGHT: BBQ proteins</span><span>END: bread + sauces</span></div>${flow.length?`<div class="flowStrip">${flow.slice(0,12).map((x,i)=>`<span>${i+1}. ${esc(x)}</span>`).join('')}</div>`:''}</div>`;card.insertBefore(v,card.firstChild?.nextSibling||null);const lp=p?.tables?.layout?.stationPlan;if(lp){const panel=document.createElement('div');panel.className='layoutServicePlan';panel.innerHTML=`<div class="layoutPlanHead"><div class="layoutPlanTitle">BUFFET SERVICE PLAN</div><div class="layoutPlanSub">Production → vessel → table → serving method</div></div>${lp.map(t=>`<div class="layoutPlanTable"><div class="layoutPlanTableHead"><span>TABLE ${t.table} • ${t.length/12}'</span><span>${t.used}" used • ${t.remaining}" open</span></div><div class="layoutPlanStation">${t.stations.map(x=>esc(x.label)).join(' → ')||'Service space'}</div>${t.items.map(x=>`<div class="layoutPlanItem"><div><b>${esc(x.name)}</b><small>${esc(x.station?B.STATION_LABELS?.[x.station]||x.station:'')}</small></div><div class="layoutPlanRight"><span><b>PRODUCE:</b> ${esc(x.production||x.quantity||'See shopping list')}</span><span><b>SET:</b> ${esc(x.vessel||'service vessel')}</span><span><b>SERVE:</b> ${esc(x.service)}</span></div></div>`).join('')||'<div class="note">No placed service items.</div>'}</div>`).join('')}`;card.appendChild(panel)}if(obs)obs.observe(card,{childList:true,subtree:true})}
-  function renderPrintAllocation(){const box=document.getElementById('psBuffet'),p=currentPlan();if(!box||!p?.tables?.layout)return;const layout=p.tables.layout,fmt=n=>`${n/12}'`;box.innerHTML=`<div><b>BUFFET LAYOUT &amp; SERVICE FLOW</b><small>Main footprint: 3 × 6' + 1 × 4' • 66 sq ft • dessert separate<br>${layout.linearRequired}" required / ${layout.linearProvided}" provided${layout.overflow?` • OVERFLOW ${layout.overflowIn}"`:''}</small></div><div class="ps-bAlloc">${layout.segments.map(seg=>`<div class="ps-bAllocTable ${seg.overflow?'over':''}"><b>TABLE ${seg.table} • ${fmt(seg.length)}</b><small>${seg.stations.map(k=>B.STATION_LABELS?.[k]||k).join(' • ')||'Service space'} • ${Math.max(0,seg.used)}" used</small><div class="ps-bAllocItems">${names(seg).slice(0,12).map(x=>`<span>${esc(x)}</span>`).join('')||'<span>Service space</span>'}</div></div>`).join('')}</div>${layout.overflow?`<div class="ps-bOverflow">OVERFLOW — ${layout.overflowIn}" does not fit. Recommended: ${layout.recommendedTables.map(fmt).join(' + ')}.</div>`:''}`}
-  function wrapPrint(){if(typeof window.populatePrint!=='function'||window.populatePrint.__allocationWrapped)return;const original=window.populatePrint;const wrapped=function(){original.apply(this,arguments);requestAnimationFrame(renderPrintAllocation)};wrapped.__allocationWrapped=true;window.populatePrint=wrapped}
-  const schedule=()=>requestAnimationFrame(()=>{render();wrapPrint()});obs=new MutationObserver(schedule);
-  function start(){const card=document.getElementById('buffetLayoutCard');if(!card){setTimeout(start,100);return}obs.observe(card,{childList:true,subtree:true});render();wrapPrint()}
+  function names(seg){return(seg.items||[]).flatMap(g=>g.items||[]).map(itemName).filter((x,i,a)=>x&&!a.slice(0,i).includes(x));}
+
+  function render(){
+    const card=document.getElementById('buffetLayoutCard');if(!card)return;const p=currentPlan();if(!p?.tables?.layout)return;const layout=p.tables.layout;
+    card.querySelectorAll('.mf-visual,.mf-recommended').forEach(x=>x.remove());
+    const visual=document.createElement('div');visual.className='mf-visual';
+    visual.innerHTML=`<div class="mf-head"><div><b>MAIN BUFFET — U-SHAPE</b><span>Actual service-vessel allocation and guest flow</span></div><div class="mf-meta">STANDARD: 3 × 6' + 1 × 4' • 66 sq ft${layout.overflow?'<strong>OVER CAPACITY</strong>':''}</div></div><div class="mf-map">${layout.segments.slice(0,4).map((s,i)=>`<div class="mf-table mf-t${i+1}"><b>TABLE ${s.table} • ${s.length/12}'</b><small>${s.used}" used • ${s.remaining}" open</small><span>${esc(s.stations.map(stationLabel).join(' → ')||'Service space')}</span><div>${names(s).slice(0,8).map(n=>`<em>${esc(n)}</em>`).join('')}</div></div>`).join('')}<div class="mf-open">GUEST APPROACH</div></div>`;
+    card.insertBefore(visual,card.querySelector('.layoutTables')||card.firstChild);
+    if(layout.recommendedLayout)renderRecommended(card,layout);
+  }
+  function renderRecommended(card,layout){
+    const r=layout.recommendedLayout,box=document.createElement('div');box.className='mf-recommended';
+    box.innerHTML=`<div class="mf-head"><div><b>RECOMMENDED PHYSICAL SETUP</b><span>This is the smallest standard table set that actually fits this menu while preserving guest flow.</span></div><div class="mf-meta"><strong>${r.tableLengths.length} TABLES</strong>${r.tableLengths.map(x=>x/12+"'").join(' + ')}<br>${r.linearProvided}" available / ${r.linearRequired}" required</div></div><div class="mf-recommended-map">${r.segments.map(s=>`<div class="mf-rtable"><b>TABLE ${s.table} • ${s.length/12}'</b><small>${s.used}" used • ${s.remaining}" open</small><span>${esc(s.stations.map(stationLabel).join(' → ')||'Service space')}</span><div>${names(s).map(n=>`<em>${esc(n)}</em>`).join('')||'<em>Service space</em>'}</div></div>`).join('')}</div><div class="mf-recommended-note">Add one 6-ft table. The extra surface is required by the physical size of the serving vessels and the fixed buffet sequence; it is not an increase in food quantity.</div>`;
+    card.appendChild(box);
+  }
+  function installStyle(){
+    if(document.getElementById('mf-layout-style'))return;const s=document.createElement('style');s.id='mf-layout-style';s.textContent=`#buffetLayoutCard .mf-visual,#buffetLayoutCard .mf-recommended{margin-top:14px;padding:14px;border:1px solid #30353b;border-radius:14px;background:#101214}#buffetLayoutCard .mf-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-end;margin-bottom:12px}.mf-head b{display:block;font-size:11px;letter-spacing:.11em}.mf-head span{display:block;color:#9da3aa;font-size:9px;line-height:1.35;margin-top:3px}.mf-meta{text-align:right;color:#aeb3b9;font-size:9px;line-height:1.35}.mf-meta strong{color:#f39a32;display:block;margin-top:2px}#buffetLayoutCard .mf-map{display:grid;grid-template-columns:1fr 1.4fr 1fr;grid-template-rows:82px 82px 34px;gap:7px}.mf-table,.mf-rtable{border:2px solid #575d64;border-radius:9px;background:#20242a;padding:7px;overflow:hidden;min-width:0}.mf-table b,.mf-rtable b{font-size:9px}.mf-table small,.mf-rtable small{display:block;color:#9da3aa;font-size:7px;margin-top:2px}.mf-table>span,.mf-rtable>span{display:block;color:#bfc4c9;font-size:7px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mf-table>div,.mf-rtable>div{display:flex;flex-wrap:wrap;gap:2px;margin-top:4px}.mf-table em,.mf-rtable em{font-style:normal;font-size:6.5px;border:1px solid #3a4047;border-radius:99px;padding:2px 3px;color:#d8dce0}.mf-t1{grid-column:1;grid-row:1 / span 2}.mf-t2{grid-column:2;grid-row:1}.mf-t3{grid-column:3;grid-row:1 / span 2}.mf-t4{grid-column:2;grid-row:2}.mf-open{grid-column:1 / span 3;display:flex;justify-content:center;align-items:center;color:#666d75;font-size:7px;letter-spacing:.1em;text-transform:uppercase}#buffetLayoutCard .mf-recommended-map{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.mf-rtable{min-height:100px}.mf-recommended-note{margin-top:10px;padding:9px 10px;border-left:3px solid #f39a32;background:#1d1914;color:#d9c7ae;font-size:9px;line-height:1.4;border-radius:0 7px 7px 0}@media(max-width:650px){#buffetLayoutCard .mf-recommended-map{grid-template-columns:repeat(2,minmax(0,1fr))}#buffetLayoutCard .mf-map{grid-template-columns:1fr 1.2fr 1fr}}`;document.head.appendChild(s);
+  }
+  function renderPrint(){const box=document.getElementById('psBuffet'),p=currentPlan();if(!box||!p?.tables?.layout)return;const l=p.tables.layout,r=l.recommendedLayout,layout=r||l;box.innerHTML=`<div><b>${r?'RECOMMENDED PHYSICAL BUFFET SETUP':'BUFFET LAYOUT & SERVICE FLOW'}</b><small>${layout.tableLengths.map(x=>x/12+"'").join(' + ')} • ${layout.linearProvided}" available / ${layout.linearRequired}" required</small></div><div class="ps-layout-tables">${layout.segments.map(s=>`<div><strong>TABLE ${s.table} • ${s.length/12}'</strong><span>${s.used}" used • ${s.stations.map(stationLabel).join(' → ')||'Service space'}</span><p>${names(s).join(' • ')||'Service space'}</p></div>`).join('')}</div>${l.overflow&&!r?`<div class="ps-bOverflow">OVERFLOW — ${l.overflowIn}" does not fit the standard four-table footprint.</div>`:''}`;}
+  function wrapPrint(){if(typeof window.populatePrint!=='function'||window.populatePrint.__mfWrapped)return;const original=window.populatePrint,wrapped=function(){original.apply(this,arguments);requestAnimationFrame(renderPrint)};wrapped.__mfWrapped=true;window.populatePrint=wrapped;}
+  function start(){installStyle();const card=document.getElementById('buffetLayoutCard');if(!card){setTimeout(start,100);return;}render();wrapPrint();new MutationObserver(()=>requestAnimationFrame(render)).observe(card,{childList:true,subtree:true});}
   start();
-  window.BuffetAllocation=Object.freeze({allocate,itemName,preferred,stationPlan});
 })();
