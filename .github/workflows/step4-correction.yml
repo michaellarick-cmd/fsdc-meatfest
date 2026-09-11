@@ -14,11 +14,9 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
-          import re
 
           p=Path('public/buffet-layout.js')
           s=p.read_text()
-
           old="""  function refillText(x){const q=x?.quantity||x?.side?.quantity||x?.bread?.quantity;return q?'Present service vessel(s) as planned; keep remaining production as backup and refill before the vessel is empty.':'Refill from the locked menu quantity; do not change the buy/yield plan.';}"""
           new=old+"""
           function presentationPlan(x){
@@ -36,33 +34,30 @@ jobs:
           }"""
           if old not in s: raise SystemExit('refillText anchor not found')
           s=s.replace(old,new,1)
-
           old="""return{id:x.id||x.name,name:itemName(x),station:g.station,vessel:x.vessel?.label||x.vessel?.type||'',service:serviceText(x),production:productionText(x),quantity:quantityText(x),refill:refillText(x),width:w,startIn:start,endIn:offset,position:`${start}\\\"–${offset}\\\" from table start`};"""
           new="""const presentation=presentationPlan(x);return{id:x.id||x.name,name:itemName(x),station:g.station,vessel:x.vessel?.label||x.vessel?.type||'',service:serviceText(x),production:productionText(x),quantity:quantityText(x),refill:refillText(x),initial:presentation.initial,backup:presentation.backup,refillTrigger:presentation.trigger,width:w,startIn:start,endIn:offset,position:`${start}\\\"–${offset}\\\" from table start`};"""
           if old not in s: raise SystemExit('stationPlan item anchor not found')
           s=s.replace(old,new,1)
-
           old="""<div class=\"mf-execution-note\"><b>Operating rule:</b> buy/production quantity stays locked. The service plan controls what is presented at the buffet, what vessel it occupies, where it sits in the sequence, and when the backup quantity is brought forward.</div>`;card.appendChild(box);}"""
           new="""<div class=\"mf-execution-note\"><b>Operating rule:</b> buy/production quantity stays locked. The service plan controls what is presented at the buffet, what vessel it occupies, where it sits in the sequence, and when the backup quantity is brought forward.</div><div class=\"mf-physical-table\"><div class=\"mf-physical-title\"><b>INITIAL PRESENTATION / BACKUP</b><span>Use the locked production quantity — do not add or remove food.</span></div><div class=\"mf-position-list\">${rows.map(r=>`<div class=\"mf-position-item\"><strong>${esc(r.name)}</strong><small>INITIAL: ${esc(r.initial)} • BACKUP: ${esc(r.backup)} • REFILL: ${esc(r.refillTrigger)}</small></div>`).join('')}</div></div>`;card.appendChild(box);}"""
           if old not in s: raise SystemExit('execution note anchor not found')
           s=s.replace(old,new,1)
-
           p.write_text(s)
 
           t=Path('test/cloudflare-live.test.cjs')
           ts=t.read_text()
-          old="""return {...state,executionText,executionVisible:!!execution,executionRows:execution?[...execution.querySelectorAll('.mf-exec-row')].length-1:0};"""
-          if old not in ts:
-            old="""return {...state,executionText,executionVisible:!!execution,executionRows:execution?[...execution.querySelectorAll('.mf-exec-row')].length-1:0};"""
-          # Re-query the live execution block after populatePrint() and expose presentation text.
-          marker="""window.populatePrint?.();\n  const execution=document.querySelector('#buffetLayoutCard .mf-execution'),"""
-          repl="""window.populatePrint?.();\n  const execution=document.querySelector('#buffetLayoutCard .mf-execution'),\n        presentationText=execution?.textContent||'',"""
-          if marker not in ts: raise SystemExit('test execution anchor not found')
-          ts=ts.replace(marker,repl,1)
-          marker2="""if(state.executionRows<3)\n  fail(`Live buffet execution plan has too few service rows: ${state.executionRows}`);"""
-          repl2=marker2+"""\nif(!state.presentationText?.includes('INITIAL PRESENTATION / BACKUP'))fail('Live buffet plan is missing initial presentation / backup section.');\nfor(const label of ['INITIAL:','BACKUP:','REFILL:']) if(!state.presentationText.includes(label))fail(`Live buffet plan is missing presentation field: ${label}`);"""
-          if marker2 not in ts: raise SystemExit('test assertion anchor not found')
-          ts=ts.replace(marker2,repl2,1)
+          old="""window.populatePrint?.();const execution=document.querySelector('#buffetLayoutCard .mf-execution'),pb="""
+          new="""window.populatePrint?.();const execution=document.querySelector('#buffetLayoutCard .mf-execution'),presentationText=execution?.innerText||'',pb="""
+          if old not in ts: raise SystemExit('test execution anchor not found')
+          ts=ts.replace(old,new,1)
+          old="""executionRows:execution?[...execution.querySelectorAll('.mf-exec-row:not(.mf-exec-head)')].length:0,print:"""
+          new="""executionRows:execution?[...execution.querySelectorAll('.mf-exec-row:not(.mf-exec-head)')].length:0,presentationText,print:"""
+          if old not in ts: raise SystemExit('test state anchor not found')
+          ts=ts.replace(old,new,1)
+          old="""if(state.executionRows<3)fail(`Live buffet execution plan has too few service rows: ${state.executionRows}`);"""
+          new=old+"""\n    if(!state.presentationText.includes('INITIAL PRESENTATION / BACKUP'))fail('Live buffet plan is missing initial presentation / backup section.');\n    for(const label of ['INITIAL:','BACKUP:','REFILL:'])if(!state.presentationText.includes(label))fail(`Live buffet plan is missing presentation field: ${label}`);"""
+          if old not in ts: raise SystemExit('test assertion anchor not found')
+          ts=ts.replace(old,new,1)
           t.write_text(ts)
       - name: Commit correction
         run: |
