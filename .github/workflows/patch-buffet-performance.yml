@@ -1,0 +1,38 @@
+name: Patch buffet UI performance
+on:
+  push:
+    branches: [fix/buffet-performance]
+    paths:
+      - '.github/workflows/patch-buffet-performance.yml'
+      - 'public/buffet-ui.js'
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, 'fix: remove expensive buffet UI planning') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Patch UI to use fast planning
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('public/buffet-ui.js')
+          s=p.read_text()
+          marker='  function ensureStyle()'
+          helper="""  window.fastBuffetPlan=function(input={}){const sequenceItems=B.sequence(input),groups=B.physicalPlan(sequenceItems),layout=B.uTableLayout(groups,{tableLengths:input.mainTableLengths||B.TABLE_GEOMETRY.main}),tables={tables:layout.tableLengths,linearRequired:layout.linearRequired,linearProvided:layout.linearProvided,layout,overflow:layout.overflow};const desserts=B.dessertPlan(input),dessertStationPlan=B.dessertStation(desserts,input.dessertTableOptions||{});return{supplementalFactor:B.supplementalFactor(input.supplementalIds||[]),sausageMode:input.sausageMode||'polish',sides:B.sidePlan(input),breads:B.breadPlan(input),condiments:B.condimentPlan(input.condimentIds||[]),desserts,sequence:sequenceItems,serviceGroups:groups,tables,dessertStation:dessertStationPlan}};\n"""
+          if 'window.fastBuffetPlan=' not in s:
+              if marker not in s: raise SystemExit('marker missing')
+              s=s.replace(marker,helper+marker,1)
+          old='const p=B.plan({proteinKeys,sideIds,sideRows:s.sideRows,eaters:s.eaters,breadIds:state.breadIds,supplementalIds:state.supplementalIds,condimentIds:state.condimentIds,dessertIds:state.dessertIds,load:state.dessertLoad,sausageMode:state.sausageMode});'
+          new='const input={proteinKeys,sideIds,sideRows:s.sideRows,eaters:s.eaters,breadIds:state.breadIds,supplementalIds:state.supplementalIds,condimentIds:state.condimentIds,dessertIds:state.dessertIds,load:state.dessertLoad,sausageMode:state.sausageMode};const p=window.fastBuffetPlan(input);'
+          if old not in s: raise SystemExit('plan call missing')
+          s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/buffet-ui.js
+          git rm .github/workflows/patch-buffet-performance.yml
+          git commit -m 'fix: remove expensive buffet UI planning'
+          git push
