@@ -21,6 +21,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Patch buffet interaction path
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('public/buffet-ui.js')
+          s=p.read_text()
+          old="const state = { supplementalIds: [], dessertIds: [], breadIds: [], condimentIds: [], dessertLoad: 'moderate', sausageMode: 'polish' };"
+          new="const state = window.__meatfestBuffetState || (window.__meatfestBuffetState = { supplementalIds: [], dessertIds: [], breadIds: [], condimentIds: [], dessertLoad: 'moderate', sausageMode: 'polish' });"
+          if old in s: s=s.replace(old,new,1)
+          marker='  function render(){'
+          helper=r'''  function fastMainLayout(groups){const lengths=[72,72,72,48],segments=lengths.map((length,i)=>({table:i+1,length,used:0,remaining:length,items:[],stations:[]}));const required=(groups||[]).reduce((sum,g)=>sum+(Number(g.linearIn)||0),0);let index=0;for(const group of groups||[]){const need=Number(group.linearIn)||0;while(index<segments.length-1&&need>segments[index].remaining)index++;const seg=segments[index];seg.items.push(group);seg.used+=need;seg.remaining=seg.length-seg.used;(group.items||[]).forEach(item=>{const station=item.category==='cold'?'cold':item.category==='vegetable'?'vegetable':item.category==='starch'?'starch':item.type==='protein'?'core':item.type==='bread'?'bread':item.type==='condiment'?'finish':'core';if(!seg.stations.includes(station))seg.stations.push(station)});}const provided=lengths.reduce((a,b)=>a+b,0);return{tableLengths:lengths,segments,linearRequired:required,linearProvided:provided,overflow:required>provided}};
+  function fastBuffetPlan(input={}){const sequenceItems=B.sequence(input),groups=B.physicalPlan(sequenceItems),layout=fastMainLayout(groups),desserts=B.dessertPlan(input),dessertStation=B.dessertStation(desserts,input.dessertTableOptions||{});return{supplementalFactor:B.supplementalFactor(input.supplementalIds||[]),sausageMode:input.sausageMode||'polish',sides:B.sidePlan(input),breads:B.breadPlan(input),condiments:B.condimentPlan(input.condimentIds||[]),desserts,sequence:sequenceItems,serviceGroups:groups,tables:{tables:layout.tableLengths,linearRequired:layout.linearRequired,linearProvided:layout.linearProvided,layout,overflow:layout.overflow},dessertStation};}
+'''
+          if 'function fastBuffetPlan(' not in s:
+              if marker not in s: raise SystemExit('render marker missing')
+              s=s.replace(marker,helper+marker,1)
+          pattern=r"const p=B\.plan\(\{proteinKeys,sideIds,sideRows:s\.sideRows,eaters:s\.eaters,breadIds:state\.breadIds,supplementalIds:state\.supplementalIds,condimentIds:state\.condimentIds,dessertIds:state\.dessertIds,load:state\.dessertLoad,sausageMode:state\.sausageMode\}\);"
+          replacement="const p=fastBuffetPlan({proteinKeys,sideIds,sideRows:s.sideRows,eaters:s.eaters,breadIds:state.breadIds,supplementalIds:state.supplementalIds,condimentIds:state.condimentIds,dessertIds:state.dessertIds,load:state.dessertLoad,sausageMode:state.sausageMode});"
+          s,n=re.subn(pattern,replacement,s,count=1)
+          if n not in (0,1): raise SystemExit(f'plan replacement count={n}')
+          p.write_text(s)
+          PY
+
       - name: Run Meatfest calculation tests
         run: npm test
 
