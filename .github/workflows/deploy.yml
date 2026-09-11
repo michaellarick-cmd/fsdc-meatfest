@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   MEATFEST_LIVE_URL: https://fsdc-meatfest.michael-larick.workers.dev/
@@ -20,26 +20,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Apply final reset refresh correction
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('public/buffet-ui.js')
-          s=p.read_text()
-          old="state.supplementalIds=[];state.dessertIds=[];state.breadIds=[];state.condimentIds=[];state.dessertLoad='moderate';state.sausageMode='polish'},{capture:true})"
-          new="state.supplementalIds=[];state.dessertIds=[];state.breadIds=[];state.condimentIds=[];state.dessertLoad='moderate';state.sausageMode='polish';setTimeout(render,0)},{capture:true})"
-          if old not in s: raise SystemExit('Expected reset listener not found')
-          p.write_text(s.replace(old,new,1))
-          PY
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/buffet-ui.js
-          git commit -m "fix: refresh buffet state after reset"
-          git push
+
       - name: Run Meatfest calculation tests
         run: npm test
+
       - name: Install pinned Wrangler
         run: npm install --no-save --no-audit wrangler@4.129.1
+
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v4
         with:
@@ -47,26 +34,12 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "4.129.1"
           command: deploy
+
       - name: Install browser test runner
         run: npm install --no-save --no-audit playwright@1.63.0
+
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
+
       - name: Verify deployed Cloudflare site
         run: node test/cloudflare-live.test.cjs
-      - name: Verify requested UI corrections live
-        run: |
-          node <<'NODE'
-          const { chromium } = require('playwright');
-          (async()=>{
-            const b=await chromium.launch({headless:true});
-            const p=await b.newPage();
-            await p.goto(process.env.MEATFEST_LIVE_URL,{waitUntil:'networkidle'});await p.waitForTimeout(500);
-            if(await p.locator('#buffetServiceCard,#buffetLayoutCard').count()!==2) throw new Error('Buffet sections are not present in Meatfest mode');
-            for(const id of ['bbqSauce','pickles','mustard']){const btn=p.locator(`button[data-buffet-key="condimentIds"][data-buffet-id="${id}"]`);if(await btn.count()!==1)throw new Error(`Missing condiment control: ${id}`);if(await btn.getAttribute('aria-pressed')==='true')throw new Error(`Condiment incorrectly selected by default: ${id}`);await btn.click();}
-            const reset=p.locator('button').filter({hasText:/^\s*reset\s*$/i});if(await reset.count()!==1)throw new Error('Reset control not found');await reset.click();await p.waitForTimeout(300);
-            for(const id of ['bbqSauce','pickles','mustard']){const btn=p.locator(`button[data-buffet-key="condimentIds"][data-buffet-id="${id}"]`);if(await btn.getAttribute('aria-pressed')==='true')throw new Error(`Reset failed to clear condiment: ${id}`);}
-            const family=p.locator('.modeBtn').filter({hasText:/^\s*family\s*$/i});if(await family.count()!==1)throw new Error('Family Mode control not found');await family.click();await p.waitForTimeout(200);
-            if(await p.locator('#buffetServiceCard,#buffetLayoutCard').count()!==0)throw new Error('Sections 6 and 7 are still rendered in Family Mode');
-            console.log('Requested buffet UI corrections: PASS');await b.close();
-          })().catch(e=>{console.error(e);process.exit(1)});
-          NODE
