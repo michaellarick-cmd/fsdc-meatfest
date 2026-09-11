@@ -22,22 +22,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Patch buffet interaction path
-        run: |
-          node <<'NODE'
-          const fs = require('fs');
-          const path = 'public/buffet-ui.js';
-          let s = fs.readFileSync(path, 'utf8');
-          const oldState = "const state = { supplementalIds: [], dessertIds: [], breadIds: [], condimentIds: [], dessertLoad: 'moderate', sausageMode: 'polish' };";
-          const newState = "const state = window.__meatfestBuffetState || (window.__meatfestBuffetState = { supplementalIds: [], dessertIds: [], breadIds: [], condimentIds: [], dessertLoad: 'moderate', sausageMode: 'polish' });";
-          if (!s.includes(oldState)) throw new Error('Expected buffet state declaration not found');
-          s = s.replace(oldState, newState);
-          const oldPlan = "const p=B.plan({proteinKeys,sideIds,sideRows:s.sideRows,eaters:s.eaters,breadIds:state.breadIds,supplementalIds:state.supplementalIds,condimentIds:state.condimentIds,dessertIds:state.dessertIds,load:state.dessertLoad,sausageMode:state.sausageMode});";
-          const newPlan = "const p=B.plan({proteinKeys,sideIds,sideRows:s.sideRows,eaters:s.eaters,breadIds:state.breadIds,supplementalIds:state.supplementalIds,condimentIds:state.condimentIds,dessertIds:state.dessertIds,load:state.dessertLoad,sausageMode:state.sausageMode});";
-          if (!s.includes(oldPlan)) throw new Error('Expected buffet plan call not found');
-          fs.writeFileSync(path, s);
-          NODE
-
       - name: Run Meatfest calculation tests
         run: npm test
 
