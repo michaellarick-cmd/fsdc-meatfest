@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   MEATFEST_LIVE_URL: https://fsdc-meatfest.michael-larick.workers.dev/
@@ -20,39 +20,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
-      - name: Apply buffet render performance correction
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('public/buffet-layout.js')
-          s=p.read_text()
-          old="const recommendationCache=new Map(),layoutCache=new Map();let observer=null;"
-          new="const recommendationCache=new Map(),layoutCache=new Map();let observer=null,renderScheduled=false;"
-          if old in s:
-            s=s.replace(old,new,1)
-          old="function serviceSequence(layout){return stationPlan(layout).flatMap(seg=>"
-          new="function serviceSequence(layout,rows=stationPlan(layout)){return rows.flatMap(seg=>"
-          if old not in s: raise SystemExit('serviceSequence anchor not found')
-          s=s.replace(old,new,1)
-          old="function guestFlow(layout){const rows=serviceSequence(layout),stations="
-          new="function guestFlow(layout,rows=serviceSequence(layout)){const stations="
-          if old not in s: raise SystemExit('guestFlow anchor not found')
-          s=s.replace(old,new,1)
-          old="out.stationPlan=stationPlan(out);out.serviceSequence=serviceSequence(out);out.guestFlow=guestFlow(out);"
-          new="out.stationPlan=stationPlan(out);out.serviceSequence=serviceSequence(out,out.stationPlan);out.guestFlow=guestFlow(out,out.serviceSequence);"
-          if old not in s: raise SystemExit('allocation reuse anchor not found')
-          s=s.replace(old,new,1)
-          old="observer=new MutationObserver(()=>{const c=document.getElementById('buffetLayoutCard');if(c&&(!c.querySelector('.mf-visual')||!c.querySelector('.mf-execution')||!c.querySelector('.mf-physical')||!c.querySelector('.mf-flow')))render();});"
-          new="observer=new MutationObserver(()=>{const c=document.getElementById('buffetLayoutCard');if(!c||renderScheduled)return;if(!c.querySelector('.mf-visual')||!c.querySelector('.mf-execution')||!c.querySelector('.mf-physical')||!c.querySelector('.mf-flow')){renderScheduled=true;requestAnimationFrame(()=>{renderScheduled=false;render();});}});"
-          if old not in s: raise SystemExit('observer anchor not found')
-          s=s.replace(old,new,1)
-          p.write_text(s)
-          PY
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/buffet-layout.js
-          git diff --cached --quiet || (git commit -m "fix: prevent buffet render thrash" && git push)
 
       - name: Run Meatfest calculation tests
         run: npm test
