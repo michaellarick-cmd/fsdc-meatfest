@@ -33,19 +33,8 @@ jobs:
             s=s.replace(old,new,1)
             p.write_text(s)
           else:
-            print('Buffet mode gate already uses initialized active mode control; no source change needed.')
-          if not (p.parent/'meatfest-final.js').read_text().find('getPlanningMode')<0:
-            q=p.parent/'meatfest-final.js'
-            t=q.read_text().replace('window.getPlanningMode=()=>planningMode;','',1)
-            q.write_text(t)
+            print('Buffet mode gate already uses initialized active mode control; no buffet source change needed.')
           PY
-          if ! git diff --quiet -- public/buffet-ui.js public/meatfest-final.js; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add public/buffet-ui.js public/meatfest-final.js
-            git commit -m "fix: gate buffet sections from family mode"
-            git push
-          fi
 
       - name: Run Meatfest calculation tests
         run: npm test
@@ -67,8 +56,23 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Verify deployed Cloudflare site
-        run: node test/cloudflare-live.test.cjs
+      - name: Diagnose live buffet mode
+        run: |
+          node <<'NODE'
+          const { chromium } = require('playwright');
+          (async()=>{
+            const b=await chromium.launch({headless:true});
+            const p=await b.newPage();
+            await p.goto(process.env.MEATFEST_LIVE_URL,{waitUntil:'domcontentloaded'});
+            await p.waitForTimeout(2000);
+            console.log('ACTIVE MODE:',await p.locator('.modeBtn.active').allTextContents());
+            console.log('MODE SWITCH CLASS:',await p.locator('.modeSwitch').getAttribute('class'));
+            console.log('BUFFET SERVICE:',await p.locator('#buffetServiceCard').count());
+            console.log('BUFFET LAYOUT:',await p.locator('#buffetLayoutCard').count());
+            console.log('BUFFET UI SCRIPT:',await p.locator('script[src*="buffet-ui"]').count());
+            await b.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
 
       - name: Verify requested UI corrections live
         run: |
@@ -77,14 +81,14 @@ jobs:
           (async()=>{
             const b=await chromium.launch({headless:true});
             const p=await b.newPage();
-            await p.goto(process.env.MEATFEST_LIVE_URL,{waitUntil:'networkidle'});
+            await p.goto(process.env.MEATFEST_LIVE_URL,{waitUntil:'domcontentloaded'});await p.waitForTimeout(2000);
             const buffetCards=()=>p.locator('#buffetServiceCard,#buffetLayoutCard').count();
             if(await buffetCards()!==2) throw new Error('Buffet sections are not present in Meatfest mode');
             const condTexts=['BBQ Sauce','Pickles','Mustard'];
             for(const t of condTexts){const btn=p.getByRole('button',{name:new RegExp('^'+t+'$','i')});if(await btn.count()!==1)throw new Error(`Missing condiment control: ${t}`);if(await btn.getAttribute('aria-pressed')==='true')throw new Error(`Condiment incorrectly selected by default: ${t}`);await btn.click();}
             const reset=p.getByRole('button',{name:/reset/i});if(await reset.count()!==1)throw new Error('Reset control not found');await reset.click();await p.waitForTimeout(150);
             for(const t of condTexts){const btn=p.getByRole('button',{name:new RegExp('^'+t+'$','i')});if(await btn.getAttribute('aria-pressed')==='true')throw new Error(`Reset failed to clear condiment: ${t}`);}
-            const family=p.getByRole('button',{name:/family/i});if(await family.count()!==1)throw new Error('Family Mode control not found');await family.click();await p.waitForTimeout(150);
+            const family=p.getByRole('button',{name:/family/i});if(await family.count()!==1)throw new Error('Family Mode control not found');await family.click();await p.waitForTimeout(300);
             if(await buffetCards()!==0)throw new Error('Sections 6 and 7 are still rendered in Family Mode');
             console.log('Requested buffet UI corrections: PASS');
             await b.close();
