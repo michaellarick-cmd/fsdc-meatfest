@@ -8,7 +8,7 @@ const fail = message => { throw new Error(message); };
     const response = await page.goto(LIVE_URL,{waitUntil:'networkidle',timeout:60000});
     if(!response || !response.ok()) fail(`Cloudflare page request failed: ${response ? response.status() : 'no response'}`);
     const title=await page.title(); if(!title.includes('Meatfest')) fail(`Unexpected page title: ${title}`);
-    await page.locator('#buffetServiceCard').waitFor({state:'visible',timeout:30000});
+    await page.locator('#buffetServiceCard').waitFor({state:'attached',timeout:30000});await page.waitForTimeout(500);
     const hotDogs=page.locator('button[data-buffet-key="supplementalIds"][data-buffet-id="hotdogs"]');
     if(await hotDogs.count()!==1) fail('Hot Dogs buffet control is missing.');
     if(await hotDogs.getAttribute('aria-pressed')!=='false') fail('Hot Dogs control did not start unselected.');
