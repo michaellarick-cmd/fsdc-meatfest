@@ -63,5 +63,8 @@ test('representative buffet audit: full menu reports only physically unplaceable
   assert.equal(p.tables.overflow,true);
   assert.equal(p.tables.layout.overflowIn,54);
   assert.equal(p.tables.layout.linearRequired-p.tables.layout.overflowIn,250);
-  assert.deepEqual(Array.from(p.tables.layout.recommendedTables),[72,72,72,48,48]);
+  assert.deepEqual(Array.from(p.tables.layout.recommendedTables),[72,72,72,72,48]);
+  assert.ok(p.tables.layout.recommendedLayout);
+  assert.equal(p.tables.layout.recommendedLayout.overflow,false);
+  assert.equal(p.tables.layout.recommendedLayout.linearProvided,336);
 });
