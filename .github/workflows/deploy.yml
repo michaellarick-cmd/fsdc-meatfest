@@ -43,3 +43,6 @@ jobs:
 
       - name: Verify deployed Cloudflare site
         run: node test/cloudflare-live.test.cjs
+
+      - name: Verify buffet interaction performance
+        run: node test/buffet-interaction-performance.test.cjs
