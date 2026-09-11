@@ -1,0 +1,51 @@
+name: Apply buffet cache and regression correction
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-cache-and-buffet-regression.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, 'test: verify buffet cross-category persistence and bust UI cache') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Patch cache policy, cache-bust UI, and strengthen live regression
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('public/index.html')
+          s=p.read_text()
+          old='<script src="/app.js?v=1a262787"></script><script src="/meat-engine.js?v=dcd258e1"></script><script src="/meatfest-final.js?v=982109662f8dc16022b467c4233f4129fb240102"></script><script src="/buffet-engine.js?v=1"></script><script src="/buffet-ui.js?v=1"></script><script src="/buffet-layout.js?v=2"></script>'
+          if old not in s:
+              old='<script src="/app.js?v=1a262787"></script><script src="/meat-engine.js?v=dcd258e1"></script><script src="/meatfest-final.js?v=dcd258e1"></script><script src="/buffet-engine.js?v=1"></script><script src="/buffet-ui.js?v=1"></script><script src="/buffet-layout.js?v=2"></script>'
+          if old not in s:
+              import re
+              s,n=re.subn(r'<script src="/buffet-ui\.js\?v=1"></script>','<script src="/buffet-ui.js?v=2"></script>',s,count=1)
+              if n!=1: raise SystemExit('buffet-ui script tag not found')
+          else:
+              s=s.replace('<script src="/buffet-ui.js?v=1"></script>','<script src="/buffet-ui.js?v=2"></script>',1)
+          p.write_text(s)
+
+          p=Path('public/_headers')
+          s=p.read_text()
+          if '/buffet-ui.js' not in s:
+              s += '/buffet-ui.js\n  Cache-Control: no-store\n'
+          p.write_text(s)
+
+          p=Path('test/buffet-interaction-performance.test.cjs')
+          s=p.read_text()
+          start=s.index("    const selections=")
+          end=s.index("    const final=timings", start)
+          replacement='''    const selections=[\n      ['supplementalIds','burgers','Burgers'],\n      ['supplementalIds','brats','Grilling Brats'],\n      ['condimentIds','bbqSauce','BBQ Sauce'],\n      ['dessertIds','cobbler','Cobbler / Crisp']\n    ];\n    const timings=[];\n    for(const [key,id,label] of selections){\n      const button=page.locator(`button[data-buffet-key="${key}"][data-buffet-id="${id}"]`);\n      if(await button.count()!==1) fail(`${label} buffet control is missing.`);\n      if(await button.getAttribute('aria-pressed')!=='false') fail(`${label} control did not start unselected.`);\n      const start=Date.now();\n      await button.click();\n      await page.waitForFunction(({key,id})=>document.querySelector(`button[data-buffet-key="${key}"][data-buffet-id="${id}"]`)?.getAttribute('aria-pressed')==='true',{key,id},{timeout:10000});\n      for(const [previousKey,previousId] of [['supplementalIds','burgers'],['supplementalIds','brats']]){\n        const previous=page.locator(`button[data-buffet-key="${previousKey}"][data-buffet-id="${previousId}"]`);\n        if(await previous.count()===1 && (previousKey!==key || previousId!==id) && (previousId==='burgers' || previousId==='brats')){\n          if(await previous.getAttribute('aria-pressed')!=='true') fail(`${label} selection reset ${previousId}.`);\n        }\n      }\n      const elapsed=Date.now()-start;\n      const health=await page.evaluate(()=>{const service=document.getElementById('buffetServiceCard'),layout=document.getElementById('buffetLayoutCard');const rect=s=>s?.getBoundingClientRect();const sr=rect(service),lr=rect(layout);return{serviceHeight:sr?.height||0,layoutHeight:lr?.height||0,scrollHeight:document.documentElement.scrollHeight,visual:document.querySelectorAll('#buffetLayoutCard > .mf-visual').length,execution:document.querySelectorAll('#buffetLayoutCard > .mf-execution').length,physical:document.querySelectorAll('#buffetLayoutCard > .mf-physical').length,flow:document.querySelectorAll('#buffetLayoutCard > .mf-flow:has(.mf-flow-route)').length};});\n      if(elapsed>5000) fail(`${label} selection took ${elapsed}ms to complete.`);\n      if(health.serviceHeight<100||health.layoutHeight<100||health.scrollHeight<500) fail(`${label} selection left an invalid page layout: ${JSON.stringify(health)}`);\n      if(health.visual!==1||health.execution!==1||health.physical!==1||health.flow!==1) fail(`${label} selection produced duplicate or missing buffet render blocks: ${JSON.stringify(health)}`);\n      timings.push({label,elapsed,health});\n    }\n'''
+          s=s[:start]+replacement+s[end:]
+          p.write_text(s)
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/index.html public/_headers test/buffet-interaction-performance.test.cjs .github/workflows/apply-cache-and-buffet-regression.yml
+          git rm .github/workflows/apply-cache-and-buffet-regression.yml
+          git commit -m 'test: verify buffet cross-category persistence and bust UI cache'
+          git push
