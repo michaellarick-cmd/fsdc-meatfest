@@ -66,9 +66,9 @@
   }
 
   function stationPlan(layout) {
-    return (layout?.segments||[]).map(seg=>({
+    return (layout?.segments || []).map(seg => ({
       table:seg.table,length:seg.length,used:seg.used,remaining:Math.max(0,seg.remaining),
-      stations:seg.stations.map(id=>({id,label:stationLabel(id)})),
+      stations:seg.stations.map(id => ({id,label:stationLabel(id)})),
       items:(seg.items||[]).flatMap(g=>(g.items||[]).map(x=>({id:x.id||x.name,name:itemName(x),station:g.station,vessel:x.vessel?.label||x.vessel?.type||'',service:serviceText(x),production:productionText(x)})))
     }));
   }
@@ -132,10 +132,15 @@
     card.appendChild(box);
   }
   function installStyle(){
+    if(!document.createElement||!document.head)return;
     if(document.getElementById('mf-layout-style'))return;const s=document.createElement('style');s.id='mf-layout-style';s.textContent=`#buffetLayoutCard .mf-visual,#buffetLayoutCard .mf-recommended{margin-top:14px;padding:14px;border:1px solid #30353b;border-radius:14px;background:#101214}#buffetLayoutCard .mf-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-end;margin-bottom:12px}.mf-head b{display:block;font-size:11px;letter-spacing:.11em}.mf-head span{display:block;color:#9da3aa;font-size:9px;line-height:1.35;margin-top:3px}.mf-meta{text-align:right;color:#aeb3b9;font-size:9px;line-height:1.35}.mf-meta strong{color:#f39a32;display:block;margin-top:2px}#buffetLayoutCard .mf-map{display:grid;grid-template-columns:1fr 1.4fr 1fr;grid-template-rows:82px 82px 34px;gap:7px}.mf-table,.mf-rtable{border:2px solid #575d64;border-radius:9px;background:#20242a;padding:7px;overflow:hidden;min-width:0}.mf-table b,.mf-rtable b{font-size:9px}.mf-table small,.mf-rtable small{display:block;color:#9da3aa;font-size:7px;margin-top:2px}.mf-table>span,.mf-rtable>span{display:block;color:#bfc4c9;font-size:7px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mf-table>div,.mf-rtable>div{display:flex;flex-wrap:wrap;gap:2px;margin-top:4px}.mf-table em,.mf-rtable em{font-style:normal;font-size:6.5px;border:1px solid #3a4047;border-radius:99px;padding:2px 3px;color:#d8dce0}.mf-t1{grid-column:1;grid-row:1 / span 2}.mf-t2{grid-column:2;grid-row:1}.mf-t3{grid-column:3;grid-row:1 / span 2}.mf-t4{grid-column:2;grid-row:2}.mf-open{grid-column:1 / span 3;display:flex;justify-content:center;align-items:center;color:#666d75;font-size:7px;letter-spacing:.1em;text-transform:uppercase}#buffetLayoutCard .mf-recommended-map{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.mf-rtable{min-height:100px}.mf-recommended-note{margin-top:10px;padding:9px 10px;border-left:3px solid #f39a32;background:#1d1914;color:#d9c7ae;font-size:9px;line-height:1.4;border-radius:0 7px 7px 0}@media(max-width:650px){#buffetLayoutCard .mf-recommended-map{grid-template-columns:repeat(2,minmax(0,1fr))}#buffetLayoutCard .mf-map{grid-template-columns:1fr 1.2fr 1fr}}`;document.head.appendChild(s);
   }
-  function renderPrint(){const box=document.getElementById('psBuffet'),p=currentPlan();if(!box||!p?.tables?.layout)return;const l=p.tables.layout,r=l.recommendedLayout,layout=r||l;box.innerHTML=`<div><b>${r?'RECOMMENDED PHYSICAL BUFFET SETUP':'BUFFET LAYOUT & SERVICE FLOW'}</b><small>${layout.tableLengths.map(x=>x/12+"'").join(' + ')} • ${layout.linearProvided}" available / ${layout.linearRequired}" required</small></div><div class="ps-layout-tables">${layout.segments.map(s=>`<div><strong>TABLE ${s.table} • ${s.length/12}'</strong><span>${s.used}" used • ${s.stations.map(stationLabel).join(' → ')||'Service space'}</span><p>${names(s).join(' • ')||'Service space'}</p></div>`).join('')}</div>${l.overflow&&!r?`<div class="ps-bOverflow">OVERFLOW — ${l.overflowIn}" does not fit the standard four-table footprint.</div>`:''}`;}
-  function wrapPrint(){if(typeof window.populatePrint!=='function'||window.populatePrint.__mfWrapped)return;const original=window.populatePrint,wrapped=function(){original.apply(this,arguments);requestAnimationFrame(renderPrint)};wrapped.__mfWrapped=true;window.populatePrint=wrapped;}
-  function start(){installStyle();const card=document.getElementById('buffetLayoutCard');if(!card){setTimeout(start,100);return;}render();wrapPrint();new MutationObserver(()=>requestAnimationFrame(render)).observe(card,{childList:true,subtree:true});}
+  function renderPrintAllocation(){const box=document.getElementById('psBuffet'),p=currentPlan();if(!box||!p?.tables?.layout)return;const l=p.tables.layout,r=l.recommendedLayout,layout=r||l;box.innerHTML=`<div><b>${r?'RECOMMENDED PHYSICAL BUFFET SETUP':'BUFFET LAYOUT & SERVICE FLOW'}</b><small>${layout.tableLengths.map(x=>x/12+"'").join(' + ')} • ${layout.linearProvided}" available / ${layout.linearRequired}" required</small></div><div class="ps-layout-tables">${layout.segments.map(seg=>`<div><strong>TABLE ${seg.table} • ${seg.length/12}'</strong><span>${seg.used}" used • ${seg.stations.map(stationLabel).join(' → ')||'Service space'}</span><p>${names(seg).join(' • ')||'Service space'}</p></div>`).join('')}</div>${l.overflow&&!r?`<div class="ps-bOverflow">OVERFLOW — ${l.overflowIn}" does not fit the standard four-table footprint.</div>`:''}`;}
+  function wrapPrint(){if(typeof window.populatePrint!=='function'||window.populatePrint.__mfWrapped)return;const original=window.populatePrint,wrapped=function(){original.apply(this,arguments);requestAnimationFrame(renderPrintAllocation)};wrapped.__mfWrapped=true;window.populatePrint=wrapped;}
+  function start(){
+    if(!document.createElement)return;
+    installStyle();const card=document.getElementById('buffetLayoutCard');if(!card){setTimeout(start,100);return;}render();wrapPrint();
+    if(typeof MutationObserver==='function')new MutationObserver(()=>requestAnimationFrame(render)).observe(card,{childList:true,subtree:true});
+  }
   start();
 })();
