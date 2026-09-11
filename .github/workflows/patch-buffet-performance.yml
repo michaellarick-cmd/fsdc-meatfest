@@ -36,3 +36,4 @@ jobs:
           git rm .github/workflows/patch-buffet-performance.yml
           git commit -m 'fix: remove expensive buffet UI planning'
           git push
+# trigger
