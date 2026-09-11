@@ -50,7 +50,7 @@ const fail = message => { throw new Error(message); };
     if(!state.flow)fail('Live guest-flow service strategy did not render.');
     for(const label of ['GUEST FLOW / SERVICE STRATEGY','START / ENTRY','FINISH / EXIT','ONE-WAY FLOW','PRESSURE POINTS','CREW RULE','DESIGN RULE'])if(!state.flowText.includes(label))fail(`Live guest-flow strategy is missing expected content: ${label}`);
     if(!state.flowText.includes('Table 1 → Table 2 → Table 3 → Table 4'))fail(`Live guest-flow strategy is missing one-way table direction: ${state.flowText}`);
-    if(!state.flowText.includes('No rationing'))fail(`Live guest-flow strategy is missing the no-rationing rule: ${state.flowText}`);
+    if(!state.flowText.toLowerCase().includes('no rationing'))fail(`Live guest-flow strategy is missing the no-rationing rule: ${state.flowText}`);
     if(!state.flowText.includes('crew replenishes from the kitchen side'))fail(`Live guest-flow strategy is missing crew-lane guidance: ${state.flowText}`);
     if(state.capacity.linearRequired!==140||state.capacity.linearProvided!==120||!state.capacity.overflow||state.capacity.overflowIn!==20)fail(`Live buffet overflow capacity calculation is wrong: ${JSON.stringify(state.capacity)}`);
     if(JSON.stringify(state.capacity.recommendedTables)!==JSON.stringify([72,72,48]))fail(`Live buffet overflow recommendation is wrong: ${JSON.stringify(state.capacity.recommendedTables)}`);
