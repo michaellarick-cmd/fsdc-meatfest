@@ -68,9 +68,10 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
       const serviceText=document.querySelector('#buffetServiceCard')?.innerText||'';
       const dynamicText=document.querySelector('#buffetDynamic')?.innerText||'';
       const layoutText=document.querySelector('#buffetLayoutDynamic')?.innerText||'';
+      const legacy=document.querySelectorAll('#buffetLayoutCard .mf-visual,#buffetLayoutCard .mf-execution,#buffetLayoutCard .mf-physical,#buffetLayoutCard .mf-flow,#buffetLayoutCard .mf-recommended').length;
       const table=B.tableRequirement([{linearIn:102}],{tableLengths:[72,48]});
       const capacity=window.BuffetAllocation.allocate([{station:'core',linearIn:50,items:[{id:'protein-a',name:'Protein A',vessel:{type:'chafer'}}]},{station:'core',linearIn:50,items:[{id:'protein-b',name:'Protein B',vessel:{type:'chafer'}}]},{station:'specialty',linearIn:40,items:[{id:'specialty-a',name:'Specialty A',vessel:{type:'chafer'}}]}],[72,48]);
-      return {summary,cauli,collards,cp,table,capacity,serviceText,dynamicText,layoutText};
+      return {summary,cauli,collards,cp,table,capacity,serviceText,dynamicText,layoutText,legacy};
     });
 
     if(state.summary.eaters!==44) fail(`Live adult-equivalent eater count is wrong: ${state.summary.eaters}`);
@@ -81,6 +82,7 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
     if(!state.cp?.quantity?.service||state.cp.quantity.service.count!==1||state.cp.quantity.service.label!=='serving bowl') fail(`Live Collard Greens service calculation is wrong: ${JSON.stringify(state.cp?.quantity?.service)}`);
     if(state.cp.vessel?.type!=='bowl'||state.cp.service?.method!=='tongs') fail(`Live Collard Greens service metadata is wrong: ${JSON.stringify({vessel:state.cp.vessel,service:state.cp.service})}`);
     if(state.table.linearRequired!==102||state.table.linearProvided!==120||JSON.stringify(state.table.tables)!==JSON.stringify([72,48])) fail(`Live table requirement calculation is wrong: ${JSON.stringify(state.table)}`);
+    if(state.legacy!==0) fail(`Legacy buffet presentation nodes are still rendering: ${state.legacy}`);
     for(const label of ['Cauliflower Mac','Mac & Cheese','Collard Greens','Hawaiian Rolls','Cornbread']) if(!state.dynamicText.includes(label)&&!state.layoutText.includes(label)) fail(`Live buffet presentation is missing selected item: ${label}`);
     for(const label of ['Hawaiian Rolls','Cornbread']) if(!state.serviceText.includes(label)) fail(`Live buffet service card is missing bread control: ${label}`);
     for(const label of ['MAIN BUFFET','3 × 6\' + 1 × 4\' U-shape','DESSERT','TABLE-BY-TABLE SETUP','Table 1','Table 2','Table 3','Table 4','SERVICE RULES']) if(!state.layoutText.includes(label)) fail(`Live buffet layout is missing expected content: ${label}`);
@@ -88,6 +90,17 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
     if(state.capacity.linearRequired!==140||state.capacity.linearProvided!==120||!state.capacity.overflow||state.capacity.overflowIn!==20) fail(`Live buffet overflow capacity calculation is wrong: ${JSON.stringify(state.capacity)}`);
     if(JSON.stringify(state.capacity.recommendedTables)!==JSON.stringify([72,72,48])) fail(`Live buffet overflow recommendation is wrong: ${JSON.stringify(state.capacity.recommendedTables)}`);
     if(!state.capacity.recommendedLayout||state.capacity.recommendedLayout.linearProvided!==192||state.capacity.recommendedLayout.linearRequired!==140||state.capacity.recommendedLayout.overflow) fail(`Live recommended expanded buffet layout is not a valid full-menu fit: ${JSON.stringify(state.capacity.recommendedLayout)}`);
+
+    await page.evaluate(()=>{ window.__meatfestPrintCalled=false; window.print=()=>{window.__meatfestPrintCalled=true}; });
+    const beforePrint=await page.evaluate(()=>({summary:window.buildSummary(),url:location.href,selected:[...selected],sides:[...selectedSides],supplemental:window.__meatfestBuffetState?.supplementalIds?.slice()}));
+    await page.locator('#print').click();
+    await page.waitForFunction(()=>window.__meatfestPrintCalled===true,{timeout:3000});
+    await page.waitForFunction(()=>document.querySelector('#printSheet')?.textContent?.includes('TOTAL PURCHASE WEIGHT'),{timeout:3000});
+    const afterPrint=await page.evaluate(()=>({summary:window.buildSummary(),url:location.href,selected:[...selected],sides:[...selectedSides],supplemental:window.__meatfestBuffetState?.supplementalIds?.slice(),title:document.querySelector('#psTitle')?.textContent}));
+    if(JSON.stringify(afterPrint.summary)!==JSON.stringify(beforePrint.summary)) fail(`Print changed calculator summary/state: before=${JSON.stringify(beforePrint.summary)} after=${JSON.stringify(afterPrint.summary)}`);
+    if(JSON.stringify(afterPrint.selected)!==JSON.stringify(beforePrint.selected)||JSON.stringify(afterPrint.sides)!==JSON.stringify(beforePrint.sides)||JSON.stringify(afterPrint.supplemental)!==JSON.stringify(beforePrint.supplemental)) fail(`Print changed selection state.`);
+    if(afterPrint.url!==beforePrint.url) fail(`Print changed the page URL.`);
+    if(!afterPrint.title||!afterPrint.title.includes('MEATFEST')) fail(`Print sheet was not populated.`);
 
     log('live verification passed');
   } catch(error) {
