@@ -84,10 +84,12 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
     if(!state.collards||state.collards.q.amount!==1||state.collards.q.unit!=='recipe') fail(`Live Collard Greens quantity is wrong: ${JSON.stringify(state.collards)}`);
     if(!state.cp?.quantity?.service||state.cp.quantity.service.count!==1||state.cp.quantity.service.label!=='serving bowl') fail(`Live Collard Greens service calculation is wrong: ${JSON.stringify(state.cp?.quantity?.service)}`);
     if(state.cp.vessel?.type!=='bowl'||state.cp.service?.method!=='tongs') fail(`Live Collard Greens service metadata is wrong: ${JSON.stringify({vessel:state.cp.vessel,service:state.cp.service})}`);
-    for(const row of state.summary.sideRows){
-      const expected=state.shopping[row.id];
-      const actual=state.serviceRows.find(x=>x.text.startsWith(state.summary.sideRows.find(r=>r.id===row.id)?({beans:'Baked Beans',cauli:'Cauliflower Mac',mac:'Mac & Cheese',collards:'Collard Greens'}[row.id]||''):''))?.buy;
-      if(!expected||!actual||actual!==expected) fail(`Buffet service quantity diverges from shopping quantity for ${row.id}: shopping=${expected} service=${actual}`);
+    const sideNames={beans:'Baked Beans',cauli:'Cauliflower Mac',mac:'Mac & Cheese',collards:'Collard Greens'};
+    for(const id of Object.keys(sideNames)){
+      const row=state.summary.sideRows.find(r=>r.id===id);
+      const expected=state.shopping[id];
+      const actual=state.serviceRows.find(x=>x.text.startsWith(sideNames[id]))?.buy;
+      if(!row||!expected||!actual||actual!==expected) fail(`Buffet service quantity diverges from shopping quantity for ${id}: shopping=${expected} service=${actual}`);
     }
     if(state.table.linearRequired!==102||state.table.linearProvided!==120||JSON.stringify(state.table.tables)!==JSON.stringify([72,48])) fail(`Live table requirement calculation is wrong: ${JSON.stringify(state.table)}`);
     if(state.legacy!==0) fail(`Legacy buffet presentation nodes are still rendering: ${state.legacy}`);
