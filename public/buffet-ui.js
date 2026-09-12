@@ -11,18 +11,6 @@
     return new NativeWorker(target,options);
   };
 
-  let lastSideSignature='';
-  function syncSelectedSides(){
-    if(typeof window.buildSummary!=='function')return;
-    const card=document.getElementById('buffetServiceCard'),dyn=document.getElementById('buffetDynamic');
-    if(!card||!dyn)return;
-    const summary=window.buildSummary(),rows=summary.sideRows||[],signature=rows.map(r=>r.id).join('|');
-    if(signature===lastSideSignature)return;
-    lastSideSignature=signature;
-    if(!rows.length){dyn.innerHTML='<p class="note">No sides selected. Select buffet options to build the service quantities and layout.</p>';return;}
-    dyn.innerHTML='<div class="buffetSection"><div class="buffetGroupTitle">SELECTED ACCOMPANIMENTS</div><div class="buffetGrid">'+rows.map(r=>{const canonical=BuffetEngine.SIDE_ID_ALIASES?.[r.id]||r.id,name=BuffetEngine.SIDES?.[canonical]?.name||r.name||r.label||r.id;return'<div class="buffetRow"><span>'+String(name).replace(/[&<>\"\']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))+'</span><b>Selected</b></div>'}).join('')+'</div><p class="buffetSubnote">These selections remain part of the buffet service plan. Choose supplemental grilling, condiments, or desserts above to build the complete service plan.</p></div>';
-  }
-
   function wireBreadChoices(){
     const card=document.getElementById('buffetServiceCard');
     if(!card||typeof selectedSides==='undefined')return;
@@ -38,8 +26,8 @@
       const check=btn.querySelector('.buffetCheck');if(check)check.textContent=on?'✓':'';
       if(btn.dataset.breadWired==='1')return;
       btn.dataset.breadWired='1';
-      btn.addEventListener('click',e=>{
-        e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+      btn.onclick=e=>{
+        e.preventDefault();e.stopPropagation();
         selectedSides.has(sideId)?selectedSides.delete(sideId):selectedSides.add(sideId);
         const onNow=selectedSides.has(sideId);
         btn.classList.toggle('on',onNow);
@@ -49,22 +37,21 @@
           if(typeof renderSideCards==='function')renderSideCards();
           if(typeof calcSides==='function')calcSides();
           if(typeof save==='function')save();
-          wireBreadChoices();
           if(typeof window.calc==='function')window.calc();
         },0);
-      },true);
+      };
     });
   }
 
-  const script = document.createElement('script');
-  script.src = '/buffet-ui-v2.js?v=1';
-  script.defer = true;
+  const script=document.createElement('script');
+  script.src='/buffet-ui-v2.js?v=1';
+  script.defer=true;
   script.addEventListener('load',()=>{
-    syncSelectedSides();
     wireBreadChoices();
-    const wrap=document.querySelector('.wrap')||document.body;
-    const observer=new MutationObserver(()=>{syncSelectedSides();wireBreadChoices()});
-    observer.observe(wrap,{subtree:true,childList:true});
+    const card=document.getElementById('buffetServiceCard');
+    if(!card)return;
+    const observer=new MutationObserver(()=>wireBreadChoices());
+    observer.observe(card,{childList:true,subtree:true});
   });
   document.head.appendChild(script);
 })();
