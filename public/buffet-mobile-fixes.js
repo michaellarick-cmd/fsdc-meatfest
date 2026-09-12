@@ -38,63 +38,44 @@
     saveState();
   }
 
-  function installScrollPreservation(service) {
-    if (document.documentElement.dataset.buffetScrollFixWired) return;
-    document.documentElement.dataset.buffetScrollFixWired = '1';
-
-    let pendingScrollY = null;
-    let settleTimer = 0;
+  function installScrollStability(service) {
+    if (service.dataset.scrollStabilityWired) return;
+    service.dataset.scrollStabilityWired = '1';
+    let active = null;
     let releaseTimer = 0;
-    let originalBodyAnchor = '';
 
-    const currentY = () => window.scrollY || window.pageYOffset || 0;
+    const lock = () => {
+      const y = window.scrollY || window.pageYOffset || 0;
+      const dynamic = document.getElementById('buffetDynamic');
+      if (y < 40 || !dynamic) return;
 
-    const beginPreservation = () => {
-      const y = currentY();
-      if (y < 40) return;
-      pendingScrollY = y;
-      if (!originalBodyAnchor) originalBodyAnchor = document.body.style.overflowAnchor || '';
-      document.body.style.overflowAnchor = 'none';
-      if (settleTimer) clearTimeout(settleTimer);
       if (releaseTimer) clearTimeout(releaseTimer);
+      const height = dynamic.getBoundingClientRect().height;
+      active = { y, dynamic };
+      if (height > 0) dynamic.style.minHeight = `${Math.ceil(height)}px`;
+
       releaseTimer = setTimeout(() => {
-        pendingScrollY = null;
-        document.body.style.overflowAnchor = originalBodyAnchor;
-      }, 1200);
+        const a = active;
+        active = null;
+        if (!a || !a.dynamic.isConnected) return;
+        const target = a.y;
+        const locked = a.dynamic.style.minHeight;
+        a.dynamic.style.minHeight = '';
+        requestAnimationFrame(() => {
+          const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+          const safeY = Math.min(target, maxY);
+          if (Math.abs((window.scrollY || 0) - safeY) > 2) window.scrollTo(0, safeY);
+          requestAnimationFrame(() => {
+            const maxY2 = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+            const safeY2 = Math.min(target, maxY2);
+            if (Math.abs((window.scrollY || 0) - safeY2) > 2) window.scrollTo(0, safeY2);
+          });
+        });
+        if (locked && a.dynamic.getBoundingClientRect().height < 1) a.dynamic.style.minHeight = locked;
+      }, 900);
     };
 
-    const restore = () => {
-      const target = pendingScrollY;
-      if (target == null || target < 40) return;
-      window.scrollTo(0, target);
-    };
-
-    const queueRestoreAfterSettledDom = () => {
-      if (pendingScrollY == null) return;
-      if (settleTimer) clearTimeout(settleTimer);
-      settleTimer = setTimeout(() => {
-        restore();
-        requestAnimationFrame(restore);
-        setTimeout(restore, 120);
-        setTimeout(restore, 300);
-      }, 60);
-    };
-
-    service.addEventListener('click', beginPreservation, true);
-
-    const dynamic = document.getElementById('buffetDynamic');
-    const layout = document.getElementById('buffetLayoutDynamic');
-    const observer = new MutationObserver(queueRestoreAfterSettledDom);
-    if (dynamic) observer.observe(dynamic, { childList: true, subtree: true });
-    if (layout) observer.observe(layout, { childList: true, subtree: true });
-
-    window.addEventListener('scroll', () => {
-      if (pendingScrollY == null) return;
-      if (currentY() < pendingScrollY - 100) return;
-      if (Math.abs(currentY() - pendingScrollY) <= 100) return;
-      pendingScrollY = null;
-      document.body.style.overflowAnchor = originalBodyAnchor;
-    }, { passive: true });
+    service.addEventListener('click', lock, true);
   }
 
   function install() {
@@ -114,7 +95,7 @@
       accomp.addEventListener('click', () => setTimeout(syncBreadControls, 0), false);
     }
 
-    installScrollPreservation(service);
+    installScrollStability(service);
     return true;
   }
 
