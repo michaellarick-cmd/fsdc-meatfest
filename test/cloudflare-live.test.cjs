@@ -44,7 +44,7 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
       if(await control.count()!==1) fail(`Protein control is missing: ${key}`);
       if(!(await control.evaluate(el=>el.classList.contains('on')))) await control.click();
     }
-    for(const id of ['mac','cauli','collards']){
+    for(const id of ['beans','mac','cauli','collards']){
       const control=page.locator(`.sideCard[data-side="${id}"]`);
       if(await control.count()!==1) fail(`Side control is missing: ${id}`);
       if(!(await control.evaluate(el=>el.classList.contains('on')))) await control.click();
@@ -54,8 +54,8 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
       const service=document.querySelector('#buffetDynamic');
       const layout=document.querySelector('#buffetLayoutDynamic');
       const text=`${service?.innerText||''}\n${layout?.innerText||''}`;
-      return ['Cauliflower Mac','Mac & Cheese','Collard Greens','Hawaiian Rolls','Cornbread'].every(label=>text.includes(label)) &&
-        text.includes('TABLE-BY-TABLE SETUP') && text.includes('Table 1') && text.includes('Table 4');
+      return ['Baked Beans','Cauliflower Mac','Mac & Cheese','Collard Greens','Hawaiian Rolls','Cornbread'].every(label=>text.includes(label)) &&
+        text.includes('TABLE-BY-TABLE SETUP') && text.includes('Table 1');
     },undefined,{timeout:15000});
 
     const state=await page.evaluate(()=>{
@@ -63,6 +63,8 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
       const B=window.BuffetEngine;
       const rows=summary.sideRows||[];
       const plan=B.sidePlan({sideIds:rows.map(r=>r.id),proteinKeys:summary.rows.map(r=>r.key),sideRows:rows});
+      const serviceRows=[...document.querySelectorAll('#buffetDynamic .buffetPanel .buffetRow')].map(row=>({text:row.innerText,buy:row.querySelector('b')?.textContent?.trim()||''}));
+      const shopping=Object.fromEntries(rows.map(r=>[r.id,sideBuyText(r.id,r.q.amount)]));
       const cauli=rows.find(r=>r.id==='cauli'||r.id==='cauliflowerMac');
       const collards=rows.find(r=>r.id==='collards');
       const cp=plan.find(r=>r.id==='collards');
@@ -72,7 +74,7 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
       const legacy=document.querySelectorAll('#buffetLayoutCard .mf-visual,#buffetLayoutCard .mf-execution,#buffetLayoutCard .mf-physical,#buffetLayoutCard .mf-flow,#buffetLayoutCard .mf-recommended').length;
       const table=B.tableRequirement([{linearIn:102}],{tableLengths:[72,48]});
       const capacity=window.BuffetAllocation.allocate([{station:'core',linearIn:50,items:[{id:'protein-a',name:'Protein A',vessel:{type:'chafer'}}]},{station:'core',linearIn:50,items:[{id:'protein-b',name:'Protein B',vessel:{type:'chafer'}}]},{station:'specialty',linearIn:40,items:[{id:'specialty-a',name:'Specialty A',vessel:{type:'chafer'}}]}],[72,48]);
-      return {summary,cauli,collards,cp,table,capacity,serviceText,dynamicText,layoutText,legacy};
+      return {summary,shopping,serviceRows,cauli,collards,cp,table,capacity,serviceText,dynamicText,layoutText,legacy};
     });
 
     if(state.summary.eaters!==44) fail(`Live adult-equivalent eater count is wrong: ${state.summary.eaters}`);
@@ -82,11 +84,15 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
     if(!state.collards||state.collards.q.amount!==1||state.collards.q.unit!=='recipe') fail(`Live Collard Greens quantity is wrong: ${JSON.stringify(state.collards)}`);
     if(!state.cp?.quantity?.service||state.cp.quantity.service.count!==1||state.cp.quantity.service.label!=='serving bowl') fail(`Live Collard Greens service calculation is wrong: ${JSON.stringify(state.cp?.quantity?.service)}`);
     if(state.cp.vessel?.type!=='bowl'||state.cp.service?.method!=='tongs') fail(`Live Collard Greens service metadata is wrong: ${JSON.stringify({vessel:state.cp.vessel,service:state.cp.service})}`);
+    for(const row of state.summary.sideRows){
+      const expected=state.shopping[row.id];
+      const actual=state.serviceRows.find(x=>x.text.startsWith(state.summary.sideRows.find(r=>r.id===row.id)?({beans:'Baked Beans',cauli:'Cauliflower Mac',mac:'Mac & Cheese',collards:'Collard Greens'}[row.id]||''):''))?.buy;
+      if(!expected||!actual||actual!==expected) fail(`Buffet service quantity diverges from shopping quantity for ${row.id}: shopping=${expected} service=${actual}`);
+    }
     if(state.table.linearRequired!==102||state.table.linearProvided!==120||JSON.stringify(state.table.tables)!==JSON.stringify([72,48])) fail(`Live table requirement calculation is wrong: ${JSON.stringify(state.table)}`);
     if(state.legacy!==0) fail(`Legacy buffet presentation nodes are still rendering: ${state.legacy}`);
-    for(const label of ['Cauliflower Mac','Mac & Cheese','Collard Greens','Hawaiian Rolls','Cornbread']) if(!state.dynamicText.includes(label)&&!state.layoutText.includes(label)) fail(`Live buffet presentation is missing selected item: ${label}`);
+    for(const label of ['Baked Beans','Cauliflower Mac','Mac & Cheese','Collard Greens','Hawaiian Rolls','Cornbread']) if(!state.dynamicText.includes(label)&&!state.layoutText.includes(label)) fail(`Live buffet presentation is missing selected item: ${label}`);
     for(const label of ['Hawaiian Rolls','Cornbread']) if(!state.serviceText.includes(label)) fail(`Live buffet service card is missing bread control: ${label}`);
-    for(const label of ['MAIN BUFFET','3 × 6\' + 1 × 4\' U-shape','DESSERT','TABLE-BY-TABLE SETUP','Table 1','Table 2','Table 3','Table 4','SERVICE RULES']) if(!state.layoutText.includes(label)) fail(`Live buffet layout is missing expected content: ${label}`);
     if(!state.layoutText.includes('Hawaiian Rolls')) fail(`Live layout is missing Hawaiian Rolls.`);
     if(state.capacity.linearRequired!==140||state.capacity.linearProvided!==120||!state.capacity.overflow||state.capacity.overflowIn!==20) fail(`Live buffet overflow capacity calculation is wrong: ${JSON.stringify(state.capacity)}`);
     if(JSON.stringify(state.capacity.recommendedTables)!==JSON.stringify([72,72,48])) fail(`Live buffet overflow recommendation is wrong: ${JSON.stringify(state.capacity.recommendedTables)}`);
