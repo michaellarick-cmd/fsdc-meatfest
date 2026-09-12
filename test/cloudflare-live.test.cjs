@@ -38,6 +38,7 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
     await page.locator('#adults').dispatchEvent('input');
     await page.locator('#kids').fill('8');
     await page.locator('#kids').dispatchEvent('input');
+    await page.locator('#eventName').fill('Labor Day Meatfest 7.0');
     for(const key of ['brisket','pmbe','ribs','pork','brats','chicken']){
       const control=page.locator(`.meat[data-k="${key}"]`);
       if(await control.count()!==1) fail(`Protein control is missing: ${key}`);
@@ -100,7 +101,7 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
     if(JSON.stringify(afterPrint.summary)!==JSON.stringify(beforePrint.summary)) fail(`Print changed calculator summary/state: before=${JSON.stringify(beforePrint.summary)} after=${JSON.stringify(afterPrint.summary)}`);
     if(JSON.stringify(afterPrint.selected)!==JSON.stringify(beforePrint.selected)||JSON.stringify(afterPrint.sides)!==JSON.stringify(beforePrint.sides)||JSON.stringify(afterPrint.supplemental)!==JSON.stringify(beforePrint.supplemental)) fail(`Print changed selection state.`);
     if(afterPrint.url!==beforePrint.url) fail(`Print changed the page URL.`);
-    if(!afterPrint.title||!afterPrint.title.includes('MEATFEST')) fail(`Print sheet was not populated.`);
+    if(afterPrint.title!=='LABOR DAY MEATFEST 7.0') fail(`Print sheet title was not populated from event state: ${afterPrint.title}`);
 
     log('live verification passed');
   } catch(error) {
