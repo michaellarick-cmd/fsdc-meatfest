@@ -66,8 +66,9 @@ const fail = message => { throw new Error(message); };
 
       await page.waitForTimeout(100);
       const after=await button.evaluate(el=>({top:el.getBoundingClientRect().top,scrollY:window.scrollY}));
-      const topDelta=Math.abs(after.top-before.top);
-      if(topDelta>100) fail(`${label} selection moved the touched control: beforeTop=${before.top.toFixed(1)} afterTop=${after.top.toFixed(1)} scrollBefore=${before.scrollY} scrollAfter=${after.scrollY}`);
+      const expectedTop=before.top-(after.scrollY-before.scrollY);
+      const topDelta=Math.abs(after.top-expectedTop);
+      if(topDelta>100) fail(`${label} selection changed the touched control's position beyond the intentional user scroll: beforeTop=${before.top.toFixed(1)} afterTop=${after.top.toFixed(1)} beforeScroll=${before.scrollY} afterScroll=${after.scrollY}`);
 
       const health=await page.evaluate(()=>({
         serviceHeight:document.getElementById('buffetServiceCard')?.getBoundingClientRect().height||0,
