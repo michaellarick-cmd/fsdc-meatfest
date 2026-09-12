@@ -42,11 +42,17 @@
       btn.addEventListener('click',e=>{
         e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
         selectedSides.has(sideId)?selectedSides.delete(sideId):selectedSides.add(sideId);
-        if(typeof renderSideCards==='function')renderSideCards();
-        if(typeof calcSides==='function')calcSides();
-        if(typeof save==='function')save();
-        wireBreadChoices();
-        setTimeout(()=>{if(typeof window.calc==='function')window.calc();},0);
+        const onNow=selectedSides.has(sideId);
+        btn.classList.toggle('on',onNow);
+        btn.setAttribute('aria-pressed',String(onNow));
+        const check=btn.querySelector('.buffetCheck');if(check)check.textContent=onNow?'✓':'';
+        setTimeout(()=>{
+          if(typeof renderSideCards==='function')renderSideCards();
+          if(typeof calcSides==='function')calcSides();
+          if(typeof save==='function')save();
+          wireBreadChoices();
+          if(typeof window.calc==='function')window.calc();
+        },0);
       },true);
     });
   }
