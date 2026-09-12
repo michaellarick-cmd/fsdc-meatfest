@@ -14,6 +14,26 @@
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(window.__meatfestBuffetState || state)); } catch {}
   }
 
+  function preventLoadingCollapse() {
+    if (window.__meatfestBuffetLoadingGuard) return;
+    const proto = typeof Element !== 'undefined' ? Element.prototype : null;
+    const descriptor = proto && Object.getOwnPropertyDescriptor(proto, 'innerHTML');
+    if (!descriptor || typeof descriptor.set !== 'function' || typeof descriptor.get !== 'function') return;
+    Object.defineProperty(proto, 'innerHTML', {
+      configurable: descriptor.configurable,
+      enumerable: descriptor.enumerable,
+      get: descriptor.get,
+      set(value) {
+        if (this.id === 'buffetDynamic' && typeof value === 'string' && value.includes('Updating service plan')) return;
+        return descriptor.set.call(this, value);
+      }
+    });
+    window.__meatfestBuffetLoadingGuard = true;
+  }
+
+  /* Install before buffet-ui-v2 loads so its transient placeholder can never collapse the page. */
+  preventLoadingCollapse();
+
   function accompanimentBreadIds() {
     const ids = [];
     if (typeof selectedSides !== 'undefined') {
@@ -38,27 +58,10 @@
     saveState();
   }
 
-  function preventLoadingCollapse() {
-    if (window.__meatfestBuffetLoadingGuard) return;
-    const descriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
-    if (!descriptor || typeof descriptor.set !== 'function' || typeof descriptor.get !== 'function') return;
-    window.__meatfestBuffetLoadingGuard = true;
-    Object.defineProperty(Element.prototype, 'innerHTML', {
-      configurable: descriptor.configurable,
-      enumerable: descriptor.enumerable,
-      get: descriptor.get,
-      set(value) {
-        if (this.id === 'buffetDynamic' && value === '<p class="note">Updating service plan…</p>') return;
-        return descriptor.set.call(this, value);
-      }
-    });
-  }
-
   function install() {
     const service = document.getElementById('buffetServiceCard');
     const layout = document.getElementById('buffetLayoutCard');
     if (!service || !layout) return false;
-    preventLoadingCollapse();
     syncBreadControls();
 
     if (!service.dataset.mobileFixesWired) {
