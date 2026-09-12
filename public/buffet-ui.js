@@ -19,7 +19,7 @@
     if(signature===lastSideSignature&&!updating)return;
     lastSideSignature=signature;
     if(!rows.length){dyn.innerHTML='<p class="note">No sides selected. Select buffet options to build the service quantities and layout.</p>';return;}
-    dyn.innerHTML='<div class="buffetSection"><div class="buffetGroupTitle">SELECTED ACCOMPANIMENTS</div><div class="buffetGrid">'+rows.map(r=>'<div class="buffetRow"><span>'+String(r.name||r.label||r.id).replace(/[&<>\"\']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))+'</span><b>Selected</b></div>').join('')+'</div><p class="buffetSubnote">These selections remain part of the buffet service plan. Choose supplemental grilling, condiments, or desserts above to build the complete service plan.</p></div>';
+    dyn.innerHTML='<div class="buffetSection"><div class="buffetGroupTitle">SELECTED ACCOMPANIMENTS</div><div class="buffetGrid">'+rows.map(r=>{const canonical=BuffetEngine.SIDE_ID_ALIASES?.[r.id]||r.id,name=BuffetEngine.SIDES?.[canonical]?.name||r.name||r.label||r.id;return'<div class="buffetRow"><span>'+String(name).replace(/[&<>\"\']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))+'</span><b>Selected</b></div>'}).join('')+'</div><p class="buffetSubnote">These selections remain part of the buffet service plan. Choose supplemental grilling, condiments, or desserts above to build the complete service plan.</p></div>';
   }
   const script = document.createElement('script');
   script.src = '/buffet-ui-v2.js?v=1';
