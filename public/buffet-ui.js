@@ -29,7 +29,6 @@
     const wrap=document.querySelector('.wrap')||document.body;
     const observer=new MutationObserver(()=>syncSelectedSides());
     observer.observe(wrap,{subtree:true,attributes:true,attributeFilter:['class','aria-pressed']});
-    document.addEventListener('click',()=>setTimeout(syncSelectedSides,0),true);
   });
   document.head.appendChild(script);
 })();
