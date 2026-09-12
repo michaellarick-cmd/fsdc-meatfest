@@ -8,7 +8,7 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
   try {
     log('starting Chromium');
     browser = await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage'],timeout:30000});
-    const page = await browser.newPage({viewport:{width:1440,height:1200}});
+    const page = await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true});
     log(`navigating to ${LIVE_URL}`);
     const response = await page.goto(LIVE_URL,{waitUntil:'domcontentloaded',timeout:30000});
     if(!response || !response.ok()) fail(`Cloudflare page request failed: ${response ? response.status() : 'no response'}`);
@@ -16,16 +16,11 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
     await page.locator('#buffetServiceCard').waitFor({state:'attached',timeout:15000});
     await page.waitForTimeout(500);
 
-    for(const [id,label,sideId] of [['hawaiian','Hawaiian Rolls','rolls'],['cornbread','Cornbread','cornbread']]){
-      const button=page.locator(`button[data-buffet-key="breadIds"][data-buffet-id="${id}"]`);
-      if(await button.count()!==1) fail(`${label} buffet control is missing.`);
-      if(await button.isDisabled()) fail(`${label} buffet control is disabled.`);
-      if(await button.getAttribute('aria-pressed')!=='false') fail(`${label} control did not start unselected.`);
-      await button.click();
-      await page.waitForFunction(({id})=>document.querySelector(`button[data-buffet-key="breadIds"][data-buffet-id="${id}"]`)?.getAttribute('aria-pressed')==='true',{id},{timeout:3000});
-      const selected=await page.evaluate(()=>({rolls:selectedSides?.has('rolls'),cornbread:selectedSides?.has('cornbread')}));
-      if(!selected[sideId]) fail(`${label} did not update the accompaniment selection state.`);
-    }
+    const initialBread=await page.evaluate(()=>({
+      rolls:document.querySelector('button[data-buffet-key="breadIds"][data-buffet-id="hawaiian"]')?.getAttribute('aria-pressed'),
+      cornbread:document.querySelector('button[data-buffet-key="breadIds"][data-buffet-id="cornbread"]')?.getAttribute('aria-pressed')
+    }));
+    if(initialBread.rolls!=='false'||initialBread.cornbread!=='false') fail(`Bread controls did not start in a known state: ${JSON.stringify(initialBread)}`);
 
     const hotDogs=page.locator('button[data-buffet-key="supplementalIds"][data-buffet-id="hotdogs"]');
     if(await hotDogs.count()!==1) fail('Hot Dogs buffet control is missing.');
@@ -44,7 +39,7 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
       if(await control.count()!==1) fail(`Protein control is missing: ${key}`);
       if(!(await control.evaluate(el=>el.classList.contains('on')))) await control.click();
     }
-    for(const id of ['beans','mac','cauli','collards']){
+    for(const id of ['beans','mac','cauli','collards','rolls','cornbread']){
       const control=page.locator(`.sideCard[data-side="${id}"]`);
       if(await control.count()!==1) fail(`Side control is missing: ${id}`);
       if(!(await control.evaluate(el=>el.classList.contains('on')))) await control.click();
@@ -57,6 +52,23 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
       return ['Baked Beans','Cauliflower Mac','Mac & Cheese','Collard Greens','Hawaiian Rolls','Cornbread'].every(label=>text.includes(label)) &&
         text.includes('TABLE-BY-TABLE SETUP') && text.includes('Table 1');
     },undefined,{timeout:15000});
+
+    const breadState=await page.evaluate(()=>({
+      rolls:document.querySelector('button[data-buffet-key="breadIds"][data-buffet-id="hawaiian"]')?.getAttribute('aria-pressed'),
+      cornbread:document.querySelector('button[data-buffet-key="breadIds"][data-buffet-id="cornbread"]')?.getAttribute('aria-pressed'),
+      rollsDisabled:document.querySelector('button[data-buffet-key="breadIds"][data-buffet-id="hawaiian"]')?.disabled,
+      cornbreadDisabled:document.querySelector('button[data-buffet-key="breadIds"][data-buffet-id="cornbread"]')?.disabled
+    }));
+    if(breadState.rolls!=='true'||breadState.cornbread!=='true'||!breadState.rollsDisabled||!breadState.cornbreadDisabled) fail(`Bread controls did not mirror the Accompaniment selections: ${JSON.stringify(breadState)}`);
+
+    await page.evaluate(()=>window.scrollTo(0,document.body.scrollHeight));
+    const scrollBefore=await page.evaluate(()=>window.scrollY);
+    if(scrollBefore<200) fail(`Mobile regression did not reach the buffet bottom: ${scrollBefore}`);
+    const burgers=page.locator('button[data-buffet-key="supplementalIds"][data-buffet-id="burgers"]');
+    await burgers.click();
+    await page.waitForTimeout(500);
+    const scrollAfter=await page.evaluate(()=>window.scrollY);
+    if(scrollAfter<scrollBefore-100) fail(`Buffet update reset mobile scroll position: before=${scrollBefore} after=${scrollAfter}`);
 
     const state=await page.evaluate(()=>{
       const summary=window.buildSummary();
