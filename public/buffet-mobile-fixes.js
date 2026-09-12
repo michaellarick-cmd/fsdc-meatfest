@@ -29,9 +29,9 @@
     s.breadIds = ids;
     document.querySelectorAll('#buffetServiceCard button[data-buffet-key="breadIds"]').forEach(btn => {
       const on = ids.includes(btn.dataset.buffetId);
-      btn.disabled = true;
       btn.classList.toggle('on', on);
       btn.setAttribute('aria-pressed', String(on));
+      btn.removeAttribute('disabled');
       const check = btn.querySelector('.buffetCheck');
       if (check) check.textContent = on ? '✓' : '';
     });
