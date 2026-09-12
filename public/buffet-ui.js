@@ -11,23 +11,23 @@
   };
 
   const mobileFixes=document.createElement('script');
-  mobileFixes.src='/buffet-mobile-fixes.js?v=2';
+  mobileFixes.src='/buffet-mobile-fixes.js?v=3';
   mobileFixes.onload=loadAllocation;
   mobileFixes.onerror=loadAllocation;
   document.head.appendChild(mobileFixes);
 
   function loadAllocation(){
     const allocation=document.createElement('script');
-    allocation.src='/buffet-allocation.js?v=3';
+    allocation.src='/buffet-allocation.js?v=4';
     allocation.onload=()=>{
       const script=document.createElement('script');
-      script.src='/buffet-ui-v2.js?v=3';
+      script.src='/buffet-ui-v2.js?v=4';
       script.defer=true;
       document.head.appendChild(script);
     };
     allocation.onerror=()=>{
       const script=document.createElement('script');
-      script.src='/buffet-ui-v2.js?v=3';
+      script.src='/buffet-ui-v2.js?v=4';
       script.defer=true;
       document.head.appendChild(script);
     };
