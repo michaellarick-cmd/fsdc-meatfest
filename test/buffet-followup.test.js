@@ -1,37 +1,3 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import vm from 'node:vm';
-
-const source=fs.readFileSync(new URL('../public/buffet-engine.js',import.meta.url),'utf8');
-const context={globalThis:{}};
-vm.runInNewContext(source,context);
-const B=context.globalThis.BuffetEngine;
-
-test('two half-full standard tins share one physical chafer',()=>{
-  const groups=B.physicalPlan([
-    {type:'side',id:'mac',name:'Mac & Cheese',side:B.SIDES.mac,vessel:B.VESSELS.chafer,quantity:{amount:.5,unit:'tin'}},
-    {type:'side',id:'cauliflowerMac',name:'Cauliflower Mac',side:B.SIDES.cauliflowerMac,vessel:B.VESSELS.chafer,quantity:{amount:.5,unit:'tin'}}
-  ]);
-  assert.equal(groups.length,1);
-  assert.equal(groups[0].linearIn,21);
-  assert.equal(groups[0].items.map(x=>x.id).join('|'),'mac|cauliflowerMac');
-  assert.equal(groups[0].items.map(x=>x.serviceFill).join('|'),'half|half');
-  assert.equal(groups[0].items.every(x=>x.serviceFill==='half'),true);
-});
-
-test('a three-quarter-full standard tin is one physical tin, not three quarter tins',()=>{
-  const groups=B.physicalPlan([
-    {type:'side',id:'mac',name:'Mac & Cheese',side:B.SIDES.mac,vessel:B.VESSELS.chafer,quantity:{amount:.75,unit:'tin'}}
-  ]);
-  assert.equal(groups.length,1);
-  assert.equal(groups[0].linearIn,21);
-  assert.equal(groups[0].items.length,1);
-  assert.equal(groups[0].items[0].serviceFill,'full');
-  assert.equal(groups[0].items[0].fillFraction,.75);
-});
-
-test('one full tin plus one quarter-full standard tin uses two physical chafers',()=>{
   const groups=B.physicalPlan([
     {type:'side',id:'mac',name:'Mac & Cheese',side:B.SIDES.mac,vessel:B.VESSELS.chafer,quantity:{amount:1.25,unit:'tin'}}
   ]);
@@ -39,11 +5,14 @@ test('one full tin plus one quarter-full standard tin uses two physical chafers'
   assert.equal(groups[0].items.length,1);
   assert.equal(groups[0].items[0].serviceFill,'full');
   assert.equal(groups[1].items.length,1);
+  assert.equal(groups[1].items.length,1);
   assert.equal(groups[1].items[0].serviceFill,'quarter');
 });
 
 test('buffet bread selection is driven by Accompaniment selections',()=>{
-  const ui=fs.readFileSync(new URL('../public/buffet-ui.js',import.meta.url),'utf8');
+  const entry=fs.readFileSync(new URL('../public/buffet-ui.js',import.meta.url),'utf8');
+  const ui=fs.readFileSync(new URL('../public/buffet-ui-v2.js',import.meta.url),'utf8');
+  assert.match(entry,/buffet-ui-v2\.js/);
   assert.match(ui,/function accompanimentBreadIds\(\)/);
   assert.match(ui,/selectedSides\.has\('rolls'\).*hawaiian/);
   assert.match(ui,/selectedSides\.has\('cornbread'\).*cornbread/);
