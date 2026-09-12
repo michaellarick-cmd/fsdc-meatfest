@@ -15,10 +15,9 @@
   }
 
   /* Safari was being destabilized by programmatic scroll restoration while the worker
-     replaced buffet output. Do not fight the user's scroll position. Instead, reserve the
-     existing dynamic section heights before a buffet click so the worker render cannot
-     collapse document geometry underneath an active touch scroll. The reserved height can
-     grow naturally if the new result needs more space, but it never shrinks during the session. */
+     replaced buffet output. Do not fight the user's scroll position. Instead, reserve
+     extra room before a buffet click so the worker render cannot collapse document geometry
+     underneath an active touch scroll. The reservation can grow, but it never shrinks. */
   function reserveDynamicHeights() {
     for (const id of ['buffetDynamic', 'buffetLayoutDynamic']) {
       const el = document.getElementById(id);
@@ -26,7 +25,7 @@
       const current = Math.ceil(el.getBoundingClientRect().height || 0);
       if (current <= 0) continue;
       const prior = Number(el.dataset.meatfestReservedHeight || 0);
-      const reserved = Math.max(prior, current);
+      const reserved = Math.max(prior, current + 500);
       el.dataset.meatfestReservedHeight = String(reserved);
       el.style.minHeight = `${reserved}px`;
     }
