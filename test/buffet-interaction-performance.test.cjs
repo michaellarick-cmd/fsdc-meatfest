@@ -10,6 +10,15 @@ const fail = message => { throw new Error(message); };
     if(!response || !response.ok()) fail(`Cloudflare page request failed: ${response ? response.status() : 'no response'}`);
     await page.locator('#buffetServiceCard').waitFor({state:'attached',timeout:30000});
     await page.locator('#buffetLayoutCard').waitFor({state:'attached',timeout:30000});
+    await page.waitForFunction(()=>document.querySelectorAll('#buffetLayoutDynamic .layoutTable').length===4,{timeout:30000});
+
+    const initialScroll=await page.evaluate(()=>{
+      window.scrollTo(0,Math.max(0,document.documentElement.scrollHeight-window.innerHeight-200));
+      return window.scrollY;
+    });
+    await page.waitForTimeout(1000);
+    const initialScrollAfter=await page.evaluate(()=>window.scrollY);
+    if(Math.abs(initialScrollAfter-initialScroll)>30) fail(`Initial buffet page shifted while the user was scrolling: before=${initialScroll} after=${initialScrollAfter}`);
 
     const selections=[
       ['supplementalIds','burgers','Burgers'],
@@ -45,7 +54,16 @@ const fail = message => { throw new Error(message); };
         if(await b.getAttribute('aria-pressed')!=='true') fail(`${label} selection lost ${expectedId}.`);
       }
 
+      const userScroll=await page.evaluate(()=>{
+        window.scrollTo(0,Math.max(0,document.documentElement.scrollHeight-window.innerHeight-120));
+        return window.scrollY;
+      });
       await page.waitForFunction(()=>document.querySelectorAll('#buffetLayoutDynamic .layoutTable').length===4 && document.querySelectorAll('#buffetDynamic .buffetRow').length>0,{timeout:15000});
+      await page.waitForTimeout(150);
+      const scrollAfterRender=await page.evaluate(()=>window.scrollY);
+      const scrollDelta=Math.abs(scrollAfterRender-userScroll);
+      if(scrollDelta>30) fail(`${label} worker render moved the user's scroll position: before=${userScroll} after=${scrollAfterRender}`);
+
       await page.waitForTimeout(100);
       const after=await button.evaluate(el=>({top:el.getBoundingClientRect().top,scrollY:window.scrollY}));
       const topDelta=Math.abs(after.top-before.top);
@@ -62,12 +80,12 @@ const fail = message => { throw new Error(message); };
       if(health.serviceHeight<100||health.layoutHeight<100||health.scrollHeight<500) fail(`${label} selection left an invalid page layout: ${JSON.stringify(health)}`);
       if(health.layoutTables!==4) fail(`${label} selection produced an invalid main buffet layout: ${JSON.stringify(health)}`);
       if(health.controls<10) fail(`${label} selection lost buffet controls: ${JSON.stringify(health)}`);
-      timings.push({label,elapsed,topDelta,selectedCount:selected.length,health});
+      timings.push({label,elapsed,topDelta,scrollDelta,selectedCount:selected.length,health});
     }
 
     const final=timings[timings.length-1].elapsed,first=timings[0].elapsed;
     if(final>Math.max(1000,first*5)) fail(`Buffet interaction time degraded excessively: first=${first}ms final=${final}ms.`);
-    console.log('Cloudflare mobile buffet selection regression passed.');
+    console.log('Cloudflare mobile buffet selection and scroll regression passed.');
     console.log(JSON.stringify({url:LIVE_URL,selections:timings},null,2));
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error.stack||error);process.exit(1);});
