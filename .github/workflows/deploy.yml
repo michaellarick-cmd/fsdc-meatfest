@@ -18,6 +18,7 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -41,9 +42,6 @@ jobs:
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-
-      - name: Diagnose deployed Cloudflare site
-        run: node test/cloudflare-live-diagnostic.cjs
 
       - name: Verify deployed Cloudflare site
         run: node test/cloudflare-live.test.cjs
