@@ -14,25 +14,48 @@
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(window.__meatfestBuffetState || state)); } catch {}
   }
 
-  function preventLoadingCollapse() {
-    if (window.__meatfestBuffetLoadingGuard) return;
-    const proto = typeof Element !== 'undefined' ? Element.prototype : null;
-    const descriptor = proto && Object.getOwnPropertyDescriptor(proto, 'innerHTML');
-    if (!descriptor || typeof descriptor.set !== 'function' || typeof descriptor.get !== 'function') return;
-    Object.defineProperty(proto, 'innerHTML', {
-      configurable: descriptor.configurable,
-      enumerable: descriptor.enumerable,
-      get: descriptor.get,
-      set(value) {
-        if (this.id === 'buffetDynamic' && typeof value === 'string' && value.includes('Updating service plan')) return;
-        return descriptor.set.call(this, value);
+  /* The buffet UI replaces a large DOM subtree while the worker calculates. On a mobile viewport,
+     that temporary height collapse can clamp scrollY before the real render arrives. Keep the page
+     at its pre-update height until the worker result has rendered, then restore the exact position. */
+  const OriginalWorker = window.Worker;
+  if (OriginalWorker && !window.__meatfestWorkerStabilityWired) {
+    window.__meatfestWorkerStabilityWired = true;
+    window.Worker = function(url, options) {
+      const worker = new OriginalWorker(url, options);
+      if (typeof url === 'string' && url.includes('/buffet-worker.js')) {
+        const originalPost = worker.postMessage.bind(worker);
+        let locked = null;
+        const lockPage = () => {
+          const y = window.scrollY || 0;
+          const height = Math.max(document.documentElement.scrollHeight, document.body?.scrollHeight || 0);
+          locked = { y, height };
+          if (height > 0 && document.body) document.body.style.minHeight = `${height}px`;
+        };
+        const releasePage = () => {
+          const snapshot = locked;
+          if (!snapshot) return;
+          setTimeout(() => {
+            if (document.body) document.body.style.minHeight = '';
+            requestAnimationFrame(() => {
+              const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+              const target = Math.min(snapshot.y, maxY);
+              if (Math.abs((window.scrollY || 0) - target) > 2) window.scrollTo(0, target);
+              requestAnimationFrame(() => {
+                const maxY2 = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+                const target2 = Math.min(snapshot.y, maxY2);
+                if (Math.abs((window.scrollY || 0) - target2) > 2) window.scrollTo(0, target2);
+              });
+            });
+            locked = null;
+          }, 0);
+        };
+        worker.postMessage = (...args) => { lockPage(); return originalPost(...args); };
+        worker.addEventListener('message', releasePage);
       }
-    });
-    window.__meatfestBuffetLoadingGuard = true;
+      return worker;
+    };
+    window.Worker.prototype = OriginalWorker.prototype;
   }
-
-  /* Install before buffet-ui-v2 loads so its transient placeholder can never collapse the page. */
-  preventLoadingCollapse();
 
   function accompanimentBreadIds() {
     const ids = [];
