@@ -17,8 +17,7 @@
     const card=document.getElementById('buffetServiceCard'),dyn=document.getElementById('buffetDynamic');
     if(!card||!dyn)return;
     const summary=window.buildSummary(),rows=summary.sideRows||[],signature=rows.map(r=>r.id).join('|');
-    const updating=/Updating service plan/i.test(dyn.textContent||'');
-    if(signature===lastSideSignature&&!updating)return;
+    if(signature===lastSideSignature)return;
     lastSideSignature=signature;
     if(!rows.length){dyn.innerHTML='<p class="note">No sides selected. Select buffet options to build the service quantities and layout.</p>';return;}
     dyn.innerHTML='<div class="buffetSection"><div class="buffetGroupTitle">SELECTED ACCOMPANIMENTS</div><div class="buffetGrid">'+rows.map(r=>{const canonical=BuffetEngine.SIDE_ID_ALIASES?.[r.id]||r.id,name=BuffetEngine.SIDES?.[canonical]?.name||r.name||r.label||r.id;return'<div class="buffetRow"><span>'+String(name).replace(/[&<>\"\']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))+'</span><b>Selected</b></div>'}).join('')+'</div><p class="buffetSubnote">These selections remain part of the buffet service plan. Choose supplemental grilling, condiments, or desserts above to build the complete service plan.</p></div>';
