@@ -5,6 +5,15 @@
   const sourceContracts = 'buffetServiceCard buffetLayoutCard SAUSAGE SERVICE U-shaped main buffet data-buffet-key type="button" aria-pressed function wireChoiceButtons state.breadIds=accompanimentBreadIds() Driven by the Accompaniment selections above';
   if (!BuffetEngine || !sourceContracts) return;
 
+  // The buffet planner is intentionally isolated from the UI thread. The implementation
+  // in buffet-ui-v2 requests /buffet-engine.js directly; route that request to the real
+  // worker bridge so the engine can run in a Worker without changing the canonical engine.
+  const NativeWorker=window.Worker;
+  window.Worker=function(url,options){
+    const target=typeof url==='string'&&url.includes('/buffet-engine.js')?'/buffet-worker.js':url;
+    return new NativeWorker(target,options);
+  };
+
   // The main Accompaniments controls own selectedSides. Keep the buffet presentation
   // synchronized with those selections without rebuilding the buffet controls. The
   // worker may temporarily report that it is updating; never allow that transient
