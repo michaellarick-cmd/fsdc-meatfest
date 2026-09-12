@@ -1,0 +1,76 @@
+const { chromium } = require('playwright');
+const LIVE_URL = process.env.MEATFEST_LIVE_URL || 'https://fsdc-meatfest.michael-larick.workers.dev/';
+const fail = message => { throw new Error(message); };
+const log = message => console.log(`[LIVE-SMOKE] ${message}`);
+
+(async () => {
+  const browser = await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+  const page = await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true});
+  try {
+    log(`navigating to ${LIVE_URL}`);
+    const response = await page.goto(LIVE_URL,{waitUntil:'domcontentloaded',timeout:30000});
+    if(!response || !response.ok()) fail(`Cloudflare page request failed: ${response ? response.status() : 'no response'}`);
+    if(!(await page.title()).includes('Meatfest')) fail(`Unexpected page title: ${await page.title()}`);
+    await page.locator('#buffetServiceCard').waitFor({state:'attached',timeout:15000});
+    await page.locator('#buffetLayoutCard').waitFor({state:'attached',timeout:15000});
+
+    const bread=await page.evaluate(()=>({
+      rolls:document.querySelector('button[data-buffet-key="breadIds"][data-buffet-id="hawaiian"]')?.getAttribute('aria-pressed'),
+      cornbread:document.querySelector('button[data-buffet-key="breadIds"][data-buffet-id="cornbread"]')?.getAttribute('aria-pressed'),
+      rollsDisabled:document.querySelector('button[data-buffet-key="breadIds"][data-buffet-id="hawaiian"]')?.disabled,
+      cornbreadDisabled:document.querySelector('button[data-buffet-key="breadIds"][data-buffet-id="cornbread"]')?.disabled
+    }));
+    if(bread.rolls!=='false'||bread.cornbread!=='false'||bread.rollsDisabled||bread.cornbreadDisabled) fail(`Bread controls did not start available and unselected: ${JSON.stringify(bread)}`);
+
+    await page.locator('#adults').fill('40');
+    await page.locator('#adults').dispatchEvent('input');
+    await page.locator('#kids').fill('8');
+    await page.locator('#kids').dispatchEvent('input');
+    await page.locator('#eventName').fill('Labor Day Meatfest 7.0');
+    for(const key of ['brisket','pmbe','ribs','pork','brats','chicken']){
+      const control=page.locator(`.meat[data-k="${key}"]`);
+      if(await control.count()!==1) fail(`Protein control is missing: ${key}`);
+      if(!(await control.evaluate(el=>el.classList.contains('on')))) await control.click();
+    }
+    for(const id of ['beans','mac','cauli','collards','rolls','cornbread']){
+      const control=page.locator(`.sideCard[data-side="${id}"]`);
+      if(await control.count()!==1) fail(`Side control is missing: ${id}`);
+      if(!(await control.evaluate(el=>el.classList.contains('on')))) await control.click();
+    }
+
+    await page.waitForFunction(()=>{
+      const service=document.querySelector('#buffetDynamic');
+      const layout=document.querySelector('#buffetLayoutDynamic');
+      const text=`${service?.innerText||''}\n${layout?.innerText||''}`;
+      return ['Baked Beans','Cauliflower Mac','Mac & Cheese','Collard Greens','Hawaiian Rolls','Cornbread'].every(label=>text.includes(label)) && text.includes('TABLE-BY-TABLE SETUP') && text.includes('Table 1');
+    },undefined,{timeout:15000});
+
+    const state=await page.evaluate(()=>{
+      const summary=window.buildSummary();
+      const rows=summary.sideRows||[];
+      const cauli=rows.find(r=>r.id==='cauli'||r.id==='cauliflowerMac');
+      const collards=rows.find(r=>r.id==='collards');
+      const serviceText=document.querySelector('#buffetServiceCard')?.innerText||'';
+      const layoutText=document.querySelector('#buffetLayoutDynamic')?.innerText||'';
+      return {summary,cauli,collards,serviceText,layoutText};
+    });
+    if(state.summary.eaters!==44) fail(`Live adult-equivalent eater count is wrong: ${state.summary.eaters}`);
+    if(state.summary.rows.length!==6) fail(`Live canonical protein selection did not produce six proteins.`);
+    if(Math.abs(state.summary.total-86.125)>0.0001) fail(`Live canonical purchase weight is wrong: ${state.summary.total}`);
+    if(!state.cauli||state.cauli.q.amount!==0.5||state.cauli.q.unit!=='tin') fail(`Live Cauliflower Mac quantity is wrong: ${JSON.stringify(state.cauli)}`);
+    if(!state.collards||state.collards.q.amount!==1||state.collards.q.unit!=='recipe') fail(`Live Collard Greens quantity is wrong: ${JSON.stringify(state.collards)}`);
+    for(const label of ['Hawaiian Rolls','Cornbread']) if(!state.serviceText.includes(label)) fail(`Live buffet service card is missing bread control: ${label}`);
+    if(!state.layoutText.includes('Hawaiian Rolls')) fail('Live layout is missing Hawaiian Rolls.');
+
+    await page.evaluate(()=>{ window.__meatfestPrintCalled=false; window.print=()=>{window.__meatfestPrintCalled=true}; });
+    const before=await page.evaluate(()=>({summary:window.buildSummary(),url:location.href}));
+    await page.locator('#print').click();
+    await page.waitForFunction(()=>window.__meatfestPrintCalled===true,{timeout:3000});
+    await page.waitForFunction(()=>document.querySelector('#printSheet')?.textContent?.includes('TOTAL PURCHASE WEIGHT'),{timeout:3000});
+    const after=await page.evaluate(()=>({summary:window.buildSummary(),url:location.href,title:document.querySelector('#psTitle')?.textContent}));
+    if(JSON.stringify(after.summary)!==JSON.stringify(before.summary)) fail('Print changed calculator summary/state.');
+    if(after.url!==before.url) fail('Print changed the page URL.');
+    if(after.title!=='LABOR DAY MEATFEST 7.0') fail(`Print sheet title was not populated from event state: ${after.title}`);
+    log('live smoke verification passed');
+  } finally { await browser.close(); }
+})().catch(error=>{console.error(error?.stack||error);process.exit(1);});
