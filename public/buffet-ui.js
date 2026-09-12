@@ -6,28 +6,28 @@
 
   const NativeWorker=window.Worker;
   window.Worker=function(url,options){
-    const target=typeof url==='string'&&url.includes('/buffet-engine.js')?'/buffet-worker.js':url;
+    const target=typeof url==='string'&&url.includes('/buffet-engine.js')?'/buffet-worker.js?v=2':url;
     return new NativeWorker(target,options);
   };
 
   const mobileFixes=document.createElement('script');
-  mobileFixes.src='/buffet-mobile-fixes.js?v=1';
+  mobileFixes.src='/buffet-mobile-fixes.js?v=2';
   mobileFixes.onload=loadAllocation;
   mobileFixes.onerror=loadAllocation;
   document.head.appendChild(mobileFixes);
 
   function loadAllocation(){
     const allocation=document.createElement('script');
-    allocation.src='/buffet-allocation.js?v=2';
+    allocation.src='/buffet-allocation.js?v=3';
     allocation.onload=()=>{
       const script=document.createElement('script');
-      script.src='/buffet-ui-v2.js?v=2';
+      script.src='/buffet-ui-v2.js?v=3';
       script.defer=true;
       document.head.appendChild(script);
     };
     allocation.onerror=()=>{
       const script=document.createElement('script');
-      script.src='/buffet-ui-v2.js?v=2';
+      script.src='/buffet-ui-v2.js?v=3';
       script.defer=true;
       document.head.appendChild(script);
     };
