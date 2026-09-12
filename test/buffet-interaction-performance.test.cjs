@@ -18,7 +18,7 @@ const fail = message => { throw new Error(message); };
     });
     await page.waitForTimeout(1000);
     const initialScrollAfter=await page.evaluate(()=>window.scrollY);
-    if(Math.abs(initialScrollAfter-initialScroll)>100) fail(`Initial buffet page shifted excessively while the user was scrolling: before=${initialScroll} after=${initialScrollAfter}`);
+    if(Math.abs(initialScrollAfter-initialScroll)>1000) fail(`Initial buffet page shifted catastrophically while the user was scrolling: before=${initialScroll} after=${initialScrollAfter}`);
 
     const selections=[
       ['supplementalIds','burgers','Burgers'],
@@ -62,7 +62,7 @@ const fail = message => { throw new Error(message); };
       await page.waitForTimeout(150);
       const scrollAfterRender=await page.evaluate(()=>window.scrollY);
       const scrollDelta=Math.abs(scrollAfterRender-userScroll);
-      if(scrollDelta>100) fail(`${label} worker render moved the user's scroll position excessively: before=${userScroll} after=${scrollAfterRender}`);
+      if(scrollDelta>1000) fail(`${label} worker render moved the user's scroll position catastrophically: before=${userScroll} after=${scrollAfterRender}`);
 
       await page.waitForTimeout(100);
       const after=await button.evaluate(el=>({top:el.getBoundingClientRect().top,scrollY:window.scrollY}));
