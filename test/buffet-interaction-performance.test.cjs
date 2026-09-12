@@ -36,7 +36,7 @@ const fail = message => { throw new Error(message); };
         const b=page.locator(`button[data-buffet-key="${expectedKey}"][data-buffet-id="${expectedId}"]`);
         if(await b.getAttribute('aria-pressed')!=='true') fail(`${label} selection lost ${expectedId}.`);
       }
-      await page.waitForFunction(()=>document.querySelector('#buffetDynamic')?.textContent.includes('service')||document.querySelector('#buffetDynamic')?.querySelector('.buffetRow'),{timeout:15000});
+      await page.waitForFunction(()=>document.querySelectorAll('#buffetLayoutDynamic .layoutTable').length===4 && document.querySelectorAll('#buffetDynamic .buffetRow').length>0,{timeout:15000});
       const health=await page.evaluate(()=>({
         serviceHeight:document.getElementById('buffetServiceCard')?.getBoundingClientRect().height||0,
         layoutHeight:document.getElementById('buffetLayoutCard')?.getBoundingClientRect().height||0,
