@@ -58,18 +58,28 @@
       document.documentElement.dataset.buffetScrollFixWired = '1';
       let lastScrollY = window.scrollY || 0;
       let restoring = false;
+      let restoreTimer = 0;
       window.addEventListener('scroll', () => { if (!restoring) lastScrollY = window.scrollY || 0; }, { passive: true });
-      const observer = new MutationObserver(() => {
+      const restore = () => {
         if (restoring || lastScrollY < 40) return;
-        requestAnimationFrame(() => {
-          if (restoring) return;
-          const current = window.scrollY || 0;
-          if (current < lastScrollY - 20) {
-            restoring = true;
-            window.scrollTo(0, lastScrollY);
-            requestAnimationFrame(() => { restoring = false; });
-          }
-        });
+        const current = window.scrollY || 0;
+        if (current < lastScrollY - 20) {
+          restoring = true;
+          const target = lastScrollY;
+          let frames = 0;
+          const loop = () => {
+            window.scrollTo(0, target);
+            if (++frames < 8) requestAnimationFrame(loop);
+            else restoring = false;
+          };
+          requestAnimationFrame(loop);
+        }
+      };
+      const observer = new MutationObserver(() => {
+        if (restoreTimer) clearTimeout(restoreTimer);
+        restoreTimer = setTimeout(restore, 0);
+        setTimeout(restore, 50);
+        setTimeout(restore, 150);
       });
       observer.observe(service, { childList: true, subtree: true });
       observer.observe(layout, { childList: true, subtree: true });
