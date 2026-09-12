@@ -10,8 +10,37 @@
   } catch {}
   window.__meatfestBuffetState = state;
 
+  function saveState() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(window.__meatfestBuffetState || state)); } catch {}
+  }
+
+  /* Capture the actual control the guest touched. Restoring its viewport position is more robust
+     than restoring an absolute document scrollY because the service card can legitimately change height. */
+  let pendingAnchor = null;
+  function captureAnchor(event) {
+    const button = event.target?.closest?.('#buffetServiceCard button[data-buffet-key][data-buffet-id]');
+    if (!button) return;
+    const rect = button.getBoundingClientRect();
+    pendingAnchor = {
+      key: button.dataset.buffetKey,
+      id: button.dataset.buffetId,
+      top: rect.top,
+      scrollY: window.scrollY || 0
+    };
+  }
+
+  function restoreAnchor(anchor) {
+    if (!anchor) return;
+    const find = () => [...document.querySelectorAll('#buffetServiceCard button[data-buffet-key][data-buffet-id]')]
+      .find(btn => btn.dataset.buffetKey === anchor.key && btn.dataset.buffetId === anchor.id);
+    const button = find();
+    if (!button) return;
+    const delta = button.getBoundingClientRect().top - anchor.top;
+    if (Math.abs(delta) > 2) window.scrollBy(0, delta);
+  }
+
   /* buffet-ui.js remaps /buffet-engine.js to the actual worker URL. Hook the public URL here,
-     before that remapping, so every async buffet render keeps the current page height intact. */
+     before that remapping, and restore the touched control after the worker-driven DOM render. */
   const OriginalWorker = window.Worker;
   if (OriginalWorker && !window.__meatfestWorkerStabilityWired) {
     window.__meatfestWorkerStabilityWired = true;
@@ -19,46 +48,22 @@
       const worker = new OriginalWorker(url, options);
       if (typeof url === 'string' && url.includes('/buffet-engine.js')) {
         const originalPost = worker.postMessage.bind(worker);
-        let locked = null;
-        const lockPage = () => {
-          const y = window.scrollY || 0;
-          const html = document.documentElement;
-          const body = document.body;
-          const height = Math.max(html.scrollHeight, body?.scrollHeight || 0);
-          locked = {
-            y,
-            htmlHeight: html.style.minHeight,
-            bodyHeight: body?.style.minHeight || '',
-            anchor: html.style.overflowAnchor
-          };
-          html.style.minHeight = `${height}px`;
-          html.style.overflowAnchor = 'none';
-          if (body) body.style.minHeight = `${height}px`;
+        worker.postMessage = (...args) => {
+          const anchor = pendingAnchor;
+          pendingAnchor = null;
+          worker.__meatfestPendingAnchor = anchor;
+          return originalPost(...args);
         };
-        const releasePage = () => {
-          const snapshot = locked;
-          if (!snapshot) return;
+        worker.addEventListener('message', () => {
+          const anchor = worker.__meatfestPendingAnchor;
+          worker.__meatfestPendingAnchor = null;
+          if (!anchor) return;
           setTimeout(() => {
-            const html = document.documentElement;
-            const body = document.body;
-            html.style.minHeight = snapshot.htmlHeight;
-            html.style.overflowAnchor = snapshot.anchor;
-            if (body) body.style.minHeight = snapshot.bodyHeight;
-            requestAnimationFrame(() => {
-              const maxY = Math.max(0, html.scrollHeight - window.innerHeight);
-              const target = Math.min(snapshot.y, maxY);
-              if (Math.abs((window.scrollY || 0) - target) > 2) window.scrollTo(0, target);
-              requestAnimationFrame(() => {
-                const maxY2 = Math.max(0, html.scrollHeight - window.innerHeight);
-                const target2 = Math.min(snapshot.y, maxY2);
-                if (Math.abs((window.scrollY || 0) - target2) > 2) window.scrollTo(0, target2);
-              });
-            });
-            locked = null;
+            restoreAnchor(anchor);
+            requestAnimationFrame(() => restoreAnchor(anchor));
+            requestAnimationFrame(() => requestAnimationFrame(() => restoreAnchor(anchor)));
           }, 0);
-        };
-        worker.postMessage = (...args) => { lockPage(); return originalPost(...args); };
-        worker.addEventListener('message', releasePage);
+        });
       }
       return worker;
     };
@@ -72,10 +77,6 @@
       if (selectedSides.has('cornbread')) ids.push('cornbread');
     }
     return ids;
-  }
-
-  function saveState() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(window.__meatfestBuffetState || state)); } catch {}
   }
 
   function syncBreadControls() {
@@ -101,6 +102,7 @@
 
     if (!service.dataset.mobileFixesWired) {
       service.dataset.mobileFixesWired = '1';
+      service.addEventListener('click', captureAnchor, true);
       service.addEventListener('click', () => setTimeout(saveState, 0), false);
     }
 
