@@ -14,23 +14,6 @@
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(window.__meatfestBuffetState || state)); } catch {}
   }
 
-  /* Safari was being destabilized by programmatic scroll restoration while the worker
-     replaced buffet output. Do not fight the user's scroll position. Instead, reserve
-     extra room before a buffet click so the worker render cannot collapse document geometry
-     underneath an active touch scroll. The reservation can grow, but it never shrinks. */
-  function reserveDynamicHeights() {
-    for (const id of ['buffetDynamic', 'buffetLayoutDynamic']) {
-      const el = document.getElementById(id);
-      if (!el) continue;
-      const current = Math.ceil(el.getBoundingClientRect().height || 0);
-      if (current <= 0) continue;
-      const prior = Number(el.dataset.meatfestReservedHeight || 0);
-      const reserved = Math.max(prior, current + 500);
-      el.dataset.meatfestReservedHeight = String(reserved);
-      el.style.minHeight = `${reserved}px`;
-    }
-  }
-
   function accompanimentBreadIds() {
     const ids = [];
     if (typeof selectedSides !== 'undefined') {
@@ -63,20 +46,13 @@
 
     if (!service.dataset.mobileFixesWired) {
       service.dataset.mobileFixesWired = '1';
-      service.addEventListener('click', event => {
-        const button = event.target?.closest?.('button[data-buffet-key][data-buffet-id]');
-        if (button) reserveDynamicHeights();
-      }, true);
       service.addEventListener('click', () => setTimeout(saveState, 0), false);
     }
 
     const accomp = document.getElementById('accompSideCards');
     if (accomp && !accomp.dataset.mobileFixesWired) {
       accomp.dataset.mobileFixesWired = '1';
-      accomp.addEventListener('click', () => setTimeout(() => {
-        reserveDynamicHeights();
-        syncBreadControls();
-      }, 0), false);
+      accomp.addEventListener('click', () => setTimeout(syncBreadControls, 0), false);
     }
     return true;
   }
