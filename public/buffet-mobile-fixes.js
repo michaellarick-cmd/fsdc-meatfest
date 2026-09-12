@@ -10,10 +10,6 @@
   } catch {}
   window.__meatfestBuffetState = state;
 
-  function saveState() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(window.__meatfestBuffetState || state)); } catch {}
-  }
-
   /* buffet-ui.js remaps /buffet-engine.js to the actual worker URL. Hook the public URL here,
      before that remapping, so every async buffet render keeps the current page height intact. */
   const OriginalWorker = window.Worker;
@@ -26,21 +22,34 @@
         let locked = null;
         const lockPage = () => {
           const y = window.scrollY || 0;
-          const height = Math.max(document.documentElement.scrollHeight, document.body?.scrollHeight || 0);
-          locked = { y, height };
-          if (height > 0 && document.body) document.body.style.minHeight = `${height}px`;
+          const html = document.documentElement;
+          const body = document.body;
+          const height = Math.max(html.scrollHeight, body?.scrollHeight || 0);
+          locked = {
+            y,
+            htmlHeight: html.style.minHeight,
+            bodyHeight: body?.style.minHeight || '',
+            anchor: html.style.overflowAnchor
+          };
+          html.style.minHeight = `${height}px`;
+          html.style.overflowAnchor = 'none';
+          if (body) body.style.minHeight = `${height}px`;
         };
         const releasePage = () => {
           const snapshot = locked;
           if (!snapshot) return;
           setTimeout(() => {
-            if (document.body) document.body.style.minHeight = '';
+            const html = document.documentElement;
+            const body = document.body;
+            html.style.minHeight = snapshot.htmlHeight;
+            html.style.overflowAnchor = snapshot.anchor;
+            if (body) body.style.minHeight = snapshot.bodyHeight;
             requestAnimationFrame(() => {
-              const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+              const maxY = Math.max(0, html.scrollHeight - window.innerHeight);
               const target = Math.min(snapshot.y, maxY);
               if (Math.abs((window.scrollY || 0) - target) > 2) window.scrollTo(0, target);
               requestAnimationFrame(() => {
-                const maxY2 = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+                const maxY2 = Math.max(0, html.scrollHeight - window.innerHeight);
                 const target2 = Math.min(snapshot.y, maxY2);
                 if (Math.abs((window.scrollY || 0) - target2) > 2) window.scrollTo(0, target2);
               });
@@ -63,6 +72,10 @@
       if (selectedSides.has('cornbread')) ids.push('cornbread');
     }
     return ids;
+  }
+
+  function saveState() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(window.__meatfestBuffetState || state)); } catch {}
   }
 
   function syncBreadControls() {
