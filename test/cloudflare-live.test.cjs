@@ -51,7 +51,12 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
       if(!(await control.evaluate(el=>el.classList.contains('on')))) await control.click();
     }
 
-    await page.waitForFunction(()=>{const card=document.querySelector('#buffetLayoutCard');return !!card?.querySelector('.mf-visual') && !!card?.querySelector('.mf-execution') && !!card?.querySelector('.mf-physical') && !!card?.querySelector('.mf-flow');},{timeout:15000});
+    await page.waitForFunction(()=>{
+      const card=document.querySelector('#buffetLayoutCard');
+      const execution=card?.querySelector('.mf-execution');
+      return !!card?.querySelector('.mf-visual') && !!execution && !!card?.querySelector('.mf-physical') && !!card?.querySelector('.mf-flow') &&
+        ['Cauliflower Mac','Mac & Cheese','Collard Greens','Hawaiian Rolls','Cornbread'].every(label=>execution.innerText.includes(label));
+    },{timeout:15000});
 
     const state=await page.evaluate(()=>{
       const summary=window.buildSummary();
@@ -83,14 +88,8 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
     if(state.cp.vessel?.type!=='bowl'||state.cp.service?.method!=='tongs') fail(`Live Collard Greens service metadata is wrong: ${JSON.stringify({vessel:state.cp.vessel,service:state.cp.service})}`);
     if(state.table.linearRequired!==102||state.table.linearProvided!==120||JSON.stringify(state.table.tables)!==JSON.stringify([72,48])) fail(`Live table requirement calculation is wrong: ${JSON.stringify(state.table)}`);
 
-    // The service card is the selection/control layer. The rendered execution plan is the authoritative live presentation layer.
-    // Do not require every selected side to be duplicated in the control-card text.
-    for(const label of ['Cauliflower Mac','Mac & Cheese','Collard Greens','Hawaiian Rolls','Cornbread']){
-      if(!state.presentationText.includes(label)) fail(`Live buffet execution plan is missing selected side: ${label}`);
-    }
-    for(const label of ['Hawaiian Rolls','Cornbread']){
-      if(!state.serviceText.includes(label)) fail(`Live buffet service card is missing bread control: ${label}`);
-    }
+    for(const label of ['Cauliflower Mac','Mac & Cheese','Collard Greens','Hawaiian Rolls','Cornbread']) if(!state.presentationText.includes(label)) fail(`Live buffet execution plan is missing selected side: ${label}`);
+    for(const label of ['Hawaiian Rolls','Cornbread']) if(!state.serviceText.includes(label)) fail(`Live buffet service card is missing bread control: ${label}`);
     if(!state.mapText.includes('GUEST APPROACH')||!state.mapText.includes('TABLE 1')||!state.mapText.includes('TABLE 4')) fail(`Live U-shaped map is missing physical orientation markers: ${state.mapText}`);
     if(!state.mapText.includes('TABLE 1 → TABLE 2 → TABLE 3 → TABLE 4')) fail(`Live U-shaped map is missing guest service direction: ${state.mapText}`);
     for(const label of ['BUFFET EXECUTION PLAN','QTY / PRODUCTION','VESSEL','SERVICE','POSITION','REFILL / BACKUP','Cauliflower Mac','Collard Greens']) if(!state.presentationText.includes(label)) fail(`Live buffet execution plan is missing expected content: ${label}`);
