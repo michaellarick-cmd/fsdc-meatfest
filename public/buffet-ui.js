@@ -59,7 +59,7 @@
     wireBreadChoices();
     const wrap=document.querySelector('.wrap')||document.body;
     const observer=new MutationObserver(()=>{syncSelectedSides();wireBreadChoices()});
-    observer.observe(wrap,{subtree:true,childList:true,attributes:true,attributeFilter:['class','aria-pressed','disabled']});
+    observer.observe(wrap,{subtree:true,childList:true});
   });
   document.head.appendChild(script);
 })();
