@@ -43,48 +43,58 @@
     document.documentElement.dataset.buffetScrollFixWired = '1';
 
     let pendingScrollY = null;
-    let restoreTimer = 0;
-    let restoreQueued = false;
+    let settleTimer = 0;
+    let releaseTimer = 0;
+    let originalBodyAnchor = '';
+
+    const currentY = () => window.scrollY || window.pageYOffset || 0;
+
+    const beginPreservation = () => {
+      const y = currentY();
+      if (y < 40) return;
+      pendingScrollY = y;
+      if (!originalBodyAnchor) originalBodyAnchor = document.body.style.overflowAnchor || '';
+      document.body.style.overflowAnchor = 'none';
+      if (settleTimer) clearTimeout(settleTimer);
+      if (releaseTimer) clearTimeout(releaseTimer);
+      releaseTimer = setTimeout(() => {
+        pendingScrollY = null;
+        document.body.style.overflowAnchor = originalBodyAnchor;
+      }, 1200);
+    };
 
     const restore = () => {
       const target = pendingScrollY;
       if (target == null || target < 40) return;
       window.scrollTo(0, target);
-      setTimeout(() => {
-        if (pendingScrollY === target) window.scrollTo(0, target);
-      }, 120);
     };
 
-    const queueRestore = () => {
-      if (pendingScrollY == null || restoreQueued) return;
-      restoreQueued = true;
-      requestAnimationFrame(() => {
-        restoreQueued = false;
+    const queueRestoreAfterSettledDom = () => {
+      if (pendingScrollY == null) return;
+      if (settleTimer) clearTimeout(settleTimer);
+      settleTimer = setTimeout(() => {
         restore();
-      });
+        requestAnimationFrame(restore);
+        setTimeout(restore, 120);
+        setTimeout(restore, 300);
+      }, 60);
     };
 
-    service.addEventListener('click', () => {
-      const y = window.scrollY || window.pageYOffset || 0;
-      if (y < 40) return;
-      pendingScrollY = y;
-      if (restoreTimer) clearTimeout(restoreTimer);
-      restoreTimer = setTimeout(() => queueRestore(), 0);
-    }, true);
+    service.addEventListener('click', beginPreservation, true);
 
     const dynamic = document.getElementById('buffetDynamic');
     const layout = document.getElementById('buffetLayoutDynamic');
-    const observer = new MutationObserver(() => queueRestore());
+    const observer = new MutationObserver(queueRestoreAfterSettledDom);
     if (dynamic) observer.observe(dynamic, { childList: true, subtree: true });
     if (layout) observer.observe(layout, { childList: true, subtree: true });
 
     window.addEventListener('scroll', () => {
       if (pendingScrollY == null) return;
-      const current = window.scrollY || window.pageYOffset || 0;
-      if (Math.abs(current - pendingScrollY) > 80 && current > pendingScrollY - 80) pendingScrollY = null;
+      if (currentY() < pendingScrollY - 100) return;
+      if (Math.abs(currentY() - pendingScrollY) <= 100) return;
+      pendingScrollY = null;
+      document.body.style.overflowAnchor = originalBodyAnchor;
     }, { passive: true });
-
-    setTimeout(() => { pendingScrollY = null; }, 1500);
   }
 
   function install() {
