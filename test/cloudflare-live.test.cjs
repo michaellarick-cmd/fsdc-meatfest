@@ -18,9 +18,11 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
 
     const initialBread=await page.evaluate(()=>({
       rolls:document.querySelector('button[data-buffet-key="breadIds"][data-buffet-id="hawaiian"]')?.getAttribute('aria-pressed'),
-      cornbread:document.querySelector('button[data-buffet-key="breadIds"][data-buffet-id="cornbread"]')?.getAttribute('aria-pressed')
+      cornbread:document.querySelector('button[data-buffet-key="breadIds"][data-buffet-id="cornbread"]')?.getAttribute('aria-pressed'),
+      rollsDisabled:document.querySelector('button[data-buffet-key="breadIds"][data-buffet-id="hawaiian"]')?.disabled,
+      cornbreadDisabled:document.querySelector('button[data-buffet-key="breadIds"][data-buffet-id="cornbread"]')?.disabled
     }));
-    if(initialBread.rolls!=='false'||initialBread.cornbread!=='false') fail(`Bread controls did not start in a known state: ${JSON.stringify(initialBread)}`);
+    if(initialBread.rolls!=='false'||initialBread.cornbread!=='false'||initialBread.rollsDisabled||initialBread.cornbreadDisabled) fail(`Bread controls did not start available and unselected: ${JSON.stringify(initialBread)}`);
 
     const hotDogs=page.locator('button[data-buffet-key="supplementalIds"][data-buffet-id="hotdogs"]');
     if(await hotDogs.count()!==1) fail('Hot Dogs buffet control is missing.');
@@ -49,8 +51,7 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
       const service=document.querySelector('#buffetDynamic');
       const layout=document.querySelector('#buffetLayoutDynamic');
       const text=`${service?.innerText||''}\n${layout?.innerText||''}`;
-      return ['Baked Beans','Cauliflower Mac','Mac & Cheese','Collard Greens','Hawaiian Rolls','Cornbread'].every(label=>text.includes(label)) &&
-        text.includes('TABLE-BY-TABLE SETUP') && text.includes('Table 1');
+      return ['Baked Beans','Cauliflower Mac','Mac & Cheese','Collard Greens','Hawaiian Rolls','Cornbread'].every(label=>text.includes(label)) && text.includes('TABLE-BY-TABLE SETUP') && text.includes('Table 1');
     },undefined,{timeout:15000});
 
     const breadState=await page.evaluate(()=>({
@@ -59,14 +60,20 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
       rollsDisabled:document.querySelector('button[data-buffet-key="breadIds"][data-buffet-id="hawaiian"]')?.disabled,
       cornbreadDisabled:document.querySelector('button[data-buffet-key="breadIds"][data-buffet-id="cornbread"]')?.disabled
     }));
-    if(breadState.rolls!=='true'||breadState.cornbread!=='true'||!breadState.rollsDisabled||!breadState.cornbreadDisabled) fail(`Bread controls did not mirror the Accompaniment selections: ${JSON.stringify(breadState)}`);
+    if(breadState.rolls!=='true'||breadState.cornbread!=='true'||breadState.rollsDisabled||breadState.cornbreadDisabled) fail(`Bread controls did not mirror the Accompaniment selections while remaining available: ${JSON.stringify(breadState)}`);
+
+    const rolls=page.locator('button[data-buffet-key="breadIds"][data-buffet-id="hawaiian"]');
+    await rolls.click();
+    await page.waitForFunction(()=>document.querySelector('button[data-buffet-key="breadIds"][data-buffet-id="hawaiian"]')?.getAttribute('aria-pressed')==='false');
+    await rolls.click();
+    await page.waitForFunction(()=>document.querySelector('button[data-buffet-key="breadIds"][data-buffet-id="hawaiian"]')?.getAttribute('aria-pressed')==='true');
 
     await page.evaluate(()=>window.scrollTo(0,document.body.scrollHeight));
     const scrollBefore=await page.evaluate(()=>window.scrollY);
     if(scrollBefore<200) fail(`Mobile regression did not reach the buffet bottom: ${scrollBefore}`);
     const burgers=page.locator('button[data-buffet-key="supplementalIds"][data-buffet-id="burgers"]');
     await burgers.click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(700);
     const scrollAfter=await page.evaluate(()=>window.scrollY);
     if(scrollAfter<scrollBefore-100) fail(`Buffet update reset mobile scroll position: before=${scrollBefore} after=${scrollAfter}`);
 
@@ -76,7 +83,6 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
       const rows=summary.sideRows||[];
       const plan=B.sidePlan({sideIds:rows.map(r=>r.id),proteinKeys:summary.rows.map(r=>r.key),sideRows:rows});
       const serviceRows=[...document.querySelectorAll('#buffetDynamic .buffetPanel .buffetRow')].map(row=>({text:row.innerText,buy:row.querySelector('b')?.textContent?.trim()||''}));
-      const shopping=Object.fromEntries(rows.map(r=>[r.id,sideBuyText(r.id,r.q.amount)]));
       const cauli=rows.find(r=>r.id==='cauli'||r.id==='cauliflowerMac');
       const collards=rows.find(r=>r.id==='collards');
       const cp=plan.find(r=>r.id==='collards');
@@ -86,7 +92,7 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
       const legacy=document.querySelectorAll('#buffetLayoutCard .mf-visual,#buffetLayoutCard .mf-execution,#buffetLayoutCard .mf-physical,#buffetLayoutCard .mf-flow,#buffetLayoutCard .mf-recommended').length;
       const table=B.tableRequirement([{linearIn:102}],{tableLengths:[72,48]});
       const capacity=window.BuffetAllocation.allocate([{station:'core',linearIn:50,items:[{id:'protein-a',name:'Protein A',vessel:{type:'chafer'}}]},{station:'core',linearIn:50,items:[{id:'protein-b',name:'Protein B',vessel:{type:'chafer'}}]},{station:'specialty',linearIn:40,items:[{id:'specialty-a',name:'Specialty A',vessel:{type:'chafer'}}]}],[72,48]);
-      return {summary,shopping,serviceRows,cauli,collards,cp,table,capacity,serviceText,dynamicText,layoutText,legacy};
+      return {summary,serviceRows,cauli,collards,cp,table,capacity,serviceText,dynamicText,layoutText,legacy};
     });
 
     if(state.summary.eaters!==44) fail(`Live adult-equivalent eater count is wrong: ${state.summary.eaters}`);
@@ -98,18 +104,9 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
     if(state.cp.vessel?.type!=='bowl'||state.cp.service?.method!=='tongs') fail(`Live Collard Greens service metadata is wrong: ${JSON.stringify({vessel:state.cp.vessel,service:state.cp.service})}`);
     const sideNames={beans:'Baked Beans',cauli:'Cauliflower Mac',mac:'Mac & Cheese',collards:'Collard Greens'};
     for(const id of Object.keys(sideNames)){
-      const row=state.summary.sideRows.find(r=>r.id===id);
-      const expected=row?.q?.amount;
-      const unit=row?.q?.unit;
-      const actual=state.serviceRows.find(x=>x.text.startsWith(sideNames[id]))?.buy||'';
+      const row=state.summary.sideRows.find(r=>r.id===id); const expected=row?.q?.amount; const unit=row?.q?.unit; const actual=state.serviceRows.find(x=>x.text.startsWith(sideNames[id]))?.buy||'';
       if(expected==null||!actual) fail(`Missing shopping/service quantity for ${id}: shopping=${expected} service=${actual}`);
-      if(unit==='tin'){
-        const whole=Math.floor(expected+1e-9),remainder=Math.round((expected-whole)*4)/4;
-        if(whole>0&&!actual.includes(`${whole} full tin`)) fail(`Service tin quantity lost whole-tin amount for ${id}: shopping=${expected} service=${actual}`);
-        if(remainder===.25&&!actual.includes('filled ¼ full')) fail(`Service tin quantity lost quarter-tin amount for ${id}: shopping=${expected} service=${actual}`);
-        if(remainder===.5&&!actual.includes('filled ½ full')) fail(`Service tin quantity lost half-tin amount for ${id}: shopping=${expected} service=${actual}`);
-        if(remainder===.75&&!actual.includes('filled ¾ full')) fail(`Service tin quantity lost three-quarter-tin amount for ${id}: shopping=${expected} service=${actual}`);
-      }else if(!actual.startsWith(String(expected))) fail(`Service quantity diverges from shopping quantity for ${id}: shopping=${expected} ${unit} service=${actual}`);
+      if(unit==='tin'){const whole=Math.floor(expected+1e-9),remainder=Math.round((expected-whole)*4)/4;if(whole>0&&!actual.includes(`${whole} full tin`)) fail(`Service tin quantity lost whole-tin amount for ${id}: shopping=${expected} service=${actual}`);if(remainder===.25&&!actual.includes('filled ¼ full')) fail(`Service tin quantity lost quarter-tin amount for ${id}: shopping=${expected} service=${actual}`);if(remainder===.5&&!actual.includes('filled ½ full')) fail(`Service tin quantity lost half-tin amount for ${id}: shopping=${expected} service=${actual}`);if(remainder===.75&&!actual.includes('filled ¾ full')) fail(`Service tin quantity lost three-quarter-tin amount for ${id}: shopping=${expected} service=${actual}`);}else if(!actual.startsWith(String(expected))) fail(`Service quantity diverges from shopping quantity for ${id}: shopping=${expected} ${unit} service=${actual}`);
     }
     if(state.table.linearRequired!==102||state.table.linearProvided!==120||JSON.stringify(state.table.tables)!==JSON.stringify([72,48])) fail(`Live table requirement calculation is wrong: ${JSON.stringify(state.table)}`);
     if(state.legacy!==0) fail(`Legacy buffet presentation nodes are still rendering: ${state.legacy}`);
@@ -130,12 +127,7 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
     if(JSON.stringify(afterPrint.selected)!==JSON.stringify(beforePrint.selected)||JSON.stringify(afterPrint.sides)!==JSON.stringify(beforePrint.sides)||JSON.stringify(afterPrint.supplemental)!==JSON.stringify(beforePrint.supplemental)) fail(`Print changed selection state.`);
     if(afterPrint.url!==beforePrint.url) fail(`Print changed the page URL.`);
     if(afterPrint.title!=='LABOR DAY MEATFEST 7.0') fail(`Print sheet title was not populated from event state: ${afterPrint.title}`);
-
     log('live verification passed');
-  } catch(error) {
-    console.error(error?.stack||error);
-    process.exitCode=1;
-  } finally {
-    if(browser){ log('closing Chromium'); await browser.close(); }
-  }
+  } catch(error) { console.error(error?.stack||error); process.exitCode=1; }
+  finally { if(browser){ log('closing Chromium'); await browser.close(); } }
 })();
