@@ -1,14 +1,24 @@
 const { chromium } = require('playwright');
 const LIVE_URL = process.env.MEATFEST_LIVE_URL || 'https://fsdc-meatfest.michael-larick.workers.dev/';
 const fail = message => { throw new Error(message); };
+const log = message => console.log(`[LIVE-VERIFY] ${message}`);
 (async () => {
-  const browser = await chromium.launch({headless:true});
-  const page = await browser.newPage({viewport:{width:1440,height:1200}});
+  let browser;
   try {
-    const response = await page.goto(LIVE_URL,{waitUntil:'domcontentloaded',timeout:60000});
+    log('starting Chromium');
+    browser = await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage'],timeout:30000});
+    log('Chromium started');
+    const page = await browser.newPage({viewport:{width:1440,height:1200}});
+    log('page created');
+    log(`navigating to ${LIVE_URL}`);
+    const response = await page.goto(LIVE_URL,{waitUntil:'domcontentloaded',timeout:30000});
+    log(`navigation completed: ${response?.status() ?? 'no response'}`);
     if(!response || !response.ok()) fail(`Cloudflare page request failed: ${response ? response.status() : 'no response'}`);
-    const title=await page.title(); if(!title.includes('Meatfest')) fail(`Unexpected page title: ${title}`);
-    await page.locator('#buffetServiceCard').waitFor({state:'attached',timeout:30000}); await page.waitForTimeout(500);
+    const title=await page.title(); log(`page title: ${title}`); if(!title.includes('Meatfest')) fail(`Unexpected page title: ${title}`);
+    log('waiting for buffetServiceCard');
+    await page.locator('#buffetServiceCard').waitFor({state:'attached',timeout:15000});
+    log('buffetServiceCard attached');
+    await page.waitForTimeout(500);
     const breadSelections=[['hawaiian','Hawaiian Rolls'],['cornbread','Cornbread']];
     for(const [id,label] of breadSelections){
       const button=page.locator(`button[data-buffet-key="breadIds"][data-buffet-id="${id}"]`);
@@ -85,6 +95,12 @@ const fail = message => { throw new Error(message); };
     if(!state.crewText.includes('Collard Greens')||!state.crewText.includes('tongs'))fail(`Crew sheet is missing item/service utensil data: ${state.crewText}`);
     if(!state.crewText.includes('Buy/production quantities do not change')||!state.crewText.includes('Keep backup food in the kitchen'))fail(`Crew sheet is missing locked-quantity/backup operating rules: ${state.crewText}`);
     console.log('Cloudflare live smoke test passed.');
-    console.log(JSON.stringify({url:LIVE_URL,title,eaters:state.summary.eaters,proteinCount:state.summary.rows.length,purchaseWeight:state.summary.total,cauliflowerMac:state.cauli.q,collards:state.collards.q,collardService:state.cp.quantity.service,tableRequirement:state.table,capacity:{required:state.capacity.linearRequired,provided:state.capacity.linearProvided,overflowIn:state.capacity.overflowIn,displacedIn:state.capacity.displacedIn,recommendedTables:state.capacity.recommendedTables,overflowItems:state.capacity.overflowItems,recommendedLayout:{provided:state.capacity.recommendedLayout?.linearProvided,required:state.capacity.recommendedLayout?.linearRequired,overflow:state.capacity.recommendedLayout?.overflow}},visualLayout:state.visual,physicalSetup:{present:state.physical,tables:state.setupTables,items:state.setupItems},guestFlow:{present:state.flow},executionPlan:{visible:state.executionVisible,rows:state.executionRows},serviceSequence:{rows:state.sequenceRows},printTableCount:state.printTables,crewSheet:{present:state.crew,setupRows:state.crewSetupRows,sequenceRows:state.crewSequence}},null,2));
-  } finally { await browser.close(); }
-})().catch(error=>{console.error(error.stack||error);process.exit(1);});
+    console.log(JSON.stringify({url:LIVE_URL,title,eaters:state.summary.eaters,proteinCount:state.summary.rows.length,purchaseWeight:state.summary.total,cauliflowerMac:state.cauli.q,collards:state.collards.q,collardService:state.cp.quantity.service,tableRequirement:state.table,capacity:{required:state.capacity.linearRequired,provided:state.capacity.linearProvided,overflowIn:state.capacity.overflowIn,displaced:state.capacity.overflowItems,recommended:state.capacity.recommendedTables}}));
+  } finally {
+    if(browser){
+      log('closing Chromium');
+      await Promise.race([browser.close(),new Promise(resolve=>setTimeout(resolve,10000))]);
+      log('browser close complete');
+    }
+  }
+})().catch(error=>{console.error(error?.stack||error);process.exit(1);});
