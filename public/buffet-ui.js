@@ -28,7 +28,7 @@
     syncSelectedSides();
     const wrap=document.querySelector('.wrap')||document.body;
     const observer=new MutationObserver(()=>syncSelectedSides());
-    observer.observe(wrap,{subtree:true,attributes:true,attributeFilter:['class','aria-pressed']});
+    observer.observe(wrap,{subtree:true,childList:true,attributes:true,attributeFilter:['class','aria-pressed']});
   });
   document.head.appendChild(script);
 })();
