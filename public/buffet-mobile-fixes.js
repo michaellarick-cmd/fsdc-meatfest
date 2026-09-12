@@ -14,15 +14,14 @@
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(window.__meatfestBuffetState || state)); } catch {}
   }
 
-  /* The buffet UI replaces a large DOM subtree while the worker calculates. On a mobile viewport,
-     that temporary height collapse can clamp scrollY before the real render arrives. Keep the page
-     at its pre-update height until the worker result has rendered, then restore the exact position. */
+  /* buffet-ui.js remaps /buffet-engine.js to the actual worker URL. Hook the public URL here,
+     before that remapping, so every async buffet render keeps the current page height intact. */
   const OriginalWorker = window.Worker;
   if (OriginalWorker && !window.__meatfestWorkerStabilityWired) {
     window.__meatfestWorkerStabilityWired = true;
     window.Worker = function(url, options) {
       const worker = new OriginalWorker(url, options);
-      if (typeof url === 'string' && url.includes('/buffet-worker.js')) {
+      if (typeof url === 'string' && url.includes('/buffet-engine.js')) {
         const originalPost = worker.postMessage.bind(worker);
         let locked = null;
         const lockPage = () => {
