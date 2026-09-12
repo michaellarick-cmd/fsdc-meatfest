@@ -10,19 +10,27 @@
     return new NativeWorker(target,options);
   };
 
-  const allocation=document.createElement('script');
-  allocation.src='/buffet-allocation.js?v=2';
-  allocation.onload=()=>{
-    const script=document.createElement('script');
-    script.src='/buffet-ui-v2.js?v=2';
-    script.defer=true;
-    document.head.appendChild(script);
-  };
-  allocation.onerror=()=>{
-    const script=document.createElement('script');
-    script.src='/buffet-ui-v2.js?v=2';
-    script.defer=true;
-    document.head.appendChild(script);
-  };
-  document.head.appendChild(allocation);
+  const mobileFixes=document.createElement('script');
+  mobileFixes.src='/buffet-mobile-fixes.js?v=1';
+  mobileFixes.onload=loadAllocation;
+  mobileFixes.onerror=loadAllocation;
+  document.head.appendChild(mobileFixes);
+
+  function loadAllocation(){
+    const allocation=document.createElement('script');
+    allocation.src='/buffet-allocation.js?v=2';
+    allocation.onload=()=>{
+      const script=document.createElement('script');
+      script.src='/buffet-ui-v2.js?v=2';
+      script.defer=true;
+      document.head.appendChild(script);
+    };
+    allocation.onerror=()=>{
+      const script=document.createElement('script');
+      script.src='/buffet-ui-v2.js?v=2';
+      script.defer=true;
+      document.head.appendChild(script);
+    };
+    document.head.appendChild(allocation);
+  }
 })();
