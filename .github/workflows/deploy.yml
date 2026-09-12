@@ -44,7 +44,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Verify deployed Cloudflare site
-        run: timeout --signal=TERM --kill-after=10s 90s node test/cloudflare-live.test.cjs
+        run: timeout --signal=TERM --kill-after=10s 90s node test/cloudflare-live-smoke.test.cjs
 
       - name: Verify buffet interaction performance
         run: timeout --signal=TERM --kill-after=10s 90s node test/buffet-interaction-performance.test.cjs
