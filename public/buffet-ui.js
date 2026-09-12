@@ -7,16 +7,16 @@
 
   // The main Accompaniments controls own selectedSides. Keep the buffet presentation
   // synchronized with those selections without rebuilding the buffet controls. The
-  // full worker plan will replace this lightweight baseline whenever a buffet option
-  // is changed; this baseline exists so the service card is never stale after a
-  // main-menu side selection.
+  // worker may temporarily report that it is updating; never allow that transient
+  // state to hide the current accompaniment selections.
   let lastSideSignature='';
   function syncSelectedSides(){
     if(typeof window.buildSummary!=='function')return;
     const card=document.getElementById('buffetServiceCard'),dyn=document.getElementById('buffetDynamic');
     if(!card||!dyn)return;
     const summary=window.buildSummary(),rows=summary.sideRows||[],signature=rows.map(r=>r.id).join('|');
-    if(signature===lastSideSignature)return;
+    const updating=/Updating service plan/i.test(dyn.textContent||'');
+    if(signature===lastSideSignature&&!updating)return;
     lastSideSignature=signature;
     if(!rows.length){dyn.innerHTML='<p class="note">No sides selected. Select buffet options to build the service quantities and layout.</p>';return;}
     dyn.innerHTML='<div class="buffetSection"><div class="buffetGroupTitle">SELECTED ACCOMPANIMENTS</div><div class="buffetGrid">'+rows.map(r=>'<div class="buffetRow"><span>'+String(r.name||r.label||r.id).replace(/[&<>\"\']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))+'</span><b>Selected</b></div>').join('')+'</div><p class="buffetSubnote">These selections remain part of the buffet service plan. Choose supplemental grilling, condiments, or desserts above to build the complete service plan.</p></div>';
