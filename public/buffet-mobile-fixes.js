@@ -14,60 +14,22 @@
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(window.__meatfestBuffetState || state)); } catch {}
   }
 
-  /* Capture the actual control the guest touched. Restoring its viewport position is more robust
-     than restoring an absolute document scrollY because the service card can legitimately change height. */
-  let pendingAnchor = null;
-  function captureAnchor(event) {
-    const button = event.target?.closest?.('#buffetServiceCard button[data-buffet-key][data-buffet-id]');
-    if (!button) return;
-    const rect = button.getBoundingClientRect();
-    pendingAnchor = {
-      key: button.dataset.buffetKey,
-      id: button.dataset.buffetId,
-      top: rect.top,
-      scrollY: window.scrollY || 0
-    };
-  }
-
-  function restoreAnchor(anchor) {
-    if (!anchor) return;
-    const find = () => [...document.querySelectorAll('#buffetServiceCard button[data-buffet-key][data-buffet-id]')]
-      .find(btn => btn.dataset.buffetKey === anchor.key && btn.dataset.buffetId === anchor.id);
-    const button = find();
-    if (!button) return;
-    const delta = button.getBoundingClientRect().top - anchor.top;
-    if (Math.abs(delta) > 2) window.scrollBy(0, delta);
-  }
-
-  /* buffet-ui.js remaps /buffet-engine.js to the actual worker URL. Hook the public URL here,
-     before that remapping, and restore the touched control after the worker-driven DOM render. */
-  const OriginalWorker = window.Worker;
-  if (OriginalWorker && !window.__meatfestWorkerStabilityWired) {
-    window.__meatfestWorkerStabilityWired = true;
-    window.Worker = function(url, options) {
-      const worker = new OriginalWorker(url, options);
-      if (typeof url === 'string' && url.includes('/buffet-engine.js')) {
-        const originalPost = worker.postMessage.bind(worker);
-        worker.postMessage = (...args) => {
-          const anchor = pendingAnchor;
-          pendingAnchor = null;
-          worker.__meatfestPendingAnchor = anchor;
-          return originalPost(...args);
-        };
-        worker.addEventListener('message', () => {
-          const anchor = worker.__meatfestPendingAnchor;
-          worker.__meatfestPendingAnchor = null;
-          if (!anchor) return;
-          setTimeout(() => {
-            restoreAnchor(anchor);
-            requestAnimationFrame(() => restoreAnchor(anchor));
-            requestAnimationFrame(() => requestAnimationFrame(() => restoreAnchor(anchor)));
-          }, 0);
-        });
-      }
-      return worker;
-    };
-    window.Worker.prototype = OriginalWorker.prototype;
+  /* Safari was being destabilized by programmatic scroll restoration while the worker
+     replaced buffet output. Do not fight the user's scroll position. Instead, reserve the
+     existing dynamic section heights before a buffet click so the worker render cannot
+     collapse document geometry underneath an active touch scroll. The reserved height can
+     grow naturally if the new result needs more space, but it never shrinks during the session. */
+  function reserveDynamicHeights() {
+    for (const id of ['buffetDynamic', 'buffetLayoutDynamic']) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+      const current = Math.ceil(el.getBoundingClientRect().height || 0);
+      if (current <= 0) continue;
+      const prior = Number(el.dataset.meatfestReservedHeight || 0);
+      const reserved = Math.max(prior, current);
+      el.dataset.meatfestReservedHeight = String(reserved);
+      el.style.minHeight = `${reserved}px`;
+    }
   }
 
   function accompanimentBreadIds() {
@@ -102,14 +64,20 @@
 
     if (!service.dataset.mobileFixesWired) {
       service.dataset.mobileFixesWired = '1';
-      service.addEventListener('click', captureAnchor, true);
+      service.addEventListener('click', event => {
+        const button = event.target?.closest?.('button[data-buffet-key][data-buffet-id]');
+        if (button) reserveDynamicHeights();
+      }, true);
       service.addEventListener('click', () => setTimeout(saveState, 0), false);
     }
 
     const accomp = document.getElementById('accompSideCards');
     if (accomp && !accomp.dataset.mobileFixesWired) {
       accomp.dataset.mobileFixesWired = '1';
-      accomp.addEventListener('click', () => setTimeout(syncBreadControls, 0), false);
+      accomp.addEventListener('click', () => setTimeout(() => {
+        reserveDynamicHeights();
+        syncBreadControls();
+      }, 0), false);
     }
     return true;
   }
