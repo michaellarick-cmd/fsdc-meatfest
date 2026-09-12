@@ -87,9 +87,17 @@ const log = message => console.log(`[LIVE-VERIFY] ${message}`);
     const sideNames={beans:'Baked Beans',cauli:'Cauliflower Mac',mac:'Mac & Cheese',collards:'Collard Greens'};
     for(const id of Object.keys(sideNames)){
       const row=state.summary.sideRows.find(r=>r.id===id);
-      const expected=state.shopping[id];
-      const actual=state.serviceRows.find(x=>x.text.startsWith(sideNames[id]))?.buy;
-      if(!row||!expected||!actual||actual!==expected) fail(`Buffet service quantity diverges from shopping quantity for ${id}: shopping=${expected} service=${actual}`);
+      const expected=row?.q?.amount;
+      const unit=row?.q?.unit;
+      const actual=state.serviceRows.find(x=>x.text.startsWith(sideNames[id]))?.buy||'';
+      if(expected==null||!actual) fail(`Missing shopping/service quantity for ${id}: shopping=${expected} service=${actual}`);
+      if(unit==='tin'){
+        const whole=Math.floor(expected+1e-9),remainder=Math.round((expected-whole)*4)/4;
+        if(whole>0&&!actual.includes(`${whole} full tin`)) fail(`Service tin quantity lost whole-tin amount for ${id}: shopping=${expected} service=${actual}`);
+        if(remainder===.25&&!actual.includes('filled ¼ full')) fail(`Service tin quantity lost quarter-tin amount for ${id}: shopping=${expected} service=${actual}`);
+        if(remainder===.5&&!actual.includes('filled ½ full')) fail(`Service tin quantity lost half-tin amount for ${id}: shopping=${expected} service=${actual}`);
+        if(remainder===.75&&!actual.includes('filled ¾ full')) fail(`Service tin quantity lost three-quarter-tin amount for ${id}: shopping=${expected} service=${actual}`);
+      }else if(!actual.startsWith(String(expected))) fail(`Service quantity diverges from shopping quantity for ${id}: shopping=${expected} ${unit} service=${actual}`);
     }
     if(state.table.linearRequired!==102||state.table.linearProvided!==120||JSON.stringify(state.table.tables)!==JSON.stringify([72,48])) fail(`Live table requirement calculation is wrong: ${JSON.stringify(state.table)}`);
     if(state.legacy!==0) fail(`Legacy buffet presentation nodes are still rendering: ${state.legacy}`);
