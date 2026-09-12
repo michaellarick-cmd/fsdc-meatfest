@@ -38,50 +38,27 @@
     saveState();
   }
 
-  function installScrollStability(service) {
-    if (service.dataset.scrollStabilityWired) return;
-    service.dataset.scrollStabilityWired = '1';
-    let active = null;
-    let releaseTimer = 0;
-
-    const lock = () => {
-      const y = window.scrollY || window.pageYOffset || 0;
-      const dynamic = document.getElementById('buffetDynamic');
-      if (y < 40 || !dynamic) return;
-
-      if (releaseTimer) clearTimeout(releaseTimer);
-      const height = dynamic.getBoundingClientRect().height;
-      active = { y, dynamic };
-      if (height > 0) dynamic.style.minHeight = `${Math.ceil(height)}px`;
-
-      releaseTimer = setTimeout(() => {
-        const a = active;
-        active = null;
-        if (!a || !a.dynamic.isConnected) return;
-        const target = a.y;
-        const locked = a.dynamic.style.minHeight;
-        a.dynamic.style.minHeight = '';
-        requestAnimationFrame(() => {
-          const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-          const safeY = Math.min(target, maxY);
-          if (Math.abs((window.scrollY || 0) - safeY) > 2) window.scrollTo(0, safeY);
-          requestAnimationFrame(() => {
-            const maxY2 = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-            const safeY2 = Math.min(target, maxY2);
-            if (Math.abs((window.scrollY || 0) - safeY2) > 2) window.scrollTo(0, safeY2);
-          });
-        });
-        if (locked && a.dynamic.getBoundingClientRect().height < 1) a.dynamic.style.minHeight = locked;
-      }, 900);
-    };
-
-    service.addEventListener('click', lock, true);
+  function preventLoadingCollapse() {
+    if (window.__meatfestBuffetLoadingGuard) return;
+    const descriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+    if (!descriptor || typeof descriptor.set !== 'function' || typeof descriptor.get !== 'function') return;
+    window.__meatfestBuffetLoadingGuard = true;
+    Object.defineProperty(Element.prototype, 'innerHTML', {
+      configurable: descriptor.configurable,
+      enumerable: descriptor.enumerable,
+      get: descriptor.get,
+      set(value) {
+        if (this.id === 'buffetDynamic' && value === '<p class="note">Updating service plan…</p>') return;
+        return descriptor.set.call(this, value);
+      }
+    });
   }
 
   function install() {
     const service = document.getElementById('buffetServiceCard');
     const layout = document.getElementById('buffetLayoutCard');
     if (!service || !layout) return false;
+    preventLoadingCollapse();
     syncBreadControls();
 
     if (!service.dataset.mobileFixesWired) {
@@ -94,8 +71,6 @@
       accomp.dataset.mobileFixesWired = '1';
       accomp.addEventListener('click', () => setTimeout(syncBreadControls, 0), false);
     }
-
-    installScrollStability(service);
     return true;
   }
 
