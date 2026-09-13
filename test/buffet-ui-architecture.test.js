@@ -23,7 +23,7 @@ test('Buffet uses one canonical persistent renderer',()=>{
   assert.match(ui,/new Worker\('\/buffet-worker\.js\?v=12'\)/);
 });
 
-test('major Buffet sections have explicit persistent owners and scroll-settled rendering',()=>{
+test('major Buffet sections have explicit persistent owners and robust scroll-settled rendering',()=>{
   assert.match(ui,/dataset\.mfSection=id/);
   for(const name of ['supplemental','bread','sausage','condiments','desserts','service','layout'])assert.match(ui,new RegExp(`'${name}'`));
   assert.match(ui,/ui\.serviceRows\[k\]/);
@@ -36,13 +36,15 @@ test('major Buffet sections have explicit persistent owners and scroll-settled r
   assert.doesNotMatch(ui,/visibilityTimer/);
   assert.doesNotMatch(ui,/new MutationObserver/);
   assert.doesNotMatch(ui,/scrollTo\(|scrollBy\(/);
-  assert.match(ui,/let worker=null,busy=false,queued=false,ui=null,latestPlan=null,requestTimer=0,scrollSettleTimer=0,scrolling=false/);
-  assert.match(ui,/function maybeRender\(\)\{if\(busy\|\|!latestPlan\|\|scrolling\)return/);
+  assert.match(ui,/let worker=null,busy=false,queued=false,ui=null,latestPlan=null,requestTimer=0,scrollSettleTimer=0,renderCheckTimer=0,scrolling=false,lastScrollY=0/);
+  assert.match(ui,/function maybeRender\(\)\{if\(busy\|\|!latestPlan\)return;const y=window\.scrollY;if\(scrolling\|\|y!==lastScrollY\)/);
+  assert.match(ui,/renderCheckTimer=setTimeout\(\(\)=>\{renderCheckTimer=0;maybeRender\(\)\},160\)/);
   assert.match(ui,/function handleScroll\(\)/);
+  assert.match(ui,/lastScrollY=window\.scrollY/);
   assert.match(ui,/scrollSettleTimer=setTimeout\(\(\)=>\{scrolling=false;maybeRender\(\)\},160\)/);
   assert.match(ui,/function requestPlan\(immediate=false\)/);
   assert.match(ui,/window\.addEventListener\('scroll',handleScroll,\{passive:true\}\)/);
-  assert.match(ui,/function init\(\)\{buildShell\(\);stableSideOwner\(\);syncControls\(\);window\.addEventListener\('scroll',handleScroll,\{passive:true\}\);requestPlan\(true\)\}/);
+  assert.match(ui,/function init\(\)\{buildShell\(\);stableSideOwner\(\);syncControls\(\);lastScrollY=window\.scrollY;window\.addEventListener\('scroll',handleScroll,\{passive:true\}\);requestPlan\(true\)\}/);
   assert.match(ui,/latestPlan=e\.data\.result/);
   assert.match(ui,/else maybeRender\(\)/);
   assert.doesNotMatch(ui,/worker\.onmessage=e=>\{busy=false;if\(e\.data\?\.result\)\{renderService/);
