@@ -6,13 +6,14 @@ const fail = message => { throw new Error(message); };
 (async()=>{
   const browser=await (BROWSER_NAME==='webkit'?webkit:chromium).launch({headless:true});
   const page=await browser.newPage({viewport:{width:390,height:VIEWPORT_HEIGHT},deviceScaleFactor:2,isMobile:true});
-  await page.addInitScript(()=>{const NativeWorker=window.Worker;window.__meatfestWorkerPosts=0;window.Worker=class extends NativeWorker{postMessage(...args){window.__meatfestWorkerPosts++;return super.postMessage(...args)}}});
   try{
     const response=await page.goto(LIVE_URL,{waitUntil:'domcontentloaded',timeout:60000});
     if(!response||!response.ok())fail(`${BROWSER_NAME} Cloudflare page request failed: ${response?response.status():'no response'}`);
     await page.addStyleTag({content:'html{scroll-behavior:auto !important}'});
     await page.locator('meatfest-buffet #buffetServiceCard').waitFor({state:'attached',timeout:30000});
-    await page.waitForFunction(()=>{const root=document.querySelector('meatfest-buffet')?.shadowRoot;const h=root?.querySelector('[data-mf-section="layout"] .table b');return !!h&&!/waiting for plan/.test(h.textContent||'')},{timeout:15000});
+    await page.evaluate(()=>{window.__meatfestWorkerPosts=0;const originalPostMessage=Worker.prototype.postMessage;Worker.prototype.postMessage=function(...args){window.__meatfestWorkerPosts++;return originalPostMessage.apply(this,args)}});
+    await page.locator('meatfest-buffet').scrollIntoViewIfNeeded();
+    await page.waitForFunction(()=>{const root=document.querySelector('meatfest-buffet')?.shadowRoot;const h=root?.querySelector('[data-mf-section="layout"] .table b');return !!h&&!/waiting for plan/.test(h.textContent||'')},{timeout:30000});
     const initialPosts=await page.evaluate(()=>window.__meatfestWorkerPosts);if(initialPosts<1)fail(`${BROWSER_NAME}: Buffet never performed its initial calculation.`);
     await page.evaluate(()=>window.__meatfestWorkerPosts=0);await page.evaluate(()=>window.scrollTo(0,0));await page.waitForTimeout(150);
     const trace=[];
