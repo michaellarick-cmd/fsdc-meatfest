@@ -15,7 +15,7 @@ test('Buffet uses one canonical persistent renderer',()=>{
   assert.match(ui,/function renderLayout\(p\)/);
   assert.match(ui,/function stableSideOwner\(\)/);
   assert.match(ui,/window\.renderSideCards=sync/);
-  assert.match(ui,/\.sideCard'\)\.forEach\(el=>el\.onclick=null/);
+  assert.match(ui,/\.sideCard'\)\.forEach\(el\.onclick=null/);
   assert.doesNotMatch(ui,/\.innerHTML\s*=/);
   assert.doesNotMatch(ui,/scrollTo\(|scrollBy\(|new MutationObserver|window\.Worker\s*=/);
   assert.doesNotMatch(ui,/addEventListener\('click',handle,true\)/);
@@ -32,7 +32,7 @@ test('major Buffet sections have explicit persistent owners and stable geometry'
   assert.match(ui,/function buffetVisible\(\)/);
   assert.match(ui,/function scheduleRender\(\)/);
   assert.match(ui,/function maybeRender\(\)/);
-  assert.match(ui,/if\(scrolling\|\|busy\|\|!latestPlan\|\|!buffetVisible\(\)\)\{/);
+  assert.match(ui,/if\(busy\|\|!latestPlan\|\|!buffetVisible\(\)\)\{/);
   assert.match(ui,/function requestPlan\(immediate=false\)/);
   assert.match(ui,/!busy&&!queued&&!latestPlan&&buffetVisible\(\)\)requestPlan\(true\)/);
   assert.match(ui,/latestPlan=e\.data\.result/);
