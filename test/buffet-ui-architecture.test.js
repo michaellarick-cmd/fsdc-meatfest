@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 const entry=await readFile(new URL('../public/buffet-ui.js',import.meta.url),'utf8');
 const ui=await readFile(new URL('../public/buffet-ui-canonical.js',import.meta.url),'utf8');
+const worker=await readFile(new URL('../public/buffet-worker.js',import.meta.url),'utf8');
+const headers=await readFile(new URL('../public/_headers',import.meta.url),'utf8');
 
 test('Buffet uses one canonical persistent renderer',()=>{
   assert.match(entry,/buffet-ui-canonical\.js/);
@@ -17,7 +19,7 @@ test('Buffet uses one canonical persistent renderer',()=>{
   assert.doesNotMatch(ui,/\.innerHTML\s*=/);
   assert.doesNotMatch(ui,/scrollTo\(|scrollBy\(|new MutationObserver|window\.Worker\s*=/);
   assert.doesNotMatch(ui,/addEventListener\('click',handle,true\)/);
-  assert.match(ui,/new Worker\('\/buffet-worker\.js\?v=11'\)/);
+  assert.match(ui,/new Worker\('\/buffet-worker\.js\?v=12'\)/);
 });
 
 test('major Buffet sections have explicit persistent owners and stable geometry',()=>{
@@ -25,6 +27,24 @@ test('major Buffet sections have explicit persistent owners and stable geometry'
   for(const name of ['supplemental','bread','sausage','condiments','desserts','service','layout'])assert.match(ui,new RegExp(`'${name}'`));
   assert.match(ui,/ui\.serviceRows\[k\]/);
   assert.match(ui,/ui\.layout\.rows\.push/);
+  assert.match(ui,/ui\.dessertSummary/);
+  assert.match(ui,/ui\.layout\.overflow/);
   assert.match(ui,/o\.r\.hidden=false/);
   assert.match(ui,/o\.r\.hidden=false;o\.name\.textContent/);
+  assert.doesNotMatch(ui,/querySelector\('\.mfDessertSummary'\)/);
+  assert.doesNotMatch(ui,/querySelector\('\.mfOverflow'\)/);
+});
+
+test('Buffet worker returns a compact presentation view model',()=>{
+  assert.match(worker,/function viewModel\(plan\)/);
+  assert.match(worker,/serviceRows/);
+  assert.match(worker,/dessertSummary/);
+  assert.match(worker,/overflowItems/);
+  assert.match(worker,/self\.postMessage\(\{id,result:viewModel\(plan\)\}\)/);
+  assert.doesNotMatch(worker,/postMessage\(\{id,plan,result:plan\}\)/);
+});
+
+test('Buffet client assets explicitly disable stale browser caching',()=>{
+  assert.match(headers,/\/buffet-ui-canonical\.js\n  Cache-Control: no-store/);
+  assert.match(headers,/\/buffet-worker\.js\n  Cache-Control: no-store/);
 });
