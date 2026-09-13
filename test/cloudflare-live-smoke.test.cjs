@@ -5,10 +5,14 @@ const log = message => console.log(`[LIVE-SMOKE] ${message}`);
 (async () => {
   const browser = await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
   const page = await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true});
+  const pageErrors=[]; const consoleErrors=[];
+  page.on('pageerror',error=>pageErrors.push(String(error?.stack||error)));
+  page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text())});
   try {
     log(`navigating to ${LIVE_URL}`); const response=await page.goto(LIVE_URL,{waitUntil:'domcontentloaded',timeout:30000});
     if(!response||!response.ok())fail(`Cloudflare page request failed: ${response?response.status():'no response'}`); if(!(await page.title()).includes('Meatfest'))fail(`Unexpected page title: ${await page.title()}`);
-    await page.locator('#buffetServiceCard').waitFor({state:'attached',timeout:15000}); await page.locator('#buffetLayoutCard').waitFor({state:'attached',timeout:15000});
+    try { await page.locator('#buffetServiceCard').waitFor({state:'attached',timeout:15000}); await page.locator('#buffetLayoutCard').waitFor({state:'attached',timeout:15000}); }
+    catch(error){const diag=await page.evaluate(()=>({ready:document.readyState,canonical:!!document.querySelector('script[data-meatfest-buffet-canonical]'),engine:!!window.BuffetEngine,buildSummary:typeof window.buildSummary,canonicalFlag:!!window.__meatfestCanonicalUI,canonicalError:window.__meatfestCanonicalError||null,bodyText:(document.body?.innerText||'').slice(0,500),scripts:[...document.scripts].map(s=>s.src).filter(Boolean)}));throw new Error(`Buffet shell did not initialize: ${error.message}\nDIAG ${JSON.stringify(diag)}\nPAGE_ERRORS ${JSON.stringify(pageErrors)}\nCONSOLE_ERRORS ${JSON.stringify(consoleErrors)}`)}
     const bread=await page.evaluate(()=>({rolls:document.querySelector('button[data-k="bread"][data-id="hawaiian"]')?.getAttribute('aria-pressed'),cornbread:document.querySelector('button[data-k="bread"][data-id="cornbread"]')?.getAttribute('aria-pressed'),rollsDisabled:document.querySelector('button[data-k="bread"][data-id="hawaiian"]')?.disabled,cornbreadDisabled:document.querySelector('button[data-k="bread"][data-id="cornbread"]')?.disabled}));
     if(bread.rolls!=='false'||bread.cornbread!=='false'||bread.rollsDisabled||bread.cornbreadDisabled)fail(`Bread controls did not start available and unselected: ${JSON.stringify(bread)}`);
     await page.locator('#adults').fill('40'); await page.locator('#adults').dispatchEvent('input'); await page.locator('#kids').fill('8'); await page.locator('#kids').dispatchEvent('input'); await page.locator('#eventName').fill('Labor Day Meatfest 7.0');
