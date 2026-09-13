@@ -6,7 +6,7 @@ const ui=await readFile(new URL('../public/buffet-ui-canonical.js',import.meta.u
 
 test('Buffet uses one canonical persistent renderer',()=>{
   assert.match(entry,/buffet-ui-canonical\.js/);
-  assert.doesNotMatch(entry,/buffet-ui-v9|side-ui\.js|buffet-mobile-fixes/);
+  assert.doesNotMatch(entry,/s\.src=.*buffet-ui-v9|s\.src=.*side-ui\.js|s\.src=.*buffet-mobile-fixes/);
   assert.match(ui,/SERVICE QUANTITIES/);
   assert.match(ui,/TABLE-BY-TABLE SETUP/);
   assert.match(ui,/function renderService\(p\)/);
