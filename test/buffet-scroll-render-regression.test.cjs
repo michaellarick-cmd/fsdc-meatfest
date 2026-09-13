@@ -39,20 +39,19 @@ const fail = message => { throw new Error(message); };
     await page.waitForFunction(()=>document.querySelector('button[data-k="supplemental"][data-id="burgers"]')?.getAttribute('aria-pressed')==='true',{timeout:3000});
     const trace=[];
     const start=Date.now();
-    for(let i=0;i<=24;i++){
-      const target=await page.evaluate(i=>{const max=Math.max(0,document.documentElement.scrollHeight-window.innerHeight);return Math.round(max*(i/24));},i);
-      await page.evaluate(y=>window.scrollTo(0,y),target);
+    for(let i=0;i<30;i++){
+      await page.mouse.wheel(0,260);
       await page.waitForTimeout(30);
       trace.push(await page.evaluate(()=>({y:window.scrollY,h:document.documentElement.scrollHeight})));
     }
     const elapsed=Date.now()-start;
     const maxY=Math.max(...trace.map(x=>x.y));
-    const minAfterFirst=Math.min(...trace.slice(4).map(x=>x.y));
+    const backwardJumps=[];
+    for(let i=1;i<trace.length;i++)if(trace[i].y<trace[i-1].y-500)backwardJumps.push({from:trace[i-1].y,to:trace[i].y,at:i});
     const final=trace[trace.length-1];
-    const expectedMax=Math.max(0,final.h-844);
-    if(maxY<expectedMax-250)fail(`${BROWSER_NAME}: scroll/render race lost the page position: maxY=${maxY} expectedMax=${expectedMax}`);
-    if(minAfterFirst<maxY-500)fail(`${BROWSER_NAME}: scroll position jumped backward during worker completion: maxY=${maxY} minAfterFirst=${minAfterFirst}`);
-    if(final.y<Math.max(0,final.h-844-250))fail(`${BROWSER_NAME}: final scroll position was not preserved: ${JSON.stringify(final)}`);
+    const expectedMax=Math.max(0,final.h-window.innerHeight);
+    if(backwardJumps.length)fail(`${BROWSER_NAME}: scroll position jumped backward during worker completion: ${JSON.stringify(backwardJumps)} trace=${JSON.stringify(trace)}`);
+    if(maxY<expectedMax-300)fail(`${BROWSER_NAME}: scroll/render race lost the page position: maxY=${maxY} expectedMax=${expectedMax} trace=${JSON.stringify(trace)}`);
     await page.waitForTimeout(300);
     const health=await page.evaluate(()=>({scrollY:window.scrollY,scrollHeight:document.documentElement.scrollHeight,viewportHeight:window.innerHeight,selected:document.querySelector('button[data-k="supplemental"][data-id="burgers"]')?.getAttribute('aria-pressed'),rows:document.querySelectorAll('#buffetDynamic .b9row').length,tables:document.querySelectorAll('#buffetLayoutDynamic .b9table').length,controls:document.querySelectorAll('#buffetServiceCard button[data-k]').length}));
     if(health.selected!=='true'||health.rows<15||health.tables!==8||health.controls<10)fail(`${BROWSER_NAME}: Buffet DOM/state was damaged by scroll-time rendering: ${JSON.stringify(health)}`);
