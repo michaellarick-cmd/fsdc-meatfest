@@ -11,15 +11,16 @@ test('Buffet is a self-contained application component',()=>{
   assert.match(entry,/buffet-app\.js\?v=3/);
   assert.match(entry,/meatfest-buffet/);
   assert.match(entry,/insertBefore\(document\.createElement\('meatfest-buffet'\),footer\)/);
-  assert.doesNotMatch(entry,/IntersectionObserver|rootMargin|scrollTo\(|scrollBy\(/);
+  assert.doesNotMatch(entry,/scrollTo\(|scrollBy\(/);
   assert.match(app,/customElements\.define\('meatfest-buffet'/);
   assert.match(app,/attachShadow\(\{mode:'open'\}\)/);
   assert.match(app,/const STORAGE_KEY='mfBuffet18'/);
   assert.match(app,/new Worker\('\/buffet-worker\.js\?v=3'\)/);
   assert.match(app,/window\.buildSummary\(\)/);
   assert.match(app,/setCoreBread/);
+  assert.match(app,/new IntersectionObserver/);
   assert.doesNotMatch(app,/addEventListener\('scroll'/);
-  assert.doesNotMatch(app,/IntersectionObserver|MutationObserver|scrollTo\(|scrollBy\(/);
+  assert.doesNotMatch(app,/MutationObserver|scrollTo\(|scrollBy\(/);
   assert.doesNotMatch(app,/\.innerHTML\s*=/);
 });
 
@@ -46,6 +47,4 @@ test('Buffet worker is calculation-only and returns a compact view model',()=>{
   assert.doesNotMatch(worker,/document\.|window\.document|querySelector|createElement/);
 });
 
-test('Buffet client assets explicitly disable stale browser caching',()=>{
-  assert.match(headers,/\/buffet-worker\.js\n  Cache-Control: no-store/);
-});
+test('Buffet client assets explicitly disable stale browser caching',()=>{assert.match(headers,/\/buffet-worker\.js\n  Cache-Control: no-store/);assert.match(headers,/\/buffet-app\.js\n  Cache-Control: no-store/)});
