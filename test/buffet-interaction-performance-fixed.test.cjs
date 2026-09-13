@@ -6,7 +6,7 @@ const fail = message => { throw new Error(message); };
 (async()=>{
  const browser=await (BROWSER_NAME==='webkit'?webkit:chromium).launch({headless:true});
  const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true});
- await page.addInitScript(()=>{const NativeWorker=window.Worker;window.__meatfestWorkerPosts=0;window.Worker=class extends NativeWorker{postMessage(...args){window.__meatfestWorkerPosts++;return super.postMessage(...args)}}});
+ await page.addInitScript(()=>{window.__meatfestWorkerPosts=0;const originalPostMessage=Worker.prototype.postMessage;Worker.prototype.postMessage=function(...args){window.__meatfestWorkerPosts++;return originalPostMessage.apply(this,args)}});
  try{
   const response=await page.goto(LIVE_URL,{waitUntil:'domcontentloaded',timeout:60000});
   if(!response||!response.ok())fail(`${BROWSER_NAME} Cloudflare page request failed: ${response?response.status():'no response'}`);
