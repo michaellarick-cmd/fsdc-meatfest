@@ -46,10 +46,10 @@ const fail = message => { throw new Error(message); };
       await page.waitForTimeout(50);
       const before=await button.evaluate(el=>({top:el.getBoundingClientRect().top,scrollY:window.scrollY}));
       const start=Date.now();
-      await button.click();
+      await button.evaluate(el=>el.click());
       await page.waitForFunction(({key,id})=>document.querySelector(`button[data-k="${key}"][data-id="${id}"]`)?.getAttribute('aria-pressed')==='true',{key,id},{timeout:3000});
       const elapsed=Date.now()-start;
-      if(elapsed>1000) fail(`${BROWSER_NAME}: ${label} selection was not immediately responsive: ${elapsed}ms.`);
+      if(elapsed>250) fail(`${BROWSER_NAME}: ${label} selection handler was not immediately responsive: ${elapsed}ms.`);
 
       selected.push([key,id]);
       for(const [expectedKey,expectedId] of selected){
@@ -79,7 +79,7 @@ const fail = message => { throw new Error(message); };
     }
 
     const final=timings[timings.length-1].elapsed,first=timings[0].elapsed;
-    if(final>Math.max(1000,first*5)) fail(`${BROWSER_NAME}: buffet interaction time degraded excessively: first=${first}ms final=${final}ms.`);
+    if(final>Math.max(250,first*5)) fail(`${BROWSER_NAME}: buffet interaction time degraded excessively: first=${first}ms final=${final}ms.`);
     console.log(`${BROWSER_NAME} mobile buffet selection and scroll regression passed.`);
     console.log(JSON.stringify({browser:BROWSER_NAME,url:LIVE_URL,selections:timings},null,2));
   } finally { await browser.close(); }
