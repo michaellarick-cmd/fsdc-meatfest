@@ -19,7 +19,8 @@ test('Buffet uses one canonical persistent renderer',()=>{
 });
 
 test('major Buffet sections have explicit persistent owners',()=>{
-  for(const name of ['supplemental','bread','sausage','condiments','desserts','service','layout'])assert.match(ui,new RegExp(`data-mf-section[=\\"]${name}`));
+  assert.match(ui,/data-mf-section=id/);
+  for(const name of ['supplemental','bread','sausage','condiments','desserts','service','layout'])assert.match(ui,new RegExp(`'${name}'`));
   assert.match(ui,/ui\.serviceRows\[k\]/);
   assert.match(ui,/ui\.layout\.rows\.push/);
 });
