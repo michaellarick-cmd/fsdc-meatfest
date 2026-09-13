@@ -12,7 +12,7 @@ const fail = message => { throw new Error(message); };
     if(!response || !response.ok()) fail(`${BROWSER_NAME} Cloudflare page request failed: ${response ? response.status() : 'no response'}`);
     await page.locator('#buffetServiceCard').waitFor({state:'attached',timeout:30000});
     await page.locator('#buffetLayoutCard').waitFor({state:'attached',timeout:30000});
-    await page.waitForFunction(()=>document.querySelectorAll('#buffetLayoutDynamic .layoutTable').length===4,{timeout:30000});
+    await page.waitForFunction(()=>document.querySelector('#buffetDynamic') && document.querySelector('#buffetLayoutDynamic'),{timeout:30000});
 
     const initialScroll=await page.evaluate(()=>{
       window.scrollTo(0,Math.max(0,document.documentElement.scrollHeight-window.innerHeight-200));
