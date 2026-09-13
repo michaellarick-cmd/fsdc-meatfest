@@ -32,7 +32,10 @@ test('major Buffet sections have explicit persistent owners and stable geometry'
   assert.match(ui,/function buffetVisible\(\)/);
   assert.match(ui,/function scheduleRender\(\)/);
   assert.match(ui,/function maybeRender\(\)/);
-  assert.match(ui,/if\(busy\|\|!latestPlan\|\|!buffetVisible\(\)\)\{/);
+  // Worker results render as soon as they are ready. Rendering must not be gated
+  // by viewport visibility, because doing so allows the persistent placeholders
+  // to expand later and mutate document height during a scroll.
+  assert.match(ui,/if\(busy\|\|!latestPlan\)return/);
   assert.match(ui,/function requestPlan\(immediate=false\)/);
   assert.match(ui,/!busy&&!queued&&!latestPlan&&buffetVisible\(\)\)requestPlan\(true\)/);
   assert.match(ui,/latestPlan=e\.data\.result/);
