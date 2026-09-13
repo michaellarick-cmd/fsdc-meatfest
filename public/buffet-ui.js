@@ -7,31 +7,17 @@
   const NativeWorker=window.Worker;
   const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 
-  // iOS gets one persistent real Worker, but planning requests are coalesced.
-  // This avoids both main-thread stalls and repeated Worker creation/termination.
+  // iOS gets one persistent real Worker. Do not debounce postMessage here:
+  // the UI click must remain immediately responsive. The worker itself is
+  // isolated from the main thread, and the UI layer ignores stale responses.
   if(isIOS){
     window.Worker=function(url,options){
       const target=typeof url==='string'&&url.includes('/buffet-engine.js')?'/buffet-worker.js?v=3':url;
       const native=new NativeWorker(target,options);
-      let timer=null,lastMessage=null;
       const proxy={
         onmessage:null,onerror:null,onmessageerror:null,
-        postMessage(message){
-          lastMessage=message;
-          if(timer!==null)clearTimeout(timer);
-          timer=setTimeout(()=>{
-            timer=null;
-            const next=lastMessage;
-            lastMessage=null;
-            if(next)native.postMessage(next);
-          },900);
-        },
-        terminate(){
-          if(timer!==null)clearTimeout(timer);
-          timer=null;
-          lastMessage=null;
-          native.terminate();
-        }
+        postMessage(message){native.postMessage(message)},
+        terminate(){native.terminate()}
       };
       native.onmessage=e=>proxy.onmessage?.(e);
       native.onerror=e=>proxy.onerror?.(e);
