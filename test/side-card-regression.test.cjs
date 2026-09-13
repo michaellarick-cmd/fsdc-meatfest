@@ -6,7 +6,7 @@ const fail = message => { throw new Error(message); };
 (async()=>{
   const browserType=BROWSER_NAME==='webkit'?webkit:chromium;
   const browser=await browserType.launch({headless:true});
-  const context=await browserType===webkit?browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true}):browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
+  const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
   const page=await context.newPage();
   try{
     const response=await page.goto(LIVE_URL,{waitUntil:'domcontentloaded',timeout:60000});
@@ -57,8 +57,8 @@ const fail = message => { throw new Error(message); };
       tables:document.querySelectorAll('#buffetLayoutDynamic .b9table').length,
       dynamicRows:document.querySelectorAll('#buffetDynamic .b9row').length
     }));
-    if(!health.rolls||!health.cornbread||health.buffetRolls!=='true'||health.buffetCornbread!=='true'||health.bbqSauce!=='true')fail(`${BROWSER_NAME}: state did not survive real tap sequence: ${JSON.stringify(health)}`);
-    if(health.scrollHeight<500||health.tables<8||health.dynamicRows<15)fail(`${BROWSER_NAME}: page/layout degraded after real tap sequence: ${JSON.stringify(health)}`);
+    if(!health.rolls||!health.cornbread||health.buffetRolls!=='true'||health.buffetCornbread!=='true'||health.bbqSauce!=='true')fail(`${BROWSER_NAME}: state did not survive real touch sequence: ${JSON.stringify(health)}`);
+    if(health.scrollHeight<500||health.tables<8||health.dynamicRows<15)fail(`${BROWSER_NAME}: page/layout degraded after real touch sequence: ${JSON.stringify(health)}`);
     console.log(`${BROWSER_NAME} real-touch Buffet + side-card stability regression passed.`);
     console.log(JSON.stringify({browser:BROWSER_NAME,url:LIVE_URL,sequence:['Burgers','Grilling Brats','Hawaiian Rolls','Cornbread','BBQ Sauce'],health},null,2));
   }finally{await context.close();await browser.close()}
