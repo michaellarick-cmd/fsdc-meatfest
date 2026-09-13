@@ -10,6 +10,7 @@ const fail = message => { throw new Error(message); };
   try {
     const response = await page.goto(LIVE_URL,{waitUntil:'domcontentloaded',timeout:60000});
     if(!response || !response.ok()) fail(`${BROWSER_NAME} Cloudflare page request failed: ${response ? response.status() : 'no response'}`);
+    await page.addStyleTag({content:'html{scroll-behavior:auto !important}'});
     await page.locator('#buffetServiceCard').waitFor({state:'attached',timeout:30000});
     await page.locator('#buffetLayoutCard').waitFor({state:'attached',timeout:30000});
     await page.waitForFunction(()=>document.querySelector('#buffetDynamic') && document.querySelector('#buffetLayoutDynamic'),{timeout:30000});
