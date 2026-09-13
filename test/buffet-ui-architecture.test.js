@@ -33,7 +33,7 @@ test('major Buffet sections have explicit persistent owners and stable geometry'
   assert.match(ui,/function scheduleRender\(\)/);
   assert.match(ui,/function maybeRender\(\)/);
   assert.match(ui,/if\(scrolling\|\|busy\|\|!latestPlan\|\|!buffetVisible\(\)\)return/);
-  assert.match(ui,/latestPlan=e\.data\?\.result/);
+  assert.match(ui,/latestPlan=e\.data\.result/);
   assert.doesNotMatch(ui,/worker\.onmessage=e=>\{busy=false;if\(e\.data\?\.result\)\{renderService/);
   assert.doesNotMatch(ui,/o\.r\.hidden=false/);
   assert.doesNotMatch(ui,/o\.r\.hidden=false;o\.name\.textContent/);
