@@ -6,7 +6,7 @@ const entry=await readFile(new URL('../public/buffet-ui.js',import.meta.url),'ut
 test('accompaniment controls use a persistent DOM controller',()=>{
   assert.match(entry,/side-ui\.js/);
   assert.match(side,/window\.renderSideCards=\(\)=>sync\(\)/);
-  assert.match(side,/main\.addEventListener\('click',handle\)/);
-  assert.match(side,/accomp\.addEventListener\('click',handle\)/);
+  assert.match(side,/main\.addEventListener\('click',handle,true\)/);
+  assert.match(side,/accomp\.addEventListener\('click',handle,true\)/);
   assert.doesNotMatch(side,/new MutationObserver|scrollTo\(|scrollBy\(|window\.Worker\s*=/);
 });
