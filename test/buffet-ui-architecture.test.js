@@ -37,6 +37,7 @@ test('major Buffet sections have explicit persistent owners and stable geometry'
   // to expand later and mutate document height during a scroll.
   assert.match(ui,/if\(busy\|\|!latestPlan\)return/);
   assert.match(ui,/function requestPlan\(immediate=false\)/);
+  assert.match(ui,/function init\(\)\{buildShell\(\);stableSideOwner\(\);syncControls\(\);requestPlan\(true\);/);
   assert.match(ui,/!busy&&!queued&&!latestPlan&&buffetVisible\(\)\)requestPlan\(true\)/);
   assert.match(ui,/latestPlan=e\.data\.result/);
   assert.doesNotMatch(ui,/worker\.onmessage=e=>\{busy=false;if\(e\.data\?\.result\)\{renderService/);
