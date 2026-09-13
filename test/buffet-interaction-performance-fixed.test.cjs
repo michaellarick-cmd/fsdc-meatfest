@@ -5,6 +5,13 @@ const fail = message => { throw new Error(message); };
 (async()=>{
  const browser=await (BROWSER_NAME==='webkit'?webkit:chromium).launch({headless:true});
  const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true});
+ await page.addInitScript(()=>{
+  const NativeWorker=window.Worker;
+  window.__meatfestWorkerPosts=0;
+  window.Worker=class extends NativeWorker{
+   postMessage(...args){window.__meatfestWorkerPosts++;return super.postMessage(...args)}
+  };
+ });
  try{
   const response=await page.goto(LIVE_URL,{waitUntil:'domcontentloaded',timeout:60000});
   if(!response||!response.ok())fail(`${BROWSER_NAME} Cloudflare page request failed: ${response?response.status():'no response'}`);
@@ -31,6 +38,12 @@ const fail = message => { throw new Error(message); };
   const post=await page.evaluate(()=>({scrollY:scrollY,scrollHeight:document.documentElement.scrollHeight,viewportHeight:innerHeight,rows:document.querySelectorAll('#buffetDynamic .b9row').length,tables:document.querySelectorAll('#buffetLayoutDynamic .b9table').length,controls:document.querySelectorAll('#buffetServiceCard button[data-k]').length}));
   if(post.scrollY<Math.max(0,post.scrollHeight-post.viewportHeight-250))fail(`${BROWSER_NAME} scroll snapped away from bottom: ${JSON.stringify(post)}`);
   if(post.rows<15||post.tables!==8||post.controls<10)fail(`${BROWSER_NAME} Buffet DOM incomplete after scroll: ${JSON.stringify(post)}`);
+  await page.locator('#buffetServiceCard').scrollIntoViewIfNeeded();
+  const workerPostsBeforeDwell=await page.evaluate(()=>window.__meatfestWorkerPosts);
+  await page.waitForTimeout(1800);
+  const workerPostsAfterDwell=await page.evaluate(()=>window.__meatfestWorkerPosts);
+  const workerPostsDuringDwell=workerPostsAfterDwell-workerPostsBeforeDwell;
+  if(workerPostsDuringDwell>1)fail(`${BROWSER_NAME} Buffet continuously re-planned while visible: workerPostsDuringDwell=${workerPostsDuringDwell}`);
   const selections=[['supplemental','burgers','Burgers'],['supplemental','hotdogs','Hot Dogs'],['supplemental','brats','Grilling Brats'],['condiment','bbqSauce','BBQ Sauce'],['dessert','cobbler','Cobbler / Crisp'],['dessert','pudding','Pudding / Cream Dessert'],['dessert','pie','Pie'],['dessert','cake','Cake'],['dessert','cookies','Cookies / Bars']];
   const selected=[]; const timings=[];
   for(const [key,id,label] of selections){
@@ -56,6 +69,6 @@ const fail = message => { throw new Error(message); };
   const first=timings[0].elapsed,final=timings[timings.length-1].elapsed;
   if(final>Math.max(250,first*5))fail(`${BROWSER_NAME}: interaction time degraded excessively: first=${first}ms final=${final}ms.`);
   console.log(`${BROWSER_NAME} mobile buffet selection and scroll regression passed.`);
-  console.log(JSON.stringify({browser:BROWSER_NAME,url:LIVE_URL,selections:timings,continuousScroll:{minHeight,maxHeight,finalScroll,expectedMaxScroll}},null,2));
+  console.log(JSON.stringify({browser:BROWSER_NAME,url:LIVE_URL,selections:timings,continuousScroll:{minHeight,maxHeight,finalScroll,expectedMaxScroll},workerPostsDuringDwell},null,2));
  }finally{await browser.close();}
 })().catch(error=>{console.error(error.stack||error);process.exit(1);});
