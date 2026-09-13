@@ -5,7 +5,7 @@
     if(document.querySelector('script[data-meatfest-buffet-canonical]'))return;
     if(!window.BuffetEngine){setTimeout(load,25);return}
     const s=document.createElement('script');
-    s.src='/buffet-ui-canonical-v3.js?v=d274a2de';
+    s.src='/buffet-ui-canonical-v3.js?v=3db1dda0';
     s.dataset.meatfestBuffetCanonical='true';
     document.head.appendChild(s);
   };
