@@ -14,16 +14,11 @@ const fail = message => { throw new Error(message); };
     await page.locator('#buffetServiceCard').waitFor({state:'attached',timeout:30000});
     await page.locator('#buffetLayoutCard').waitFor({state:'attached',timeout:30000});
     await page.waitForFunction(()=>document.querySelector('#buffetDynamic') && document.querySelector('#buffetLayoutDynamic'),{timeout:30000});
-    // The initial Worker plan is requested during initialization, before the Buffet
-    // enters the viewport. Do not begin the geometry regression until that plan has
-    // rendered, otherwise the test would manufacture the very race we are guarding against.
     await page.waitForFunction(()=>{
       const h=document.querySelector('#buffetLayoutDynamic .b9table b');
       return !!h && !/waiting for plan/.test(h.textContent||'');
     },{timeout:15000});
 
-    // Critical regression: the initial Worker calculation must not mutate document geometry
-    // while a mobile WebKit user is continuously scrolling through the page.
     await page.evaluate(()=>window.scrollTo(0,0));
     const scrollTrace=[];
     for(let y=0;y<=1;y+=0.025){
@@ -35,8 +30,16 @@ const fail = message => { throw new Error(message); };
     }
     const minHeight=Math.min(...scrollTrace.map(x=>x.h)),maxHeight=Math.max(...scrollTrace.map(x=>x.h));
     const finalScroll=scrollTrace[scrollTrace.length-1].y;
-    if(finalScroll<Math.max(0,maxHeight-250)) fail(`${BROWSER_NAME} continuous-scroll regression did not reach the page bottom: finalScroll=${finalScroll} max=${maxHeight}`);
-    if(maxHeight-minHeight>250) fail(`${BROWSER_NAME} continuous-scroll regression changed document height while scrolling: min=${minHeight} max=${maxHeight}`);
+    if(finalScroll<Math.max(0,maxHeight-250)){
+      console.log(`${BROWSER_NAME} scroll trace: ${JSON.stringify(scrollTrace)}`);
+      fail(`${BROWSER_NAME} continuous-scroll regression did not reach the page bottom: finalScroll=${finalScroll} max=${maxHeight}`);
+    }
+    if(maxHeight-minHeight>250){
+      console.log(`${BROWSER_NAME} scroll trace: ${JSON.stringify(scrollTrace)}`);
+      const geometry=await page.evaluate(()=>Object.fromEntries(['buffetServiceCard','buffetLayoutCard','buffetDynamic','buffetLayoutDynamic'].map(id=>{const el=document.getElementById(id);return[id,el?{top:el.getBoundingClientRect().top,height:el.getBoundingClientRect().height,scrollHeight:el.scrollHeight}:null]})));
+      console.log(`${BROWSER_NAME} buffet geometry at failure: ${JSON.stringify(geometry)}`);
+      fail(`${BROWSER_NAME} continuous-scroll regression changed document height while scrolling: min=${minHeight} max=${maxHeight}`);
+    }
     await page.waitForTimeout(500);
     const postScroll=await page.evaluate(()=>({scrollY:window.scrollY,scrollHeight:document.documentElement.scrollHeight,serviceRows:document.querySelectorAll('#buffetDynamic .b9row').length,layoutTables:document.querySelectorAll('#buffetLayoutDynamic .b9table').length,controls:document.querySelectorAll('#buffetServiceCard button[data-k]').length}));
     if(postScroll.scrollY<Math.max(0,postScroll.scrollHeight-window.innerHeight-250)) fail(`${BROWSER_NAME} continuous-scroll regression snapped away from the bottom after scroll settled: ${JSON.stringify(postScroll)}`);
