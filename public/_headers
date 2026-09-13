@@ -9,5 +9,11 @@
   Cache-Control: no-store
 /buffet-ui.js
   Cache-Control: no-store
+/side-ui.js
+  Cache-Control: no-store
+/buffet-ui-v9.js
+  Cache-Control: no-store
+/buffet-worker.js
+  Cache-Control: no-store
 /buffet-layout.js
   Cache-Control: no-store
