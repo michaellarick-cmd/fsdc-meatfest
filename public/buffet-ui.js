@@ -30,15 +30,23 @@
       const card = document.createElement('div');
       card.className = 'sideCard';
       card.dataset.side = id;
-      card.innerHTML = '<div class="sideTop"><div><b></b><span class="sideRec"></span></div><span class="sideCheck"></span></div><small></small>';
-      const refs = {
-        title: card.querySelector('b'),
-        rec: card.querySelector('.sideRec'),
-        check: card.querySelector('.sideCheck'),
-        small: card.querySelector('small')
-      };
-      refs.title.textContent = side.name;
-      refs.small.textContent = description(side);
+
+      const top = document.createElement('div');
+      top.className = 'sideTop';
+      const text = document.createElement('div');
+      const title = document.createElement('b');
+      const rec = document.createElement('span');
+      rec.className = 'sideRec';
+      const check = document.createElement('span');
+      check.className = 'sideCheck';
+      const small = document.createElement('small');
+
+      title.textContent = side.name;
+      small.textContent = description(side);
+      text.append(title, rec);
+      top.append(text, check);
+      card.append(top, small);
+
       card.addEventListener('click', () => {
         const current = card.dataset.side;
         if (selectedSides.has(current)) selectedSides.delete(current);
@@ -47,7 +55,7 @@
         calcSides();
         save();
       });
-      card._meatfestRefs = refs;
+      card._meatfestRefs = { title, rec, check, small };
       return card;
     };
 
