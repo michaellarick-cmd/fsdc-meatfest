@@ -56,7 +56,7 @@ const fail = message => { throw new Error(message); };
         if(await b.getAttribute('aria-pressed')!=='true') fail(`${BROWSER_NAME}: ${label} selection lost ${expectedId}.`);
       }
 
-      await page.waitForFunction(()=>document.querySelectorAll('#buffetLayoutDynamic .layoutTable').length>0 && document.querySelectorAll('#buffetDynamic .buffetRow').length>0,{timeout:15000});
+      await page.waitForFunction(()=>document.querySelectorAll('#buffetLayoutDynamic .b9table').length>0 && document.querySelectorAll('#buffetDynamic .b9row').length>0,{timeout:15000});
       await page.waitForTimeout(300);
       const after=await button.evaluate(el=>({top:el.getBoundingClientRect().top,scrollY:window.scrollY}));
       const expectedTop=before.top-(after.scrollY-before.scrollY);
@@ -67,8 +67,8 @@ const fail = message => { throw new Error(message); };
         serviceHeight:document.getElementById('buffetServiceCard')?.getBoundingClientRect().height||0,
         layoutHeight:document.getElementById('buffetLayoutCard')?.getBoundingClientRect().height||0,
         scrollHeight:document.documentElement.scrollHeight,
-        dynamicRows:document.querySelectorAll('#buffetDynamic .buffetRow').length,
-        layoutTables:document.querySelectorAll('#buffetLayoutDynamic .layoutTable').length,
+        dynamicRows:document.querySelectorAll('#buffetDynamic .b9row').length,
+        layoutTables:document.querySelectorAll('#buffetLayoutDynamic .b9table').length,
         controls:document.querySelectorAll('#buffetServiceCard button[data-k]').length
       }));
       if(health.serviceHeight<100||health.layoutHeight<100||health.scrollHeight<500) fail(`${BROWSER_NAME}: ${label} selection left an invalid page layout: ${JSON.stringify(health)}`);
