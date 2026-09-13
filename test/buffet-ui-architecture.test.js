@@ -30,16 +30,17 @@ test('major Buffet sections have explicit persistent owners and stable geometry'
   assert.match(ui,/ui\.dessertSummary/);
   assert.match(ui,/ui\.layout\.overflow/);
   assert.match(ui,/function buffetVisible\(\)/);
-  assert.match(ui,/function scheduleRender\(\)/);
+  assert.doesNotMatch(ui,/function scheduleRender\(\)/);
   assert.match(ui,/function maybeRender\(\)/);
   // Worker results render as soon as they are ready. Rendering must not be gated
-  // by viewport visibility, because doing so allows the persistent placeholders
-  // to expand later and mutate document height during a scroll.
+  // by viewport visibility or scroll-idle timing, because doing so allows the
+  // persistent placeholders to expand later and mutate document height during a scroll.
   assert.match(ui,/if\(busy\|\|!latestPlan\)return/);
   assert.match(ui,/function requestPlan\(immediate=false\)/);
   assert.match(ui,/function init\(\)\{buildShell\(\);stableSideOwner\(\);syncControls\(\);requestPlan\(true\);/);
   assert.match(ui,/!busy&&!queued&&!latestPlan&&buffetVisible\(\)\)requestPlan\(true\)/);
   assert.match(ui,/latestPlan=e\.data\.result/);
+  assert.match(ui,/else maybeRender\(\)/);
   assert.doesNotMatch(ui,/worker\.onmessage=e=>\{busy=false;if\(e\.data\?\.result\)\{renderService/);
   assert.doesNotMatch(ui,/o\.r\.hidden=false/);
   assert.doesNotMatch(ui,/o\.r\.hidden=false;o\.name\.textContent/);
