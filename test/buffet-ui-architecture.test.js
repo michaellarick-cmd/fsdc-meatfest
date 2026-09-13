@@ -9,7 +9,7 @@ const headers=await readFile(new URL('../public/_headers',import.meta.url),'utf8
 
 test('Buffet is a self-contained application component',()=>{
   assert.match(entry,/buffet-app\.js\?v=3/);assert.match(entry,/meatfest-buffet/);assert.match(entry,/insertBefore\(document\.createElement\('meatfest-buffet'\), footer\)/);assert.doesNotMatch(entry,/scrollTo\(|scrollBy\(/);
-  assert.match(app,/customElements\.define\('meatfest-buffet'/);assert.match(app,/attachShadow\(\{mode:'open'\}\)/);assert.match(app,/const STORAGE_KEY='mfBuffet18'/);assert.match(app,/new Worker\('\/buffet-worker\.js\?v=3'\)/);assert.match(app,/window\.buildSummary\(\)/);assert.match(app,/setCoreBread/);assert.match(app,/new IntersectionObserver/);assert.doesNotMatch(app,/addEventListener\('scroll'/);assert.doesNotMatch(app,/MutationObserver|scrollTo\(|scrollBy\(/);assert.doesNotMatch(app,/\.innerHTML\s*=/);
+  assert.match(app,/customElements\.define\('meatfest-buffet'/);assert.match(app,/attachShadow\(\{mode:'open'\}\)/);assert.match(app,/const STORAGE_KEY='mfBuffet18'/);assert.match(app,/const WORKER_URL='\/buffet-worker\.js\?v=3'/);assert.match(app,/window\.buildSummary\(\)/);assert.match(app,/setCoreBread/);assert.match(app,/new IntersectionObserver/);assert.doesNotMatch(app,/addEventListener\('scroll'/);assert.doesNotMatch(app,/MutationObserver|scrollTo\(|scrollBy\(/);assert.doesNotMatch(app,/\.innerHTML\s*=/);
 });
 
 test('Buffet has one state-to-view pipeline and persistent section owners',()=>{
