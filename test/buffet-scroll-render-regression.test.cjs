@@ -1,11 +1,12 @@
 const { chromium, webkit } = require('playwright');
 const LIVE_URL = process.env.MEATFEST_LIVE_URL || 'https://fsdc-meatfest.michael-larick.workers.dev/';
 const BROWSER_NAME = process.env.MEATFEST_BROWSER || 'chromium';
+const VIEWPORT_HEIGHT = 844;
 const fail = message => { throw new Error(message); };
 
 (async()=>{
   const browser=await (BROWSER_NAME==='webkit'?webkit:chromium).launch({headless:true});
-  const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true});
+  const context=await browser.newContext({viewport:{width:390,height:VIEWPORT_HEIGHT},deviceScaleFactor:2,isMobile:true});
   const page=await context.newPage();
   await page.addInitScript(()=>{
     const NativeWorker=window.Worker;
@@ -49,7 +50,7 @@ const fail = message => { throw new Error(message); };
     const backwardJumps=[];
     for(let i=1;i<trace.length;i++)if(trace[i].y<trace[i-1].y-500)backwardJumps.push({from:trace[i-1].y,to:trace[i].y,at:i});
     const final=trace[trace.length-1];
-    const expectedMax=Math.max(0,final.h-window.innerHeight);
+    const expectedMax=Math.max(0,final.h-VIEWPORT_HEIGHT);
     if(backwardJumps.length)fail(`${BROWSER_NAME}: scroll position jumped backward during worker completion: ${JSON.stringify(backwardJumps)} trace=${JSON.stringify(trace)}`);
     if(maxY<expectedMax-300)fail(`${BROWSER_NAME}: scroll/render race lost the page position: maxY=${maxY} expectedMax=${expectedMax} trace=${JSON.stringify(trace)}`);
     await page.waitForTimeout(300);
