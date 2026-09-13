@@ -6,7 +6,8 @@ const fail = message => { throw new Error(message); };
 (async()=>{
   const browserType=BROWSER_NAME==='webkit'?webkit:chromium;
   const browser=await browserType.launch({headless:true});
-  const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true});
+  const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
+  const page=await context.newPage();
   try{
     const response=await page.goto(LIVE_URL,{waitUntil:'domcontentloaded',timeout:60000});
     if(!response||!response.ok())fail(`${BROWSER_NAME} page request failed: ${response?response.status():'no response'}`);
@@ -55,5 +56,5 @@ const fail = message => { throw new Error(message); };
     if(health.scrollHeight<500||health.tables<1||health.dynamicRows<1)fail(`${BROWSER_NAME}: page/layout degraded after real tap sequence: ${JSON.stringify(health)}`);
     console.log(`${BROWSER_NAME} real-tap side-card stability regression passed.`);
     console.log(JSON.stringify({browser:BROWSER_NAME,url:LIVE_URL,sequence:['Burgers','Grilling Brats','Hawaiian Rolls','Cornbread','BBQ Sauce'],health},null,2));
-  }finally{await browser.close()}
+  }finally{await context.close();await browser.close()}
 })().catch(error=>{console.error(error.stack||error);process.exit(1)});
