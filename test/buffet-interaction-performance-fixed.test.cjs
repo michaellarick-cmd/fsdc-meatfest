@@ -17,7 +17,6 @@ const fail = message => { throw new Error(message); };
   await page.addStyleTag({content:'html{scroll-behavior:auto !important}'});
   await page.locator('meatfest-buffet #buffetServiceCard').waitFor({state:'attached',timeout:30000});
   await page.locator('meatfest-buffet #buffetLayoutCard').waitFor({state:'attached',timeout:30000});
-  await page.locator('meatfest-buffet #buffetLayoutDynamic .table b').first().waitFor({state:'attached',timeout:15000});
   await page.waitForFunction(()=>{const host=document.querySelector('meatfest-buffet');const h=host?.shadowRoot?.querySelector('#buffetLayoutDynamic .table b');return !!h&&!/waiting for plan/.test(h.textContent||'')},{timeout:15000});
   await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
   await page.waitForTimeout(300);
@@ -51,7 +50,7 @@ const fail = message => { throw new Error(message); };
    await button.scrollIntoViewIfNeeded();
    const before=await button.evaluate(el=>({top:el.getBoundingClientRect().top,scrollY:scrollY}));
    const start=Date.now(); await button.click();
-   await page.waitForFunction(({kind,id})=>{const host=document.querySelector('meatfest-buffet');return host?.shadowRoot?.querySelector(`button[data-kind="${kind}"][data-id="${id"]`)?.getAttribute('aria-pressed')==='true'},{kind,id},{timeout:3000});
+   await page.waitForFunction(({kind,id})=>{const host=document.querySelector('meatfest-buffet');return host?.shadowRoot?.querySelector(`button[data-kind="${kind}"][data-id="${id}"]`)?.getAttribute('aria-pressed')==='true'},{kind,id},{timeout:3000});
    const elapsed=Date.now()-start; if(elapsed>250)fail(`${BROWSER_NAME}: ${label} selection handler was not immediately responsive: ${elapsed}ms.`);
    selected.push([kind,id]);
    for(const [ek,ei] of selected){if(await page.locator(`meatfest-buffet button[data-kind="${ek}"][data-id="${ei}"]`).getAttribute('aria-pressed')!=='true')fail(`${BROWSER_NAME}: ${label} selection lost ${ei}.`)}
