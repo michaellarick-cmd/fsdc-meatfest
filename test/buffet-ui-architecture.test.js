@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 const entry=await readFile(new URL('../public/buffet-ui.js',import.meta.url),'utf8');
-const ui=await readFile(new URL('../public/buffet-ui-canonical.js',import.meta.url),'utf8');
+const ui=await readFile(new URL('../public/buffet-ui-canonical-v3.js',import.meta.url),'utf8');
 const worker=await readFile(new URL('../public/buffet-worker.js',import.meta.url),'utf8');
 const headers=await readFile(new URL('../public/_headers',import.meta.url),'utf8');
 
 test('Buffet uses one canonical persistent renderer',()=>{
-  assert.match(entry,/buffet-ui-canonical\.js/);
+  assert.match(entry,/buffet-ui-canonical(?:-v3)?\.js/);
   assert.doesNotMatch(entry,/s\.src=.*buffet-ui-v9|s\.src=.*side-ui\.js|s\.src=.*buffet-mobile-fixes/);
   assert.match(ui,/SERVICE QUANTITIES/);
   assert.match(ui,/TABLE-BY-TABLE SETUP/);
