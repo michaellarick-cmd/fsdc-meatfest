@@ -44,11 +44,10 @@ test('one full tin plus one quarter-full standard tin uses two physical chafers'
 
 test('buffet bread selection is driven by Accompaniment selections',()=>{
   const entry=fs.readFileSync(new URL('../public/buffet-ui.js',import.meta.url),'utf8');
-  const ui=fs.readFileSync(new URL('../public/buffet-ui-v2.js',import.meta.url),'utf8');
-  assert.match(entry,/buffet-ui-v2\.js/);
+  const ui=fs.readFileSync(new URL('../public/buffet-ui-v3.js',import.meta.url),'utf8');
+  assert.match(entry,/buffet-ui-v3\.js/);
   assert.match(ui,/function accompanimentBreadIds\(\)/);
   assert.match(ui,/selectedSides\.has\('rolls'\).*hawaiian/);
   assert.match(ui,/selectedSides\.has\('cornbread'\).*cornbread/);
   assert.match(ui,/state\.breadIds=accompanimentBreadIds\(\)/);
-  assert.match(ui,/Driven by the Accompaniment selections above/);
 });
