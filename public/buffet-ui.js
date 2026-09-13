@@ -21,13 +21,13 @@
     allocation.src='/buffet-allocation.js?v=4';
     allocation.onload=()=>{
       const script=document.createElement('script');
-      script.src='/buffet-ui-v2.js?v=5';
+      script.src='/buffet-ui-v2.js?v=6';
       script.defer=true;
       document.head.appendChild(script);
     };
     allocation.onerror=()=>{
       const script=document.createElement('script');
-      script.src='/buffet-ui-v2.js?v=5';
+      script.src='/buffet-ui-v2.js?v=6';
       script.defer=true;
       document.head.appendChild(script);
     };
