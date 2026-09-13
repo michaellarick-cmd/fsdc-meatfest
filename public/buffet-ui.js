@@ -7,38 +7,35 @@
   const NativeWorker=window.Worker;
   const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 
-  // On iOS, use a short-lived real Worker for each planning request rather than
-  // keeping one Worker alive for the whole page. This preserves asynchronous UI
-  // responsiveness while avoiding the repeated postMessage lifecycle that can
-  // trigger WebKit WebContent instability on long-running pages.
+  // iOS gets one persistent real Worker, but planning requests are coalesced.
+  // This avoids both main-thread stalls and repeated Worker creation/termination.
   if(isIOS){
     window.Worker=function(url,options){
-      const proxy={onmessage:null,onerror:null,onmessageerror:null,terminate(){if(active)active.terminate();active=null;queued=null}};
-      let active=null,queued=null,busy=false;
-      const start=message=>{
-        busy=true;
-        const target=typeof url==='string'&&url.includes('/buffet-engine.js')?'/buffet-worker.js?v=3':url;
-        active=new NativeWorker(target,options);
-        active.onmessage=e=>{
-          const current=active;
-          active=null;
-          busy=false;
-          current.terminate();
-          proxy.onmessage?.(e);
-          if(queued){const next=queued;queued=null;start(next)}
-        };
-        active.onerror=e=>{
-          const current=active;
-          active=null;
-          busy=false;
-          current.terminate();
-          proxy.onerror?.(e);
-          if(queued){const next=queued;queued=null;start(next)}
-        };
-        active.onmessageerror=e=>proxy.onmessageerror?.(e);
-        active.postMessage(message);
+      const target=typeof url==='string'&&url.includes('/buffet-engine.js')?'/buffet-worker.js?v=3':url;
+      const native=new NativeWorker(target,options);
+      let timer=null,lastMessage=null;
+      const proxy={
+        onmessage:null,onerror:null,onmessageerror:null,
+        postMessage(message){
+          lastMessage=message;
+          if(timer!==null)clearTimeout(timer);
+          timer=setTimeout(()=>{
+            timer=null;
+            const next=lastMessage;
+            lastMessage=null;
+            if(next)native.postMessage(next);
+          },900);
+        },
+        terminate(){
+          if(timer!==null)clearTimeout(timer);
+          timer=null;
+          lastMessage=null;
+          native.terminate();
+        }
       };
-      proxy.postMessage=message=>{queued=message;if(!busy){const next=queued;queued=null;start(next)}};
+      native.onmessage=e=>proxy.onmessage?.(e);
+      native.onerror=e=>proxy.onerror?.(e);
+      native.onmessageerror=e=>proxy.onmessageerror?.(e);
       return proxy;
     };
   }else{
