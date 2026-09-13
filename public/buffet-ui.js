@@ -7,12 +7,13 @@
       return
     }
     const side=document.createElement('script');
-    side.src='/side-ui.js?v=1';
+    side.src='/side-ui.js?v=2';
     side.dataset.meatfestSide='true';
     side.onload=()=>{
       const s=document.createElement('script');
-      s.src='/buffet-ui-v9.js?v=10';
+      s.src='/buffet-ui-v9.js?v=11';
       s.dataset.meatfestBuffet='true';
+      s.onload=()=>window.__meatfestSyncBuffetBread?.();
       document.head.appendChild(s)
     };
     document.head.appendChild(side)
