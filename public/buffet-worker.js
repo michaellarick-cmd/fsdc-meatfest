@@ -34,7 +34,15 @@ function applyShoppingQuantities(plan,input){
   });
   const serviceGroups=B.physicalPlan(sequence);
   const layout=A.allocate(serviceGroups,input.mainTableLengths||B.TABLE_GEOMETRY.main);
-  return{...plan,sides,sequence,serviceGroups,tables:{...plan.tables,tables:layout.tableLengths,linearRequired:layout.linearRequired,linearProvided:layout.linearProvided,layout,overflow:layout.overflow}};
+  const tableRecords=(layout.segments||[]).map(seg=>({
+    table:seg.table,
+    length:seg.length,
+    used:seg.used,
+    remaining:seg.remaining,
+    stations:seg.stations,
+    items:(seg.items||[]).flatMap(group=>group.items||[])
+  }));
+  return{...plan,sides,sequence,serviceGroups,tables:{...plan.tables,tables:tableRecords,overflowItems:layout.overflowItems||[],linearRequired:layout.linearRequired,linearProvided:layout.linearProvided,layout,overflow:layout.overflow}};
 }
 
 self.onmessage=event=>{
