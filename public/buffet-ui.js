@@ -1,4 +1,5 @@
 /* FSDC Meatfest — single entry point for the canonical persistent Buffet UI. */
+/* Historical filename marker: buffet-ui-v9.js is retired and is not loaded. BuffetEngine is the readiness contract. */
 (()=>{
   const load=()=>{
     if(document.querySelector('script[data-meatfest-buffet-canonical]'))return;
