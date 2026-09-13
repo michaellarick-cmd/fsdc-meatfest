@@ -13,8 +13,10 @@ test('Buffet uses one canonical persistent renderer',()=>{
   assert.match(ui,/function renderLayout\(p\)/);
   assert.match(ui,/function stableSideOwner\(\)/);
   assert.match(ui,/window\.renderSideCards=sync/);
+  assert.match(ui,/\.sideCard'\)\.forEach\(el=>el\.onclick=null/);
   assert.doesNotMatch(ui,/\.innerHTML\s*=/);
   assert.doesNotMatch(ui,/scrollTo\(|scrollBy\(|new MutationObserver|window\.Worker\s*=/);
+  assert.doesNotMatch(ui,/addEventListener\('click',handle,true\)/);
   assert.match(ui,/new Worker\('\/buffet-worker\.js\?v=10'\)/);
 });
 
