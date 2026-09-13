@@ -15,7 +15,10 @@
   if(!main||!accomp)return;
   main.innerHTML=mainIds().map(card).join('');
   accomp.innerHTML=accompIds().map(card).join('');
-  main.addEventListener('click',handle);accomp.addEventListener('click',handle);
+  /* Capture-phase ownership is deliberate: app.js historically assigned onclick handlers to
+     these same cards. Capture prevents that legacy handler from rebuilding the card on tap. */
+  main.addEventListener('click',handle,true);
+  accomp.addEventListener('click',handle,true);
   window.renderSideCards=()=>sync();
   sync();
 })();
