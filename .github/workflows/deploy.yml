@@ -54,6 +54,14 @@ jobs:
           MEATFEST_BROWSER: webkit
         run: timeout --signal=TERM --kill-after=10s 90s node test/buffet-interaction-performance-fixed.test.cjs
 
+      - name: Verify mobile scroll/render race — Chromium
+        run: timeout --signal=TERM --kill-after=10s 90s node test/buffet-scroll-render-regression.test.cjs
+
+      - name: Verify mobile scroll/render race — WebKit
+        env:
+          MEATFEST_BROWSER: webkit
+        run: timeout --signal=TERM --kill-after=10s 90s node test/buffet-scroll-render-regression.test.cjs
+
       - name: Verify side-card stability — Chromium
         run: timeout --signal=TERM --kill-after=10s 90s node test/side-card-regression.test.cjs
 
