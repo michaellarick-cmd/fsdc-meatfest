@@ -18,20 +18,21 @@ function serviceForShoppingQuantity(unit,amount,vessel){
 
 function applyShoppingQuantities(plan,input){
   const rows=new Map((input.sideRows||[]).map(row=>[row.id,row.q]));
-  if(!rows.size)return plan;
-  const sequence=plan.sequence.map(item=>{
+  const sequence=(plan.sequence||[]).map(item=>{
     if(item.type!=='side')return item;
     const q=rows.get(item.id);
     if(!q)return item;
     const service=serviceForShoppingQuantity(q.unit,q.amount,item.vessel?.type);
     return{...item,quantity:{...q,service},side:{...item.side,quantity:{...q,service}}};
   });
-  const sides=plan.sides.map(item=>{
+  const sides=(plan.sides||[]).map(item=>{
     const q=rows.get(item.id);
     if(!q)return item;
     const service=serviceForShoppingQuantity(q.unit,q.amount,item.side?.vessel||item.vessel?.type);
     return{...item,quantity:{...q,service},side:{...item.side,quantity:{...q,service}}};
   });
+  /* Always build the physical layout. A missing sideRows array must not leave the UI
+     permanently on its initial “choose items” placeholder when proteins/breads/etc. exist. */
   const serviceGroups=B.physicalPlan(sequence);
   const layout=A.allocate(serviceGroups,input.mainTableLengths||B.TABLE_GEOMETRY.main);
   const tableRecords=(layout.segments||[]).map(seg=>({
