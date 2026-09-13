@@ -1,17 +1,22 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
-const root = path.join(__dirname,'..');
-const ui = fs.readFileSync(path.join(root,'public/buffet-ui-canonical.js'),'utf8');
-const worker = fs.readFileSync(path.join(root,'public/buffet-worker.js'),'utf8');
-const entry = fs.readFileSync(path.join(root,'public/buffet-ui.js'),'utf8');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+const entry=await readFile(new URL('../public/buffet-ui.js',import.meta.url),'utf8');
+const ui=await readFile(new URL('../public/buffet-ui-canonical.js',import.meta.url),'utf8');
+const worker=await readFile(new URL('../public/buffet-worker.js',import.meta.url),'utf8');
+const headers=await readFile(new URL('../public/_headers',import.meta.url),'utf8');
 
 test('Buffet uses one canonical persistent renderer',()=>{
   assert.match(entry,/buffet-ui-canonical\.js/);
-  assert.doesNotMatch(entry,/buffet-ui-v9\.js/);
-  assert.match(ui,/Persistent DOM/);
-  assert.doesNotMatch(ui,/\.innerHTML/);
+  assert.doesNotMatch(entry,/s\.src=.*buffet-ui-v9|s\.src=.*side-ui\.js|s\.src=.*buffet-mobile-fixes/);
+  assert.match(ui,/SERVICE QUANTITIES/);
+  assert.match(ui,/TABLE-BY-TABLE SETUP/);
+  assert.match(ui,/function renderService\(p\)/);
+  assert.match(ui,/function renderLayout\(p\)/);
+  assert.match(ui,/function stableSideOwner\(\)/);
+  assert.match(ui,/window\.renderSideCards=sync/);
+  assert.match(ui,/\.sideCard'\)\.forEach\(el=>el\.onclick=null/);
+  assert.doesNotMatch(ui,/\.innerHTML\s*=/);
   assert.doesNotMatch(ui,/scrollTo\(|scrollBy\(|new MutationObserver|window\.Worker\s*=/);
   assert.doesNotMatch(ui,/addEventListener\('click',handle,true\)/);
   assert.match(ui,/new Worker\('\/buffet-worker\.js\?v=12'\)/);
@@ -46,7 +51,6 @@ test('Buffet worker returns a compact presentation view model',()=>{
 });
 
 test('Buffet client assets explicitly disable stale browser caching',()=>{
-  const headers=fs.readFileSync(path.join(root,'public/_headers'),'utf8');
-  assert.match(headers,/buffet-ui-canonical\.js/);
-  assert.match(headers,/buffet-worker\.js/);
+  assert.match(headers,/\/buffet-ui-canonical\.js\n  Cache-Control: no-store/);
+  assert.match(headers,/\/buffet-worker\.js\n  Cache-Control: no-store/);
 });
