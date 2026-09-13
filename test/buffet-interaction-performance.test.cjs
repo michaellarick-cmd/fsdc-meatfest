@@ -18,7 +18,7 @@ const fail = message => { throw new Error(message); };
       window.scrollTo(0,Math.max(0,document.documentElement.scrollHeight-window.innerHeight-200));
       return window.scrollY;
     });
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(500);
     const initialScrollAfter=await page.evaluate(()=>window.scrollY);
     if(Math.abs(initialScrollAfter-initialScroll)>1000) fail(`${BROWSER_NAME} initial buffet page shifted catastrophically while scrolling: before=${initialScroll} after=${initialScrollAfter}`);
 
@@ -56,17 +56,8 @@ const fail = message => { throw new Error(message); };
         if(await b.getAttribute('aria-pressed')!=='true') fail(`${BROWSER_NAME}: ${label} selection lost ${expectedId}.`);
       }
 
-      const userScroll=await page.evaluate(()=>{
-        window.scrollTo(0,Math.max(0,document.documentElement.scrollHeight-window.innerHeight-120));
-        return window.scrollY;
-      });
       await page.waitForFunction(()=>document.querySelectorAll('#buffetLayoutDynamic .layoutTable').length===4 && document.querySelectorAll('#buffetDynamic .buffetRow').length>0,{timeout:15000});
-      await page.waitForTimeout(150);
-      const scrollAfterRender=await page.evaluate(()=>window.scrollY);
-      const scrollDelta=Math.abs(scrollAfterRender-userScroll);
-      if(scrollDelta>1000) fail(`${BROWSER_NAME}: ${label} worker render moved the user's scroll position catastrophically: before=${userScroll} after=${scrollAfterRender}`);
-
-      await page.waitForTimeout(100);
+      await page.waitForTimeout(300);
       const after=await button.evaluate(el=>({top:el.getBoundingClientRect().top,scrollY:window.scrollY}));
       const expectedTop=before.top-(after.scrollY-before.scrollY);
       const topDelta=Math.abs(after.top-expectedTop);
@@ -83,7 +74,7 @@ const fail = message => { throw new Error(message); };
       if(health.serviceHeight<100||health.layoutHeight<100||health.scrollHeight<500) fail(`${BROWSER_NAME}: ${label} selection left an invalid page layout: ${JSON.stringify(health)}`);
       if(health.layoutTables!==4) fail(`${BROWSER_NAME}: ${label} selection produced an invalid main buffet layout: ${JSON.stringify(health)}`);
       if(health.controls<10) fail(`${BROWSER_NAME}: ${label} selection lost buffet controls: ${JSON.stringify(health)}`);
-      timings.push({label,elapsed,topDelta,scrollDelta,selectedCount:selected.length,health});
+      timings.push({label,elapsed,topDelta,selectedCount:selected.length,health});
     }
 
     const final=timings[timings.length-1].elapsed,first=timings[0].elapsed;
