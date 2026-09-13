@@ -6,9 +6,11 @@ const ui=await readFile(new URL('../public/buffet-ui-canonical-v3.js',import.met
 const worker=await readFile(new URL('../public/buffet-worker.js',import.meta.url),'utf8');
 const headers=await readFile(new URL('../public/_headers',import.meta.url),'utf8');
 
-test('Buffet uses one canonical persistent renderer',()=>{
+test('Buffet uses one canonical persistent renderer and lazy initialization',()=>{
   assert.match(entry,/buffet-ui-canonical(?:-v3)?\.js/);
   assert.match(entry,/buffet-ui-canonical-v3\.js\?v=/);
+  assert.match(entry,/IntersectionObserver/);
+  assert.match(entry,/rootMargin:'1800px 0px 1800px 0px'/);
   assert.doesNotMatch(entry,/s\.src=.*buffet-ui-v9|s\.src=.*side-ui\.js|s\.src=.*buffet-mobile-fixes/);
   assert.match(ui,/SERVICE QUANTITIES/);
   assert.match(ui,/TABLE-BY-TABLE SETUP/);
