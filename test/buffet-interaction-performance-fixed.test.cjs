@@ -6,14 +6,19 @@ const fail = message => { throw new Error(message); };
 (async()=>{
  const browser=await (BROWSER_NAME==='webkit'?webkit:chromium).launch({headless:true});
  const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true});
- await page.addInitScript(()=>{window.__meatfestWorkerPosts=0;const originalPostMessage=Worker.prototype.postMessage;Worker.prototype.postMessage=function(...args){window.__meatfestWorkerPosts++;return originalPostMessage.apply(this,args)}});
+ const pageErrors=[],consoleErrors=[];
+ page.on('pageerror',error=>pageErrors.push(String(error?.stack||error)));
+ page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text())});
  try{
   const response=await page.goto(LIVE_URL,{waitUntil:'domcontentloaded',timeout:60000});
   if(!response||!response.ok())fail(`${BROWSER_NAME} Cloudflare page request failed: ${response?response.status():'no response'}`);
   await page.addStyleTag({content:'html{scroll-behavior:auto !important}'});
   await page.locator('meatfest-buffet #buffetServiceCard').waitFor({state:'attached',timeout:30000});
   await page.locator('meatfest-buffet #buffetLayoutCard').waitFor({state:'attached',timeout:30000});
-  await page.waitForFunction(()=>{const host=document.querySelector('meatfest-buffet');const h=host?.shadowRoot?.querySelector('[data-mf-section="layout"] .table b');return !!h&&!/waiting for plan/.test(h.textContent||'')},{timeout:15000});
+  await page.evaluate(()=>{window.__meatfestWorkerPosts=0;const originalPostMessage=Worker.prototype.postMessage;Worker.prototype.postMessage=function(...args){window.__meatfestWorkerPosts++;return originalPostMessage.apply(this,args)}});
+  const buffet=page.locator('meatfest-buffet');
+  await buffet.scrollIntoViewIfNeeded();
+  await page.waitForFunction(()=>{const host=document.querySelector('meatfest-buffet');const h=host?.shadowRoot?.querySelector('[data-mf-section="layout"] .table b');return !!h&&!/waiting for plan/.test(h.textContent||'')},{timeout:30000});
   await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight)); await page.waitForTimeout(300);
   const scrollTrace=[];
   for(let i=0;i<=40;i++){const maxScroll=await page.evaluate(()=>Math.max(0,document.documentElement.scrollHeight-window.innerHeight));await page.evaluate(target=>window.scrollTo(0,target),Math.round(maxScroll*(i/40)));await page.waitForTimeout(35);scrollTrace.push(await page.evaluate(()=>({y:window.scrollY,h:document.documentElement.scrollHeight})))}
@@ -24,7 +29,7 @@ const fail = message => { throw new Error(message); };
   const post=await page.evaluate(()=>{const root=document.querySelector('meatfest-buffet')?.shadowRoot;return{scrollY,scrollHeight:document.documentElement.scrollHeight,viewportHeight:innerHeight,rows:root?.querySelectorAll('[data-mf-section="service"] .row').length||0,tables:root?.querySelectorAll('[data-mf-section="layout"] .table').length||0,controls:root?.querySelectorAll('#buffetServiceCard button[data-kind]').length||0}});
   if(post.scrollY<Math.max(0,post.scrollHeight-post.viewportHeight-250))fail(`${BROWSER_NAME} scroll snapped away from bottom: ${JSON.stringify(post)}`);
   if(post.rows<15||post.tables!==8||post.controls<10)fail(`${BROWSER_NAME} Buffet DOM incomplete after scroll: ${JSON.stringify(post)}`);
-  await page.locator('meatfest-buffet #buffetServiceCard').scrollIntoViewIfNeeded();
+  await buffet.locator('#buffetServiceCard').scrollIntoViewIfNeeded();
   const workerPostsBeforeDwell=await page.evaluate(()=>window.__meatfestWorkerPosts);await page.waitForTimeout(1800);const workerPostsAfterDwell=await page.evaluate(()=>window.__meatfestWorkerPosts);
   if(workerPostsAfterDwell-workerPostsBeforeDwell!==0)fail(`${BROWSER_NAME} Buffet recalculated without a state change while visible: workerPosts=${workerPostsAfterDwell-workerPostsBeforeDwell}`);
   const selections=[['supplemental','burgers','Burgers'],['supplemental','hotdogs','Hot Dogs'],['supplemental','brats','Grilling Brats'],['condiment','bbqSauce','BBQ Sauce'],['dessert','cobbler','Cobbler / Crisp'],['dessert','pudding','Pudding / Cream Dessert'],['dessert','pie','Pie'],['dessert','cake','Cake'],['dessert','cookies','Cookies / Bars']];
@@ -41,6 +46,7 @@ const fail = message => { throw new Error(message); };
    if(health.serviceHeight<100||health.layoutHeight<100||health.scrollHeight<500||health.tables!==8||health.controls<10)fail(`${BROWSER_NAME}: ${label} left invalid layout: ${JSON.stringify(health)}`);timings.push({label,elapsed,topDelta});
   }
   const first=timings[0].elapsed,final=timings[timings.length-1].elapsed;if(final>Math.max(250,first*5))fail(`${BROWSER_NAME}: interaction time degraded excessively: first=${first}ms final=${final}ms.`);
+  if(pageErrors.length||consoleErrors.length)fail(`${BROWSER_NAME} emitted browser errors: ${JSON.stringify({pageErrors,consoleErrors})}`);
   console.log(`${BROWSER_NAME} mobile Buffet component interaction and scroll regression passed.`);console.log(JSON.stringify({browser:BROWSER_NAME,url:LIVE_URL,selections:timings,continuousScroll:{minHeight,maxHeight,finalScroll,expectedMaxScroll}},null,2));
  }finally{await browser.close()}
 })().catch(error=>{console.error(error.stack||error);process.exit(1)});
