@@ -15,6 +15,26 @@ const fail = message => { throw new Error(message); };
     await page.locator('#buffetLayoutCard').waitFor({state:'attached',timeout:30000});
     await page.waitForFunction(()=>document.querySelector('#buffetDynamic') && document.querySelector('#buffetLayoutDynamic'),{timeout:30000});
 
+    // Critical regression: the initial Worker calculation must not mutate document geometry
+    // while a mobile WebKit user is continuously scrolling through the page.
+    await page.evaluate(()=>window.scrollTo(0,0));
+    const scrollTrace=[];
+    for(let y=0;y<=1;y+=0.025){
+      const max=await page.evaluate(()=>Math.max(0,document.documentElement.scrollHeight-window.innerHeight));
+      const target=Math.round(max*y);
+      await page.evaluate(target=>window.scrollTo(0,target),target);
+      await page.waitForTimeout(35);
+      scrollTrace.push(await page.evaluate(()=>({y:window.scrollY,h:document.documentElement.scrollHeight,ready:document.readyState})));
+    }
+    const minHeight=Math.min(...scrollTrace.map(x=>x.h)),maxHeight=Math.max(...scrollTrace.map(x=>x.h));
+    const finalScroll=scrollTrace[scrollTrace.length-1].y;
+    if(finalScroll<Math.max(0,maxHeight-250)) fail(`${BROWSER_NAME} continuous-scroll regression did not reach the page bottom: finalScroll=${finalScroll} max=${maxHeight}`);
+    if(maxHeight-minHeight>250) fail(`${BROWSER_NAME} continuous-scroll regression changed document height while scrolling: min=${minHeight} max=${maxHeight}`);
+    await page.waitForTimeout(500);
+    const postScroll=await page.evaluate(()=>({scrollY:window.scrollY,scrollHeight:document.documentElement.scrollHeight,serviceRows:document.querySelectorAll('#buffetDynamic .b9row').length,layoutTables:document.querySelectorAll('#buffetLayoutDynamic .b9table').length,controls:document.querySelectorAll('#buffetServiceCard button[data-k]').length}));
+    if(postScroll.scrollY<Math.max(0,postScroll.scrollHeight-window.innerHeight-250)) fail(`${BROWSER_NAME} continuous-scroll regression snapped away from the bottom after scroll settled: ${JSON.stringify(postScroll)}`);
+    if(postScroll.serviceRows<15||postScroll.layoutTables!==8) fail(`${BROWSER_NAME} continuous-scroll regression left Buffet DOM incomplete: ${JSON.stringify(postScroll)}`);
+
     const initialScroll=await page.evaluate(()=>{
       window.scrollTo(0,Math.max(0,document.documentElement.scrollHeight-window.innerHeight-200));
       return window.scrollY;
@@ -81,6 +101,6 @@ const fail = message => { throw new Error(message); };
     const final=timings[timings.length-1].elapsed,first=timings[0].elapsed;
     if(final>Math.max(250,first*5)) fail(`${BROWSER_NAME}: buffet interaction time degraded excessively: first=${first}ms final=${final}ms.`);
     console.log(`${BROWSER_NAME} mobile buffet selection and scroll regression passed.`);
-    console.log(JSON.stringify({browser:BROWSER_NAME,url:LIVE_URL,selections:timings},null,2));
+    console.log(JSON.stringify({browser:BROWSER_NAME,url:LIVE_URL,selections:timings,continuousScroll:{minHeight,maxHeight,finalScroll}},null,2));
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error.stack||error);process.exit(1);});
