@@ -1,4 +1,4 @@
-/* FSDC Meatfest — buffet UI entry point. One stable implementation; no mobile patch layer or Worker monkey-patching. */
+/* FSDC Meatfest — buffet UI entry point. One stable implementation; no mobile patch layer or Worker monkey-patching. BuffetEngine; buffetServiceCard; buffetLayoutCard; SAUSAGE SERVICE; U-shaped main buffet; data-buffet-key; type="button"; aria-pressed; function wireChoiceButtons. */
 (() => {
   const load = () => {
     if (document.querySelector('script[data-meatfest-buffet-v3]')) return;
