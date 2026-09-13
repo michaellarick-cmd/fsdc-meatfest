@@ -7,29 +7,47 @@
   const NativeWorker=window.Worker;
   const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 
-  // iOS gets one persistent real Worker. Do not debounce postMessage here:
-  // the UI click must remain immediately responsive. The worker itself is
-  // isolated from the main thread, and the UI layer ignores stale responses.
-  if(isIOS){
-    window.Worker=function(url,options){
-      const target=typeof url==='string'&&url.includes('/buffet-engine.js')?'/buffet-worker.js?v=3':url;
-      const native=new NativeWorker(target,options);
-      const proxy={
-        onmessage:null,onerror:null,onmessageerror:null,
-        postMessage(message){native.postMessage(message)},
-        terminate(){native.terminate()}
-      };
-      native.onmessage=e=>proxy.onmessage?.(e);
-      native.onerror=e=>proxy.onerror?.(e);
-      native.onmessageerror=e=>proxy.onmessageerror?.(e);
-      return proxy;
+  // iOS gets one persistent real Worker, but only one planning request may be
+  // in flight at a time. While it is busy, retain only the newest payload.
+  // This prevents a burst of buffet taps from building a Worker message queue
+  // while keeping each tap itself synchronous and immediately responsive.
+  window.Worker=function(url,options){
+    const target=typeof url==='string'&&url.includes('/buffet-engine.js')?'/buffet-worker.js?v=3':url;
+    const native=new NativeWorker(target,options);
+    if(!isIOS)return native;
+    let busy=false,queued=null,terminated=false;
+    const proxy={
+      onmessage:null,onerror:null,onmessageerror:null,
+      postMessage(message){
+        if(terminated)return;
+        if(busy){queued=message;return;}
+        busy=true;
+        native.postMessage(message);
+      },
+      terminate(){
+        terminated=true;
+        queued=null;
+        native.terminate();
+      }
     };
-  }else{
-    window.Worker=function(url,options){
-      const target=typeof url==='string'&&url.includes('/buffet-engine.js')?'/buffet-worker.js?v=3':url;
-      return new NativeWorker(target,options);
+    native.onmessage=e=>{
+      busy=false;
+      proxy.onmessage?.(e);
+      if(!terminated&&queued!==null){
+        const next=queued;
+        queued=null;
+        busy=true;
+        native.postMessage(next);
+      }
     };
-  }
+    native.onerror=e=>{
+      busy=false;
+      proxy.onerror?.(e);
+      queued=null;
+    };
+    native.onmessageerror=e=>proxy.onmessageerror?.(e);
+    return proxy;
+  };
 
   const mobileFixes=document.createElement('script');
   mobileFixes.src='/buffet-mobile-fixes.js?v=8';
