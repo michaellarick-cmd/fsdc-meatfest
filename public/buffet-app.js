@@ -1,7 +1,7 @@
 /* FSDC Meatfest — Buffet application. One state owner, one calculation pipeline, one renderer. */
 (() => {
   const STORAGE_KEY='mfBuffet18';
-  const WORKER_URL='/buffet-worker.js?v=3';
+  const WORKER_URL='/buffet-worker.js?v=4';
   const BREAD_TO_SIDE=Object.freeze({hawaiian:'rolls',cornbread:'cornbread'});
   const SIDE_ROWS=Object.freeze(['asparagus','beans','broccoli','cauli','slaw','collards','corn','cucumber','greenbeans','mac','pastasalad','potatosalad','kraut','hawaiian','cornbread']);
   const SUPPLEMENTAL=Object.freeze([['burgers','Burgers'],['hotdogs','Hot Dogs'],['brats','Grilling Brats']]);
@@ -55,13 +55,21 @@
       super();
       this.attachShadow({mode:'open'});
       this.state=readState();this.state.breadIds=coreBreadIds();
-      this.worker=null;this.busy=false;this.pending=null;this.revision=0;this.appliedRevision=0;this.refs={};this.visibilityObserver=null;
+      this.worker=null;this.busy=false;this.pending=null;this.revision=0;this.appliedRevision=0;this.refs={};this.visibilityObserver=null;this.planStarted=false;
     }
 
     connectedCallback(){
       if(this.initialized)return;
-      this.initialized=true;this.shadowRoot.append(this.styles(),this.shell());this.bind();this.syncControls();this.requestPlan();
-      this.visibilityObserver=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting))this.requestPlan()},{threshold:0});
+      this.initialized=true;
+      this.shadowRoot.append(this.styles(),this.shell());
+      this.bind();
+      this.syncControls();
+      this.visibilityObserver=new IntersectionObserver(entries=>{
+        if(entries.some(entry=>entry.isIntersecting)){
+          this.planStarted=true;
+          this.requestPlan();
+        }
+      },{threshold:0,rootMargin:'240px 0px'});
       this.visibilityObserver.observe(this);
     }
 
@@ -81,7 +89,7 @@
       const grill=this.makeSection(serviceCard,'supplemental','SUPPLEMENTAL GRILLING'),bread=this.makeSection(serviceCard,'bread','GENERAL BREAD / BAKERY'),sausage=this.makeSection(serviceCard,'sausage','SAUSAGE SERVICE'),condiment=this.makeSection(serviceCard,'condiments','CONDIMENTS'),dessert=this.makeSection(serviceCard,'desserts','DESSERTS'),service=this.makeSection(serviceCard,'service','SERVICE QUANTITIES','Calculated from the current Meatfest plan and Buffet selections.');
       this.refs.grill=grill;this.refs.bread=bread;this.refs.sausage=sausage;this.refs.condiment=condiment;this.refs.dessert=dessert;this.refs.service=service;
       const rows=new Map();for(const id of SIDE_ROWS){const row=el('div',{class:'row',dataset:{row:id}}),name=el('div'),title=el('b'),note=el('small'),qty=el('b',{class:'qty'});name.append(title,note);row.append(name,qty);service.append(row);rows.set(id,{row,name:title,note,qty})}this.refs.rows=rows;
-      this.refs.dessertSummary=el('div',{class:'dessertSummary',text:'No desserts selected.'});dessert.append(this.refs.dessertSummary);
+      this.refs.dessertSummary=el('div',{class:'dessertSummary',text:'Scroll to Buffet to calculate service quantities.'});dessert.append(this.refs.dessertSummary);
       const load=el('label',{class:'load',text:'Dessert load '});this.refs.load=el('select',{id:'mfDessertLoad'});for(const value of ['light','moderate','heavy'])this.refs.load.append(el('option',{value,text:value[0].toUpperCase()+value.slice(1)}));load.append(this.refs.load);dessert.append(load);
       const layoutCard=el('section',{class:'card',id:'buffetLayoutCard'});layoutCard.append(el('h2',{text:'7. Buffet Table Layout'}),el('p',{class:'note',text:'Canonical Meatfest geometry: a U-shaped main buffet using three 6\' tables plus one 4\' table. Dessert remains a separate 4\' station.'}));
       const layout=this.makeSection(layoutCard,'layout','TABLE-BY-TABLE SETUP'),tableRefs=[];for(let i=1;i<=8;i++){const table=el('div',{class:'table',dataset:{table:String(i)}}),head=el('b',{text:`Table ${i} — waiting for plan`}),bar=el('div',{class:'bar'}),fill=el('div',{class:'fill'}),items=el('div',{class:'items',text:'Waiting for calculation…'});bar.append(fill);table.append(head,bar,items);layout.append(table);tableRefs.push({table,head,fill,items})}const overflow=el('div',{class:'overflow',text:'No overflow'});layoutCard.append(overflow);this.refs.layout={section:layout,rows:tableRefs,overflow};
@@ -92,10 +100,10 @@
     addChoice(section,id,label,kind){const button=el('button',{type:'button',class:'choice',dataset:{kind,id,k:kind}});button.setAttribute('aria-pressed','false');button.append(el('span',{class:'check'}),el('span',{text:label}));section.append(button);return button}
 
     bind(){
-      const choiceSets=[['supplemental',SUPPLEMENTAL,this.refs.grill],['bread',BREAD,this.refs.bread],['sausage',SAUSAGE.map(([id,mode])=>[id,mode.label]),this.refs.sausage],['condiment',CONDIMENTS,this.refs.condiment],['dessert',DESSERTS.map(([id,dessert])=>[id,dessert.name]),this.refs.dessert)];
+      const choiceSets=[['supplemental',SUPPLEMENTAL,this.refs.grill],['bread',BREAD,this.refs.bread],['sausage',SAUSAGE.map(([id,mode])=>[id,mode.label]),this.refs.sausage],['condiment',CONDIMENTS,this.refs.condiment],['dessert',DESSERTS.map(([id,dessert])=>[id,dessert.name]),this.refs.dessert]];
       for(const [kind,items,section] of choiceSets)for(const [id,label] of items)this.addChoice(section,id,label,kind);
-      this.refs.load.value=this.state.dessertLoad;this.refs.load.addEventListener('change',event=>{this.state.dessertLoad=event.target.value;this.persist();this.requestPlan()});
-      this.shadowRoot.addEventListener('click',event=>{const button=event.target.closest?.('button[data-kind]');if(!button)return;const{kind,id}=button.dataset;if(kind==='bread'){setCoreBread(id,!this.state.breadIds.includes(id));this.state.breadIds=coreBreadIds()}else if(kind==='sausage')this.state.sausageMode=id;else{const key=kind==='supplemental'?'supplementalIds':kind==='condiment'?'condimentIds':'dessertIds';this.state[key]=this.toggle(this.state[key],id)}this.persist();this.syncControls();this.requestPlan()});
+      this.refs.load.value=this.state.dessertLoad;this.refs.load.addEventListener('change',event=>{this.state.dessertLoad=event.target.value;this.persist();if(this.planStarted)this.requestPlan()});
+      this.shadowRoot.addEventListener('click',event=>{const button=event.target.closest?.('button[data-kind]');if(!button)return;const{kind,id}=button.dataset;if(kind==='bread'){setCoreBread(id,!this.state.breadIds.includes(id));this.state.breadIds=coreBreadIds()}else if(kind==='sausage')this.state.sausageMode=id;else{const key=kind==='supplemental'?'supplementalIds':kind==='condiment'?'condimentIds':'dessertIds';this.state[key]=this.toggle(this.state[key],id)}this.persist();this.syncControls();if(this.planStarted)this.requestPlan()});
     }
 
     toggle(list,id){return list.includes(id)?list.filter(value=>value!==id):[...list,id]}
@@ -110,5 +118,5 @@
   }
 
   if(!customElements.get('meatfest-buffet'))customElements.define('meatfest-buffet',MeatfestBuffet);
-  window.MeatfestBuffet=Object.freeze({version:3});
+  window.MeatfestBuffet=Object.freeze({version:4});
 })();
