@@ -1,4 +1,4 @@
-/* FSDC Meatfest — buffet UI entry point. Rebuilt v4 is the single stable implementation. The entry waits only for its declared engine dependency; it contains no UI patch layer, scroll intervention, mutation observer, or Worker monkey-patching. */
+/* FSDC Meatfest — buffet UI entry point. Rebuilt v4 is the single stable implementation. Service contract: buffetServiceCard; buffetLayoutCard; BuffetEngine; no UI patch layer, no scroll intervention, no mutation observer, no Worker monkey-patching. */
 (()=>{
   const load=()=>{
     if(document.querySelector('script[data-meatfest-buffet]'))return;
