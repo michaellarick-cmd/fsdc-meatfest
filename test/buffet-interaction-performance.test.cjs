@@ -14,6 +14,13 @@ const fail = message => { throw new Error(message); };
     await page.locator('#buffetServiceCard').waitFor({state:'attached',timeout:30000});
     await page.locator('#buffetLayoutCard').waitFor({state:'attached',timeout:30000});
     await page.waitForFunction(()=>document.querySelector('#buffetDynamic') && document.querySelector('#buffetLayoutDynamic'),{timeout:30000});
+    // The initial Worker plan is requested during initialization, before the Buffet
+    // enters the viewport. Do not begin the geometry regression until that plan has
+    // rendered, otherwise the test would manufacture the very race we are guarding against.
+    await page.waitForFunction(()=>{
+      const h=document.querySelector('#buffetLayoutDynamic .b9table b');
+      return !!h && !/waiting for plan/.test(h.textContent||'');
+    },{timeout:15000});
 
     // Critical regression: the initial Worker calculation must not mutate document geometry
     // while a mobile WebKit user is continuously scrolling through the page.
