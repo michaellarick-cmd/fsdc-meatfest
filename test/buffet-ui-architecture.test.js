@@ -8,6 +8,7 @@ const headers=await readFile(new URL('../public/_headers',import.meta.url),'utf8
 
 test('Buffet uses one canonical persistent renderer',()=>{
   assert.match(entry,/buffet-ui-canonical(?:-v3)?\.js/);
+  assert.match(entry,/buffet-ui-canonical-v3\.js\?v=/);
   assert.doesNotMatch(entry,/s\.src=.*buffet-ui-v9|s\.src=.*side-ui\.js|s\.src=.*buffet-mobile-fixes/);
   assert.match(ui,/SERVICE QUANTITIES/);
   assert.match(ui,/TABLE-BY-TABLE SETUP/);
@@ -22,7 +23,7 @@ test('Buffet uses one canonical persistent renderer',()=>{
   assert.match(ui,/new Worker\('\/buffet-worker\.js\?v=12'\)/);
 });
 
-test('major Buffet sections have explicit persistent owners and stable geometry',()=>{
+test('major Buffet sections have explicit persistent owners and scroll-settled rendering',()=>{
   assert.match(ui,/dataset\.mfSection=id/);
   for(const name of ['supplemental','bread','sausage','condiments','desserts','service','layout'])assert.match(ui,new RegExp(`'${name}'`));
   assert.match(ui,/ui\.serviceRows\[k\]/);
@@ -33,11 +34,15 @@ test('major Buffet sections have explicit persistent owners and stable geometry'
   assert.doesNotMatch(ui,/function installScrollGate\(\)/);
   assert.doesNotMatch(ui,/function ensureVisiblePlan\(\)/);
   assert.doesNotMatch(ui,/visibilityTimer/);
-  assert.doesNotMatch(ui,/function scheduleRender\(\)/);
-  assert.match(ui,/function maybeRender\(\)/);
-  assert.match(ui,/if\(busy\|\|!latestPlan\)return/);
+  assert.doesNotMatch(ui,/new MutationObserver/);
+  assert.doesNotMatch(ui,/scrollTo\(|scrollBy\(/);
+  assert.match(ui,/let worker=null,busy=false,queued=false,ui=null,latestPlan=null,requestTimer=0,scrollSettleTimer=0,scrolling=false/);
+  assert.match(ui,/function maybeRender\(\)\{if\(busy\|\|!latestPlan\|\|scrolling\)return/);
+  assert.match(ui,/function handleScroll\(\)/);
+  assert.match(ui,/scrollSettleTimer=setTimeout\(\(\)=>\{scrolling=false;maybeRender\(\)\},160\)/);
   assert.match(ui,/function requestPlan\(immediate=false\)/);
-  assert.match(ui,/function init\(\)\{buildShell\(\);stableSideOwner\(\);syncControls\(\);requestPlan\(true\)\}/);
+  assert.match(ui,/window\.addEventListener\('scroll',handleScroll,\{passive:true\}\)/);
+  assert.match(ui,/function init\(\)\{buildShell\(\);stableSideOwner\(\);syncControls\(\);window\.addEventListener\('scroll',handleScroll,\{passive:true\}\);requestPlan\(true\)\}/);
   assert.match(ui,/latestPlan=e\.data\.result/);
   assert.match(ui,/else maybeRender\(\)/);
   assert.doesNotMatch(ui,/worker\.onmessage=e=>\{busy=false;if\(e\.data\?\.result\)\{renderService/);
@@ -58,5 +63,6 @@ test('Buffet worker returns a compact presentation view model',()=>{
 
 test('Buffet client assets explicitly disable stale browser caching',()=>{
   assert.match(headers,/\/buffet-ui-canonical\.js\n  Cache-Control: no-store/);
+  assert.match(headers,/\/buffet-ui-canonical-v3\.js\n  Cache-Control: no-store/);
   assert.match(headers,/\/buffet-worker\.js\n  Cache-Control: no-store/);
 });
