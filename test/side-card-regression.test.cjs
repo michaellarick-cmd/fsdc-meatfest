@@ -14,7 +14,7 @@ const fail = message => { throw new Error(message); };
     await page.locator('[data-side="rolls"]').waitFor({state:'attached',timeout:30000});
     await page.locator('[data-side="cornbread"]').waitFor({state:'attached',timeout:30000});
 
-    for(const [key,id,label] of [['supplemental','burgers','Burgers'],['supplemental','brats','Grilling Brats']]){
+    for(const [key,id] of [['supplemental','burgers'],['supplemental','brats']]){
       const b=page.locator(`button[data-k="${key}"][data-id="${id}"]`);
       await b.evaluate(el=>el.scrollIntoView({block:'center',inline:'nearest'}));
       await b.evaluate(el=>el.click());
@@ -28,7 +28,7 @@ const fail = message => { throw new Error(message); };
       await card.evaluate(el=>el.scrollIntoView({block:'center',inline:'nearest'}));
       await card.evaluate(el=>el.click());
       await page.waitForFunction(id=>document.querySelector(`[data-side="${id}"]`)?.classList.contains('on'),id,{timeout:3000});
-      const stable=await handle.evaluate(el=>el.isConnected&&el===document.querySelector(`[data-side="${id}"]`));
+      const stable=await handle.evaluate((el,id)=>el.isConnected&&el===document.querySelector(`[data-side="${id}"]`),id);
       if(!stable)fail(`${BROWSER_NAME}: ${label} side-card DOM node was replaced during selection.`);
       const buffetBreadId=id==='rolls'?'hawaiian':'cornbread';
       await page.waitForFunction(id=>document.querySelector(`button[data-k="bread"][data-id="${id}"]`)?.getAttribute('aria-pressed')==='true',buffetBreadId,{timeout:3000});
