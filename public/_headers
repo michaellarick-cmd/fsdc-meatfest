@@ -9,15 +9,9 @@
   Cache-Control: no-store
 /buffet-ui.js
   Cache-Control: no-store
-/buffet-ui-canonical.js
-  Cache-Control: no-store
-/buffet-ui-canonical-v3.js
-  Cache-Control: no-store
-/side-ui.js
-  Cache-Control: no-store
-/buffet-ui-v9.js
+/buffet-app.js
   Cache-Control: no-store
 /buffet-worker.js
   Cache-Control: no-store
-/buffet-layout.js
+/side-ui.js
   Cache-Control: no-store
