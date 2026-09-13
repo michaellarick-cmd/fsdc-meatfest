@@ -11,7 +11,7 @@
   };
 
   const mobileFixes=document.createElement('script');
-  mobileFixes.src='/buffet-mobile-fixes.js?v=5';
+  mobileFixes.src='/buffet-mobile-fixes.js?v=6';
   mobileFixes.onload=loadAllocation;
   mobileFixes.onerror=loadAllocation;
   document.head.appendChild(mobileFixes);
