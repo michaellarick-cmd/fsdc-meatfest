@@ -23,21 +23,21 @@ const fail = message => { throw new Error(message); };
     if(Math.abs(initialScrollAfter-initialScroll)>1000) fail(`${BROWSER_NAME} initial buffet page shifted catastrophically while scrolling: before=${initialScroll} after=${initialScrollAfter}`);
 
     const selections=[
-      ['supplementalIds','burgers','Burgers'],
-      ['supplementalIds','hotdogs','Hot Dogs'],
-      ['supplementalIds','brats','Grilling Brats'],
-      ['condimentIds','bbqSauce','BBQ Sauce'],
-      ['dessertIds','cobbler','Cobbler / Crisp'],
-      ['dessertIds','pudding','Pudding / Cream Dessert'],
-      ['dessertIds','pie','Pie'],
-      ['dessertIds','cake','Cake'],
-      ['dessertIds','cookies','Cookies / Bars']
+      ['supplemental','burgers','Burgers'],
+      ['supplemental','hotdogs','Hot Dogs'],
+      ['supplemental','brats','Grilling Brats'],
+      ['condiment','bbqSauce','BBQ Sauce'],
+      ['dessert','cobbler','Cobbler / Crisp'],
+      ['dessert','pudding','Pudding / Cream Dessert'],
+      ['dessert','pie','Pie'],
+      ['dessert','cake','Cake'],
+      ['dessert','cookies','Cookies / Bars']
     ];
     const timings=[];
     const selected=[];
 
     for(const [key,id,label] of selections){
-      const button=page.locator(`button[data-buffet-key="${key}"][data-buffet-id="${id}"]`);
+      const button=page.locator(`button[data-k="${key}"][data-id="${id}"]`);
       if(await button.count()!==1) fail(`${BROWSER_NAME}: ${label} buffet control is missing.`);
       if(await button.getAttribute('aria-pressed')!=='false') fail(`${BROWSER_NAME}: ${label} control did not start unselected.`);
 
@@ -46,13 +46,13 @@ const fail = message => { throw new Error(message); };
       const before=await button.evaluate(el=>({top:el.getBoundingClientRect().top,scrollY:window.scrollY}));
       const start=Date.now();
       await button.click();
-      await page.waitForFunction(({key,id})=>document.querySelector(`button[data-buffet-key="${key}"][data-buffet-id="${id}"]`)?.getAttribute('aria-pressed')==='true',{key,id},{timeout:3000});
+      await page.waitForFunction(({key,id})=>document.querySelector(`button[data-k="${key}"][data-id="${id}"]`)?.getAttribute('aria-pressed')==='true',{key,id},{timeout:3000});
       const elapsed=Date.now()-start;
       if(elapsed>1000) fail(`${BROWSER_NAME}: ${label} selection was not immediately responsive: ${elapsed}ms.`);
 
       selected.push([key,id]);
       for(const [expectedKey,expectedId] of selected){
-        const b=page.locator(`button[data-buffet-key="${expectedKey}"][data-buffet-id="${expectedId}"]`);
+        const b=page.locator(`button[data-k="${expectedKey}"][data-id="${expectedId}"]`);
         if(await b.getAttribute('aria-pressed')!=='true') fail(`${BROWSER_NAME}: ${label} selection lost ${expectedId}.`);
       }
 
@@ -69,7 +69,7 @@ const fail = message => { throw new Error(message); };
         scrollHeight:document.documentElement.scrollHeight,
         dynamicRows:document.querySelectorAll('#buffetDynamic .buffetRow').length,
         layoutTables:document.querySelectorAll('#buffetLayoutDynamic .layoutTable').length,
-        controls:document.querySelectorAll('#buffetServiceCard button[data-buffet-key]').length
+        controls:document.querySelectorAll('#buffetServiceCard button[data-k]').length
       }));
       if(health.serviceHeight<100||health.layoutHeight<100||health.scrollHeight<500) fail(`${BROWSER_NAME}: ${label} selection left an invalid page layout: ${JSON.stringify(health)}`);
       if(health.layoutTables!==4) fail(`${BROWSER_NAME}: ${label} selection produced an invalid main buffet layout: ${JSON.stringify(health)}`);
