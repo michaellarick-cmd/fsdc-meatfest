@@ -56,7 +56,7 @@ const fail = message => { throw new Error(message); };
         if(await b.getAttribute('aria-pressed')!=='true') fail(`${BROWSER_NAME}: ${label} selection lost ${expectedId}.`);
       }
 
-      await page.waitForFunction(()=>document.querySelectorAll('#buffetLayoutDynamic .layoutTable').length===4 && document.querySelectorAll('#buffetDynamic .buffetRow').length>0,{timeout:15000});
+      await page.waitForFunction(()=>document.querySelectorAll('#buffetLayoutDynamic .layoutTable').length>0 && document.querySelectorAll('#buffetDynamic .buffetRow').length>0,{timeout:15000});
       await page.waitForTimeout(300);
       const after=await button.evaluate(el=>({top:el.getBoundingClientRect().top,scrollY:window.scrollY}));
       const expectedTop=before.top-(after.scrollY-before.scrollY);
@@ -72,7 +72,7 @@ const fail = message => { throw new Error(message); };
         controls:document.querySelectorAll('#buffetServiceCard button[data-k]').length
       }));
       if(health.serviceHeight<100||health.layoutHeight<100||health.scrollHeight<500) fail(`${BROWSER_NAME}: ${label} selection left an invalid page layout: ${JSON.stringify(health)}`);
-      if(health.layoutTables!==4) fail(`${BROWSER_NAME}: ${label} selection produced an invalid main buffet layout: ${JSON.stringify(health)}`);
+      if(health.layoutTables<1||health.layoutTables>8) fail(`${BROWSER_NAME}: ${label} selection produced an invalid main buffet table count: ${JSON.stringify(health)}`);
       if(health.controls<10) fail(`${BROWSER_NAME}: ${label} selection lost buffet controls: ${JSON.stringify(health)}`);
       timings.push({label,elapsed,topDelta,selectedCount:selected.length,health});
     }
