@@ -41,7 +41,7 @@ const fail = message => { throw new Error(message); };
     const trace=[];
     const start=Date.now();
     for(let i=0;i<30;i++){
-      await page.mouse.wheel(0,260);
+      await page.evaluate(()=>window.scrollBy(0,260));
       await page.waitForTimeout(30);
       trace.push(await page.evaluate(()=>({y:window.scrollY,h:document.documentElement.scrollHeight})));
     }
