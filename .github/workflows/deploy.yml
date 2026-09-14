@@ -69,3 +69,11 @@ jobs:
         env:
           MEATFEST_BROWSER: webkit
         run: timeout --signal=TERM --kill-after=10s 90s node test/side-card-regression.test.cjs
+
+      - name: Verify persisted Buffet state — Chromium
+        run: timeout --signal=TERM --kill-after=10s 90s node test/buffet-persisted-state-regression.test.cjs
+
+      - name: Verify persisted Buffet state — WebKit
+        env:
+          MEATFEST_BROWSER: webkit
+        run: timeout --signal=TERM --kill-after=10s 90s node test/buffet-persisted-state-regression.test.cjs
