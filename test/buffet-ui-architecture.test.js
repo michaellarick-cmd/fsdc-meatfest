@@ -11,17 +11,16 @@ const headers=await readFile(new URL('../public/_headers',import.meta.url),'utf8
 const compactWhitespace=text=>text.replace(/\s+/g,'');
 
 test('Buffet is a self-contained application component',()=>{
-  assert.match(entry,/buffet-app\.js\?v=4/);assert.match(entry,/meatfest-buffet/);assert.match(entry,/customElements\.get\('meatfest-buffet'\)/);assert.match(entry,/insertBefore\(host, footer\)/);assert.match(entry,/wrap\.append\(host\)/);assert.doesNotMatch(entry,/requestAnimationFrame|setTimeout|setInterval|scrollTo\(|scrollBy\(/);
-  assert.match(app,/customElements\.define\('meatfest-buffet'/);assert.match(app,/attachShadow\(\{mode:'open'\}\)/);assert.match(app,/const STORAGE_KEY='mfBuffet18'/);assert.match(app,/const WORKER_URL='\/buffet-worker\.js\?v=4'/);assert.match(app,/window\.buildSummary\(\)/);assert.match(app,/setCoreBread/);assert.match(app,/new IntersectionObserver/);assert.doesNotMatch(app,/addEventListener\('scroll'/);assert.doesNotMatch(app,/MutationObserver|scrollTo\(|scrollBy\(/);assert.doesNotMatch(app,/\.innerHTML\s*=/);assert.doesNotMatch(core,/function renderSideCards\s*\(/);assert.doesNotMatch(core,/mainSideCards\"\)\.innerHTML|accompSideCards\"\)\.innerHTML/);assert.doesNotMatch(core,/querySelectorAll\(\"\[data-side\]\"/);
+  assert.match(entry,/buffet-app\.js\?v=5/);assert.match(entry,/meatfest-buffet/);assert.match(entry,/customElements\.get\('meatfest-buffet'\)/);assert.match(entry,/insertBefore\(host, footer\)/);assert.match(entry,/wrap\.append\(host\)/);assert.doesNotMatch(entry,/requestAnimationFrame|setTimeout|setInterval|scrollTo\(|scrollBy\(/);
+  assert.match(app,/customElements\.define\('meatfest-buffet'/);assert.match(app,/attachShadow\(\{mode:'open'\}\)/);assert.match(app,/const STORAGE_KEY='mfBuffet18'/);assert.match(app,/const WORKER_URL='\/buffet-worker\.js\?v=5'/);assert.match(app,/window\.buildSummary\(\)/);assert.match(app,/setCoreBread/);assert.doesNotMatch(app,/new IntersectionObserver/);assert.doesNotMatch(app,/addEventListener\('scroll'/);assert.doesNotMatch(app,/MutationObserver|scrollTo\(|scrollBy\(/);assert.doesNotMatch(app,/\.innerHTML\s*=/);assert.doesNotMatch(core,/function renderSideCards\s*\(/);assert.doesNotMatch(core,/mainSideCards\"\)\.innerHTML|accompSideCards\"\)\.innerHTML/);assert.doesNotMatch(core,/querySelectorAll\(\"\[data-side\]\"/);
 });
 
-test('Buffet mounts without calculating until it is visible',()=>{
+test('Buffet calculates immediately instead of racing viewport visibility',()=>{
   assert.match(app,/this\.shadowRoot\.append\(this\.styles\(\),this\.shell\(\)\)/);
   assert.match(app,/this\.syncControls\(\)/);
-  assert.match(app,/this\.visibilityObserver=new IntersectionObserver/);
-  assert.match(app,/if\(entries\.some\(entry=>entry\.isIntersecting\)\)/);
   assert.match(app,/this\.planStarted=true/);
-  assert.doesNotMatch(app,/this\.syncControls\(\);this\.requestPlan\(\)/);
+  assert.match(app,/this\.requestPlan\(\)/);
+  assert.doesNotMatch(app,/visibilityObserver|IntersectionObserver|isIntersecting/);
 });
 
 test('Buffet core-state events flow from core into Buffet without mutating core twice',()=>{
