@@ -14,7 +14,10 @@ const log = message => console.log(`[LIVE-SMOKE] ${message}`);
       const diagnostics=await page.evaluate(()=>({readyState:document.readyState,buffetCount:document.querySelectorAll('meatfest-buffet').length,customElementDefined:!!customElements.get('meatfest-buffet'),buffetAppScript:!!document.querySelector('script[data-meatfest-buffet-app]'),scripts:[...document.scripts].map(script=>({src:script.src,ready:script.readyState||null})),engine:!!window.BuffetEngine,meatfestBuffet:!!window.MeatfestBuffet}));
       fail(`Buffet host did not mount: ${JSON.stringify({diagnostics,pageErrors,consoleErrors,waitError:String(error?.message||error)})}`);
     }
-    await page.waitForFunction(()=>{const host=document.querySelector('meatfest-buffet');return !!host?.shadowRoot?.querySelector('#buffetServiceCard')},{timeout:15000});
+    try{await page.waitForFunction(()=>{const host=document.querySelector('meatfest-buffet');return !!host?.shadowRoot?.querySelector('#buffetServiceCard')},{timeout:15000});}catch(error){
+      const diagnostics=await page.evaluate(()=>{const host=document.querySelector('meatfest-buffet');return{hostAttached:!!host,shadowRoot:!!host?.shadowRoot,shadowHTML:host?.shadowRoot?.innerHTML?.slice(0,4000)||'',customElementDefined:!!customElements.get('meatfest-buffet'),meatfestBuffet:!!window.MeatfestBuffet,engine:!!window.BuffetEngine}});
+      fail(`Buffet shell did not build: ${JSON.stringify({diagnostics,pageErrors,consoleErrors,waitError:String(error?.message||error)})}`);
+    }
     const bread=await buffet.evaluate(host=>{const root=host.shadowRoot;return{rolls:root?.querySelector('button[data-kind="bread"][data-id="hawaiian"]')?.getAttribute('aria-pressed'),cornbread:root?.querySelector('button[data-kind="bread"][data-id="cornbread"]')?.getAttribute('aria-pressed')}});
     if(bread.rolls!=='false'||bread.cornbread!=='false')fail(`Bread controls did not start available and unselected: ${JSON.stringify(bread)}`);
     await page.locator('#adults').fill('40');await page.locator('#adults').dispatchEvent('input');await page.locator('#kids').fill('8');await page.locator('#kids').dispatchEvent('input');await page.locator('#eventName').fill('Labor Day Meatfest 7.0');
