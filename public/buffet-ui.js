@@ -4,7 +4,7 @@
    Side cards use the same persistent-UI rule: keyed DOM nodes are updated in place.
 */
 (() => {
-  const APP_SRC = '/buffet-app.js?v=5';
+  const APP_SRC = '/buffet-app.js?v=6';
 
   const ready = (fn) => {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn, { once: true });
@@ -14,9 +14,6 @@
   const reserveBrandLogoSpace = () => {
     const img = document.querySelector('.brandLogo img');
     if (!img) return;
-    // The logo is a replaced element whose intrinsic dimensions can arrive after
-    // the first mobile scroll. Reserve its 3:2 display box up front so WebKit
-    // cannot add the logo's height to document flow while the user is scrolling.
     img.style.aspectRatio = '3 / 2';
     img.style.objectFit = 'contain';
     img.style.objectPosition = 'left center';
