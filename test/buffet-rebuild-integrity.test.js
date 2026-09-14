@@ -24,7 +24,8 @@ const obsoleteFiles=[
   'public/buffet-ui-v7.js',
   'public/buffet-ui-v8.js',
   'public/buffet-layout.js',
-  'test/buffet-interaction-performance-fixed.test.cjs'
+  'test/buffet-interaction-performance-fixed.test.cjs',
+  'test/cloudflare-live.test.cjs'
 ];
 
 const legacyReferences=[
@@ -52,8 +53,9 @@ test('rebuilt Buffet repository contains no legacy architecture references',()=>
   const files=[];
   const walk=(dir)=>{for(const entry of fs.readdirSync(dir,{withFileTypes:true})){if(entry.name==='node_modules'||entry.name==='.git')continue;const full=path.join(dir,entry.name);if(entry.isDirectory())walk(full);else if(/\.(?:js|cjs|html|yml|yaml|json)$/.test(entry.name))files.push(full)}};
   walk(root);
+  const guard=path.relative(root,new URL(import.meta.url).pathname);
   const offenders=[];
-  for(const file of files){const text=fs.readFileSync(file,'utf8');for(const token of legacyReferences)if(text.includes(token))offenders.push(`${path.relative(root,file)} -> ${token}`)}
+  for(const file of files){if(path.relative(root,file)===guard)continue;const text=fs.readFileSync(file,'utf8');for(const token of legacyReferences)if(text.includes(token))offenders.push(`${path.relative(root,file)} -> ${token}`)}
   assert.deepEqual(offenders,[],`legacy Buffet references remain:\n${offenders.join('\n')}`);
 });
 
