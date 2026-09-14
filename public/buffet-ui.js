@@ -16,6 +16,20 @@
 
     const description = (side) => side.unit === 'tin' ? 'Practical serving-pan unit' : side.unit === 'recipe' ? 'Prepared from your recipe' : side.unit === 'ear' ? 'Whole ears → half-ear servings' : side.unit === 'piece' ? 'Plan pieces → buy packages' : 'Practical serving unit';
 
+    const toggleSide = (card) => {
+      const current = card.dataset.side;
+      if (selectedSides.has(current)) selectedSides.delete(current); else selectedSides.add(current);
+      window.renderSideCards();
+      calcSides();
+      save();
+    };
+
+    const bindCard = (card) => {
+      if (card._meatfestSideBound) return;
+      card.addEventListener('click', () => toggleSide(card));
+      card._meatfestSideBound = true;
+    };
+
     const hydrateCard = (card, side) => {
       let top = card.querySelector('.sideTop');
       let text = top?.querySelector(':scope > div');
@@ -27,6 +41,7 @@
       if (!rec) { rec = document.createElement('span'); rec.className = 'sideRec'; text.append(rec); }
       rec.className = 'sideRec';
       card._meatfestRefs = { title, rec, check, small };
+      bindCard(card);
       return card._meatfestRefs;
     };
 
@@ -37,8 +52,7 @@
       const text = document.createElement('div'), title = document.createElement('b'), rec = document.createElement('span'); rec.className = 'sideRec';
       const check = document.createElement('span'); check.className = 'sideCheck'; const small = document.createElement('small');
       title.textContent = side.name; small.textContent = description(side); text.append(title, rec); top.append(text, check); card.append(top, small);
-      card.addEventListener('click', () => { const current = card.dataset.side; if (selectedSides.has(current)) selectedSides.delete(current); else selectedSides.add(current); renderSideCards(); calcSides(); save(); });
-      card._meatfestRefs = { title, rec, check, small }; return card;
+      card._meatfestRefs = { title, rec, check, small }; bindCard(card); return card;
     };
 
     const updateContainer = (container, ids) => {
