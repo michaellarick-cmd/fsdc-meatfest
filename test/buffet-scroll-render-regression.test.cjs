@@ -7,11 +7,13 @@ const fail = message => { throw new Error(message); };
   const browser=await (BROWSER_NAME==='webkit'?webkit:chromium).launch({headless:true});
   const page=await browser.newPage({viewport:{width:390,height:VIEWPORT_HEIGHT},deviceScaleFactor:2,isMobile:true});
   try{
+    // Instrument Worker before navigation so the initial Buffet calculation is observable.
+    await page.addInitScript(()=>{window.__meatfestWorkerPosts=0;const originalPostMessage=Worker.prototype.postMessage;Worker.prototype.postMessage=function(...args){window.__meatfestWorkerPosts++;return originalPostMessage.apply(this,args)}});
     const response=await page.goto(LIVE_URL,{waitUntil:'domcontentloaded',timeout:60000});
     if(!response||!response.ok())fail(`${BROWSER_NAME} Cloudflare page request failed: ${response?response.status():'no response'}`);
     await page.addStyleTag({content:'html{scroll-behavior:auto !important}'});
     await page.locator('meatfest-buffet #buffetServiceCard').waitFor({state:'attached',timeout:30000});
-    await page.evaluate(()=>{window.__meatfestWorkerPosts=0;const originalPostMessage=Worker.prototype.postMessage;Worker.prototype.postMessage=function(...args){window.__meatfestWorkerPosts++;return originalPostMessage.apply(this,args)}});
+    await page.locator('meatfest-buffet #buffetLayoutCard').waitFor({state:'attached',timeout:30000});
     await page.locator('meatfest-buffet').scrollIntoViewIfNeeded();
     await page.waitForFunction(()=>{const root=document.querySelector('meatfest-buffet')?.shadowRoot;const h=root?.querySelector('[data-mf-section="layout"] .table b');return !!h&&!/waiting for plan/.test(h.textContent||'')},{timeout:30000});
     const initialPosts=await page.evaluate(()=>window.__meatfestWorkerPosts);if(initialPosts<1)fail(`${BROWSER_NAME}: Buffet never performed its initial calculation.`);
