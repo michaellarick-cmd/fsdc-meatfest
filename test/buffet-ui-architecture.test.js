@@ -8,6 +8,8 @@ const core=await readFile(new URL('../public/app.js',import.meta.url),'utf8');
 const worker=await readFile(new URL('../public/buffet-worker.js',import.meta.url),'utf8');
 const headers=await readFile(new URL('../public/_headers',import.meta.url),'utf8');
 
+const compactWhitespace=text=>text.replace(/\s+/g,'');
+
 test('Buffet is a self-contained application component',()=>{
   assert.match(entry,/buffet-app\.js\?v=4/);assert.match(entry,/meatfest-buffet/);assert.match(entry,/customElements\.get\('meatfest-buffet'\)/);assert.match(entry,/insertBefore\(host, footer\)/);assert.match(entry,/wrap\.append\(host\)/);assert.doesNotMatch(entry,/requestAnimationFrame|setTimeout|setInterval|scrollTo\(|scrollBy\(/);
   assert.match(app,/customElements\.define\('meatfest-buffet'/);assert.match(app,/attachShadow\(\{mode:'open'\}\)/);assert.match(app,/const STORAGE_KEY='mfBuffet18'/);assert.match(app,/const WORKER_URL='\/buffet-worker\.js\?v=4'/);assert.match(app,/window\.buildSummary\(\)/);assert.match(app,/setCoreBread/);assert.match(app,/new IntersectionObserver/);assert.doesNotMatch(app,/addEventListener\('scroll'/);assert.doesNotMatch(app,/MutationObserver|scrollTo\(|scrollBy\(/);assert.doesNotMatch(app,/\.innerHTML\s*=/);assert.doesNotMatch(core,/function renderSideCards\s*\(/);assert.doesNotMatch(core,/mainSideCards\"\)\.innerHTML|accompSideCards\"\)\.innerHTML/);assert.doesNotMatch(core,/querySelectorAll\(\"\[data-side\]\"/);
@@ -23,8 +25,9 @@ test('Buffet mounts without calculating until it is visible',()=>{
 });
 
 test('Buffet core-state events flow from core into Buffet without mutating core twice',()=>{
-  assert.match(app,/this\._coreStateChanged=\(\)=>\{this\.state\.breadIds=coreBreadIds\(\);this\.syncControls\(\);if\(this\.planStarted\)this\.requestPlan\(\);\}/);
-  assert.doesNotMatch(app,/this\._coreStateChanged=[^;]*this\.setCoreBread/);
+  const compact=compactWhitespace(app);
+  assert.match(compact,/this\._coreStateChanged=\(\)=>\{this\.state\.breadIds=coreBreadIds\(\);this\.syncControls\(\);if\(this\.planStarted\)this\.requestPlan\(\);\}/);
+  assert.doesNotMatch(compact,/this\._coreStateChanged=[^}]*this\.setCoreBread/);
 });
 
 test('Buffet has one state-to-view pipeline and persistent section owners',()=>{
