@@ -12,7 +12,8 @@ const fail = message => { throw new Error(message); };
     const response=await page.goto(LIVE_URL,{waitUntil:'domcontentloaded',timeout:60000});
     if(!response||!response.ok())fail(`${BROWSER_NAME} page request failed: ${response?response.status():'no response'}`);
     await page.addStyleTag({content:'html{scroll-behavior:auto !important}'});
-    await page.locator('meatfest-buffet #buffetServiceCard').waitFor({state:'attached',timeout:30000});
+    await page.locator('meatfest-buffet').waitFor({state:'attached',timeout:30000});
+    await page.waitForFunction(()=>!!document.querySelector('meatfest-buffet')?.shadowRoot?.querySelector('#buffetServiceCard'),{timeout:30000});
     await page.locator('[data-side="rolls"]').waitFor({state:'attached',timeout:30000});
     await page.locator('[data-side="cornbread"]').waitFor({state:'attached',timeout:30000});
 
