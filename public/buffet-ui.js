@@ -22,6 +22,7 @@
       window.renderSideCards();
       calcSides();
       save();
+      window.dispatchEvent(new CustomEvent('meatfest:core-state-changed'));
     };
 
     const bindCard = (card) => {

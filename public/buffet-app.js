@@ -55,12 +55,13 @@
       super();
       this.attachShadow({mode:'open'});
       this.state=readState();this.state.breadIds=coreBreadIds();
-      this.worker=null;this.busy=false;this.pending=null;this.revision=0;this.appliedRevision=0;this.refs={};this.visibilityObserver=null;this.planStarted=false;
+      this.worker=null;this.busy=false;this.pending=null;this.revision=0;this.appliedRevision=0;this.refs={};this.visibilityObserver=null;this.planStarted=false;this._coreStateChanged=()=>{this.state.breadIds=coreBreadIds();this.syncControls();if(this.planStarted)this.requestPlan()};
     }
 
     connectedCallback(){
       if(this.initialized)return;
       this.initialized=true;
+      window.addEventListener('meatfest:core-state-changed',this._coreStateChanged);
       this.shadowRoot.append(this.styles(),this.shell());
       this.bind();
       this.syncControls();
@@ -73,7 +74,7 @@
       this.visibilityObserver.observe(this);
     }
 
-    disconnectedCallback(){this.visibilityObserver?.disconnect();this.visibilityObserver=null;this.worker?.terminate();this.worker=null;}
+    disconnectedCallback(){window.removeEventListener('meatfest:core-state-changed',this._coreStateChanged);this.visibilityObserver?.disconnect();this.visibilityObserver=null;this.worker?.terminate();this.worker=null;}
 
     styles(){return el('style',{text:`
       :host{display:block;margin:11px 0;color:var(--text,#f5f2e9);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
