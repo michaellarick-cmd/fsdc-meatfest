@@ -22,6 +22,11 @@ test('Buffet mounts without calculating until it is visible',()=>{
   assert.doesNotMatch(app,/this\.syncControls\(\);this\.requestPlan\(\)/);
 });
 
+test('Buffet core-state events flow from core into Buffet without mutating core twice',()=>{
+  assert.match(app,/this\._coreStateChanged=\(\)=>\{this\.state\.breadIds=coreBreadIds\(\);this\.syncControls\(\);if\(this\.planStarted\)this\.requestPlan\(\);\}/);
+  assert.doesNotMatch(app,/this\._coreStateChanged=[^;]*this\.setCoreBread/);
+});
+
 test('Buffet has one state-to-view pipeline and persistent section owners',()=>{
   for(const name of ['supplemental','bread','sausage','condiments','desserts','service','layout'])assert.match(app,new RegExp(`'${name}'`));
   assert.match(app,/this\.state=/);assert.match(app,/this\.input\(\)/);assert.match(app,/this\.requestPlan\(\)/);assert.match(app,/this\.renderResult\(message\.result\)/);assert.match(app,/const rows=new Map/);assert.match(app,/this\.refs\.rows=rows/);assert.match(app,/this\.refs\.layout=\{section:layout,rows:tableRefs,overflow\}/);assert.match(app,/revision:\+\+this\.revision/);assert.match(app,/if\(this\.pending\)this\.dispatchPending\(\)/);assert.doesNotMatch(app,/setTimeout\(|setInterval\(|requestAnimationFrame\(/);
