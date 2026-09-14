@@ -1,21 +1,19 @@
 /* FSDC Meatfest — Buffet application. One state owner, one calculation pipeline, one renderer. */
 (() => {
   const STORAGE_KEY='mfBuffet18';
-  const WORKER_URL='/buffet-worker.js?v=5';
-  const BREAD_TO_SIDE=Object.freeze({hawaiian:'rolls',cornbread:'cornbread'});
+  const WORKER_URL='/buffet-worker.js?v=6';
   const SIDE_ROWS=Object.freeze(['asparagus','beans','broccoli','cauli','slaw','collards','corn','cucumber','greenbeans','mac','pastasalad','potatosalad','kraut','hawaiian','cornbread']);
   const SUPPLEMENTAL=Object.freeze([['burgers','Burgers'],['hotdogs','Hot Dogs'],['brats','Grilling Brats']]);
-  const BREAD=Object.freeze([['hawaiian','Hawaiian Rolls'],['cornbread','Cornbread']]);
   const SAUSAGE=Object.freeze(Object.entries(window.BuffetEngine.SAUSAGE_MODES||{}));
   const CONDIMENTS=Object.freeze([['bbqSauce','BBQ Sauce'],['pickles','Pickles'],['pickledOnions','Pickled Onions'],['mustard','Mustard']]);
   const DESSERTS=Object.freeze(Object.entries(window.BuffetEngine.DESSERTS||{}));
 
   const readState=()=>{
-    const defaults={supplementalIds:[],breadIds:[],condimentIds:[],dessertIds:[],dessertLoad:'moderate',sausageMode:'polish'};
+    const defaults={supplementalIds:[],condimentIds:[],dessertIds:[],dessertLoad:'moderate',sausageMode:'polish'};
     try{
       const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');
       const next={...defaults,...saved};
-      for(const key of ['supplementalIds','breadIds','condimentIds','dessertIds'])if(!Array.isArray(next[key]))next[key]=[];
+      for(const key of ['supplementalIds','condimentIds','dessertIds'])if(!Array.isArray(next[key]))next[key]=[];
       if(!['light','moderate','heavy'].includes(next.dessertLoad))next.dessertLoad='moderate';
       if(!window.BuffetEngine.SAUSAGE_MODES?.[next.sausageMode])next.sausageMode='polish';
       return next;
@@ -29,13 +27,6 @@
       if(selectedSides.has('cornbread'))ids.push('cornbread');
     }
     return ids;
-  };
-
-  const setCoreBread=(id,on)=>{
-    if(typeof selectedSides==='undefined')return;
-    const sideId=BREAD_TO_SIDE[id];if(!sideId)return;
-    if(on)selectedSides.add(sideId);else selectedSides.delete(sideId);
-    window.renderSideCards?.();window.calcSides?.();window.save?.();
   };
 
   const el=(tag,props={},children=[])=>{
@@ -54,31 +45,22 @@
     constructor(){
       super();
       this.attachShadow({mode:'open'});
-      this.state=readState();this.state.breadIds=coreBreadIds();
+      this.state=readState();
       this.worker=null;this.busy=false;this.pending=null;this.revision=0;this.appliedRevision=0;this.refs={};this.planStarted=false;
-      this._coreStateChanged=()=>{
-        this.state.breadIds=coreBreadIds();
-        this.syncControls();
-        if(this.planStarted)this.requestPlan();
-      };
     }
 
     connectedCallback(){
-      if(this.initialized)return;
+      if(this.connectedOnce)return;
+      this.connectedOnce=true;
       this.initialized=true;
-      window.addEventListener('meatfest:core-state-changed',this._coreStateChanged);
       this.shadowRoot.append(this.styles(),this.shell());
       this.bind();
       this.syncControls();
-      // Do not gate the first calculation on viewport visibility. The Buffet is
-      // part of the page's persistent layout, and lazy visibility scheduling can
-      // race with scrolling and make the service/layout regions appear blank.
-      // Calculate immediately; subsequent calculations remain state-change driven.
       this.planStarted=true;
       this.requestPlan();
     }
 
-    disconnectedCallback(){window.removeEventListener('meatfest:core-state-changed',this._coreStateChanged);this.worker?.terminate();this.worker=null;}
+    disconnectedCallback(){this.worker?.terminate();this.worker=null;this.busy=false;this.pending=null;this.planStarted=false;}
 
     styles(){return el('style',{text:`
       :host{display:block;margin:11px 0;color:var(--text,#f5f2e9);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -91,8 +73,8 @@
 
     shell(){
       const serviceCard=el('section',{class:'card',id:'buffetServiceCard'});serviceCard.append(el('h2',{text:'6. Buffet & Service Plan'}),el('p',{class:'note',text:'Service logistics are calculated from the selections above. The locked meat buy/yield model is not changed.'}));
-      const grill=this.makeSection(serviceCard,'supplemental','SUPPLEMENTAL GRILLING'),bread=this.makeSection(serviceCard,'bread','GENERAL BREAD / BAKERY'),sausage=this.makeSection(serviceCard,'sausage','SAUSAGE SERVICE'),condiment=this.makeSection(serviceCard,'condiments','CONDIMENTS'),dessert=this.makeSection(serviceCard,'desserts','DESSERTS'),service=this.makeSection(serviceCard,'service','SERVICE QUANTITIES','Calculated from the current Meatfest plan and Buffet selections.');
-      this.refs.grill=grill;this.refs.bread=bread;this.refs.sausage=sausage;this.refs.condiment=condiment;this.refs.dessert=dessert;this.refs.service=service;
+      const grill=this.makeSection(serviceCard,'supplemental','SUPPLEMENTAL GRILLING'),sausage=this.makeSection(serviceCard,'sausage','SAUSAGE SERVICE'),condiment=this.makeSection(serviceCard,'condiments','CONDIMENTS'),dessert=this.makeSection(serviceCard,'desserts','DESSERTS'),service=this.makeSection(serviceCard,'service','SERVICE QUANTITIES','Calculated from the current Meatfest plan and Buffet selections.');
+      this.refs.grill=grill;this.refs.sausage=sausage;this.refs.condiment=condiment;this.refs.dessert=dessert;this.refs.service=service;
       const rows=new Map();for(const id of SIDE_ROWS){const row=el('div',{class:'row',dataset:{row:id}}),name=el('div'),title=el('b'),note=el('small'),qty=el('b',{class:'qty'});name.append(title,note);row.append(name,qty);service.append(row);rows.set(id,{row,name:title,note,qty})}this.refs.rows=rows;
       this.refs.dessertSummary=el('div',{class:'dessertSummary',text:'Calculating service quantities…'});dessert.append(this.refs.dessertSummary);
       const load=el('label',{class:'load',text:'Dessert load '});this.refs.load=el('select',{id:'mfDessertLoad'});for(const value of ['light','moderate','heavy'])this.refs.load.append(el('option',{value,text:value[0].toUpperCase()+value.slice(1)}));load.append(this.refs.load);dessert.append(load);
@@ -105,16 +87,16 @@
     addChoice(section,id,label,kind){const button=el('button',{type:'button',class:'choice',dataset:{kind,id,k:kind}});button.setAttribute('aria-pressed','false');button.append(el('span',{class:'check'}),el('span',{text:label}));section.append(button);return button}
 
     bind(){
-      const choiceSets=[['supplemental',SUPPLEMENTAL,this.refs.grill],['bread',BREAD,this.refs.bread],['sausage',SAUSAGE.map(([id,mode])=>[id,mode.label]),this.refs.sausage],['condiment',CONDIMENTS,this.refs.condiment],['dessert',DESSERTS.map(([id,dessert])=>[id,dessert.name]),this.refs.dessert]];
+      const choiceSets=[['supplemental',SUPPLEMENTAL,this.refs.grill],['sausage',SAUSAGE.map(([id,mode])=>[id,mode.label]),this.refs.sausage],['condiment',CONDIMENTS,this.refs.condiment],['dessert',DESSERTS.map(([id,dessert])=>[id,dessert.name]),this.refs.dessert]];
       for(const [kind,items,section] of choiceSets)for(const [id,label] of items)this.addChoice(section,id,label,kind);
       this.refs.load.value=this.state.dessertLoad;this.refs.load.addEventListener('change',event=>{this.state.dessertLoad=event.target.value;this.persist();if(this.planStarted)this.requestPlan()});
-      this.shadowRoot.addEventListener('click',event=>{const button=event.target.closest?.('button[data-kind]');if(!button)return;const{kind,id}=button.dataset;if(kind==='bread'){setCoreBread(id,!this.state.breadIds.includes(id));this.state.breadIds=coreBreadIds()}else if(kind==='sausage')this.state.sausageMode=id;else{const key=kind==='supplemental'?'supplementalIds':kind==='condiment'?'condimentIds':'dessertIds';this.state[key]=this.toggle(this.state[key],id)}this.persist();this.syncControls();if(this.planStarted)this.requestPlan()});
+      this.shadowRoot.addEventListener('click',event=>{const button=event.target.closest?.('button[data-kind]');if(!button)return;const{kind,id}=button.dataset;if(kind==='sausage')this.state.sausageMode=id;else{const key=kind==='supplemental'?'supplementalIds':kind==='condiment'?'condimentIds':'dessertIds';this.state[key]=this.toggle(this.state[key],id)}this.persist();this.syncControls();if(this.planStarted)this.requestPlan()});
     }
 
     toggle(list,id){return list.includes(id)?list.filter(value=>value!==id):[...list,id]}
     persist(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(this.state))}catch{}}
-    syncControls(){this.refs.load.value=this.state.dessertLoad;this.shadowRoot.querySelectorAll('button[data-kind]').forEach(button=>{const{kind,id}=button.dataset;let on=false;if(kind==='bread')on=this.state.breadIds.includes(id);else if(kind==='sausage')on=this.state.sausageMode===id;else{const key=kind==='supplemental'?'supplementalIds':kind==='condiment'?'condimentIds':'dessertIds';on=this.state[key].includes(id)}button.classList.toggle('on',on);button.setAttribute('aria-pressed',String(on));button.querySelector('.check').textContent=on?'✓':''})}
-    input(){const summary=window.buildSummary();this.state.breadIds=coreBreadIds();return{proteinKeys:(summary.rows||[]).map(row=>row.key),sideIds:(summary.sideRows||[]).map(row=>row.id),sideRows:summary.sideRows||[],eaters:summary.eaters,breadIds:[...this.state.breadIds],supplementalIds:[...this.state.supplementalIds],condimentIds:[...this.state.condimentIds],dessertIds:[...this.state.dessertIds],load:this.state.dessertLoad,sausageMode:this.state.sausageMode}}
+    syncControls(){this.refs.load.value=this.state.dessertLoad;this.shadowRoot.querySelectorAll('button[data-kind]').forEach(button=>{const{kind,id}=button.dataset;let on=false;if(kind==='sausage')on=this.state.sausageMode===id;else{const key=kind==='supplemental'?'supplementalIds':kind==='condiment'?'condimentIds':'dessertIds';on=this.state[key].includes(id)}button.classList.toggle('on',on);button.setAttribute('aria-pressed',String(on));button.querySelector('.check').textContent=on?'✓':''})}
+    input(){const summary=window.buildSummary();return{proteinKeys:(summary.rows||[]).map(row=>row.key),sideIds:(summary.sideRows||[]).map(row=>row.id),sideRows:summary.sideRows||[],eaters:summary.eaters,breadIds:coreBreadIds(),supplementalIds:[...this.state.supplementalIds],condimentIds:[...this.state.condimentIds],dessertIds:[...this.state.dessertIds],load:this.state.dessertLoad,sausageMode:this.state.sausageMode}}
     requestPlan(){this.pending={revision:++this.revision,input:this.input()};if(!this.busy)this.dispatchPending()}
     dispatchPending(){if(!this.pending)return;if(!this.worker){this.worker=new Worker(WORKER_URL);this.worker.onmessage=event=>this.receive(event.data||{});this.worker.onerror=event=>this.fail(`Buffet calculation failed: ${event.message||'worker error'}`)}const request=this.pending;this.pending=null;this.busy=true;this.worker.postMessage(request)}
     receive(message){this.busy=false;if(message.error){this.fail(message.error);return}if(message.revision>=this.appliedRevision){this.appliedRevision=message.revision;this.renderResult(message.result)}if(this.pending)this.dispatchPending()}
@@ -123,5 +105,5 @@
   }
 
   if(!customElements.get('meatfest-buffet'))customElements.define('meatfest-buffet',MeatfestBuffet);
-  window.MeatfestBuffet=Object.freeze({version:5});
+  window.MeatfestBuffet=Object.freeze({version:6});
 })();
