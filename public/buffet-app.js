@@ -55,7 +55,12 @@
       super();
       this.attachShadow({mode:'open'});
       this.state=readState();this.state.breadIds=coreBreadIds();
-      this.worker=null;this.busy=false;this.pending=null;this.revision=0;this.appliedRevision=0;this.refs={};this.visibilityObserver=null;this.planStarted=false;this._coreStateChanged=(event)=>{const detail=event?.detail||{};this.setCoreBread('hawaiian',!!detail.rolls);this.setCoreBread('cornbread',!!detail.cornbread);this.syncControls();if(this.planStarted)this.requestPlan()};
+      this.worker=null;this.busy=false;this.pending=null;this.revision=0;this.appliedRevision=0;this.refs={};this.visibilityObserver=null;this.planStarted=false;
+      this._coreStateChanged=()=>{
+        this.state.breadIds=coreBreadIds();
+        this.syncControls();
+        if(this.planStarted)this.requestPlan();
+      };
     }
 
     connectedCallback(){
