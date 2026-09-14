@@ -4,11 +4,11 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 const engine=fs.readFileSync(new URL('../public/buffet-engine.js',import.meta.url),'utf8');
-const layout=fs.readFileSync(new URL('../public/buffet-layout.js',import.meta.url),'utf8');
+const allocation=fs.readFileSync(new URL('../public/buffet-allocation.js',import.meta.url),'utf8');
 const document={getElementById:()=>null,querySelector:()=>null,querySelectorAll:()=>[]};
 const window={BuffetEngine:null,buildSummary:null};
 const context={window,document,globalThis:{},requestAnimationFrame:fn=>fn(),setTimeout:()=>0,MutationObserver:class{observe(){}disconnect(){}}};
-vm.runInNewContext(engine,context);window.BuffetEngine=context.globalThis.BuffetEngine;vm.runInNewContext(layout,context);
+vm.runInNewContext(engine,context);window.BuffetEngine=context.globalThis.BuffetEngine;vm.runInNewContext(allocation,context);
 const B=window.BuffetEngine;
 
 const menu=(eaters,proteinKeys,sideIds=[],extra={})=>B.plan({
