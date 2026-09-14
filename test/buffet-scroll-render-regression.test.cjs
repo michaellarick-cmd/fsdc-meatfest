@@ -45,8 +45,19 @@ async function runDesktop(browser) {
       window.__mfTrace={posts:0,connects:0,disconnects:0};
       const originalPostMessage=Worker.prototype.postMessage;
       Worker.prototype.postMessage=function(...args){window.__mfTrace.posts++;return originalPostMessage.apply(this,args)};
-      const observe=()=>{const el=document.querySelector('meatfest-buffet');if(!el||el.__mfObserved)return;el.__mfObserved=true;const proto=Object.getPrototypeOf(el);const originalConnected=proto.connectedCallback,originalDisconnected=proto.disconnectedCallback;el.connectedCallback=function(){window.__mfTrace.connects++;return originalConnected?.call(this)};el.disconnectedCallback=function(){window.__mfTrace.disconnects++;return originalDisconnected?.call(this)}};
-      new MutationObserver(observe).observe(document.documentElement,{subtree:true,childList:true});
+      const wrap=proto=>{
+        if(!proto||proto.__mfLifecycleWrapped)return;
+        proto.__mfLifecycleWrapped=true;
+        const originalConnected=proto.connectedCallback;
+        const originalDisconnected=proto.disconnectedCallback;
+        proto.connectedCallback=function(){window.__mfTrace.connects++;return originalConnected?.call(this)};
+        proto.disconnectedCallback=function(){window.__mfTrace.disconnects++;return originalDisconnected?.call(this)};
+      };
+      const originalDefine=customElements.define.bind(customElements);
+      customElements.define=function(name,ctor,options){
+        if(name==='meatfest-buffet')wrap(ctor.prototype);
+        return originalDefine(name,ctor,options);
+      };
     });
     const response=await page.goto(LIVE_URL,{waitUntil:'domcontentloaded',timeout:60000});
     if(!response||!response.ok())fail(`desktop Cloudflare page request failed: ${response?response.status():'no response'}`);
