@@ -11,6 +11,17 @@
     else fn();
   };
 
+  const reserveBrandLogoSpace = () => {
+    const img = document.querySelector('.brandLogo img');
+    if (!img) return;
+    // The logo is a replaced element whose intrinsic dimensions can arrive after
+    // the first mobile scroll. Reserve its 3:2 display box up front so WebKit
+    // cannot add the logo's height to document flow while the user is scrolling.
+    img.style.aspectRatio = '3 / 2';
+    img.style.objectFit = 'contain';
+    img.style.objectPosition = 'left center';
+  };
+
   const installStableSideRenderer = () => {
     if (typeof sides === 'undefined' || typeof sideOrder === 'undefined' || typeof selectedSides === 'undefined') return;
 
@@ -89,6 +100,7 @@
 
   const loadApp = () => {
     if (!window.BuffetEngine) throw new Error('BuffetEngine must be loaded before buffet-app.js');
+    reserveBrandLogoSpace();
     installStableSideRenderer();
     if (customElements.get('meatfest-buffet')) { mount(); return; }
     if (document.querySelector('script[data-meatfest-buffet-app]')) return;
@@ -96,5 +108,5 @@
   };
 
   ready(loadApp);
-  window.addEventListener('load', installStableSideRenderer, { once: true });
+  window.addEventListener('load', () => { reserveBrandLogoSpace(); installStableSideRenderer(); }, { once: true });
 })();
