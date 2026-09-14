@@ -26,7 +26,7 @@
 
     const bindCard = (card) => {
       if (card._meatfestSideBound) return;
-      card.addEventListener('click', () => toggleSide(card));
+      card.onclick = () => toggleSide(card);
       card._meatfestSideBound = true;
     };
 
