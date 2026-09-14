@@ -1,28 +1,10 @@
 from pathlib import Path
 
 p=Path('public/buffet-ui.js'); s=p.read_text(encoding='utf-8')
-needle="window.renderSideCards = renderStableSideCards;"
-replacement=needle+"\nwindow.addEventListener('meatfest:core-state-changed',()=>renderStableSideCards());"
-if "meatfest:core-state-changed" not in s:
-    if needle not in s: raise SystemExit('buffet-ui owner insertion point missing')
-    s=s.replace(needle,replacement,1)
-needle2="window.renderSideCards?.();window.calcSides?.();window.save?.();"
-replacement2=needle2+"window.dispatchEvent(new CustomEvent('meatfest:core-state-changed'));"
-if s.count(needle2)!=1: raise SystemExit(f'expected one bread core bridge, found {s.count(needle2)}')
-# no change to buffet-ui toggle here; its existing toggle is patched below
-s=s.replace(needle2,replacement2,1)
-p.write_text(s,encoding='utf-8')
-
-p=Path('public/buffet-ui.js'); s=p.read_text(encoding='utf-8')
-needle3="window.calcSides();window.save();"
-if needle3 in s and "window.dispatchEvent(new CustomEvent('meatfest:core-state-changed'));" not in s.split(needle3)[0][-500:]:
-    s=s.replace(needle3,needle3+"window.dispatchEvent(new CustomEvent('meatfest:core-state-changed'));",1)
-else:
-    # stable owner may use optional chaining in current source
-    needle4="window.calcSides?.();window.save?.();"
-    if s.count(needle4)!=1: raise SystemExit('stable side toggle bridge insertion point missing')
-    if "meatfest:core-state-changed" not in s.split(needle4)[0][-500:]:
-        s=s.replace(needle4,needle4+"window.dispatchEvent(new CustomEvent('meatfest:core-state-changed'));",1)
+needle="window.renderSideCards();\n      calcSides();\n      save();"
+replacement=needle+"\n      window.dispatchEvent(new CustomEvent('meatfest:core-state-changed'));"
+if s.count(needle)!=1: raise SystemExit(f'expected one stable side toggle, found {s.count(needle)}')
+s=s.replace(needle,replacement,1)
 p.write_text(s,encoding='utf-8')
 
 p=Path('public/buffet-app.js'); s=p.read_text(encoding='utf-8')
