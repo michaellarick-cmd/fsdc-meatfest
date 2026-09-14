@@ -4,11 +4,11 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 const engine=fs.readFileSync(new URL('../public/buffet-engine.js',import.meta.url),'utf8');
-const layout=fs.readFileSync(new URL('../public/buffet-layout.js',import.meta.url),'utf8');
+const allocation=fs.readFileSync(new URL('../public/buffet-allocation.js',import.meta.url),'utf8');
 const document={getElementById:()=>null,querySelector:()=>null,querySelectorAll:()=>[]};
 const window={BuffetEngine:null,buildSummary:null};
 const context={window,document,globalThis:{},requestAnimationFrame:fn=>fn(),setTimeout:()=>0,MutationObserver:class{observe(){}disconnect(){}}};
-vm.runInNewContext(engine,context);window.BuffetEngine=context.globalThis.BuffetEngine;vm.runInNewContext(layout,context);
+vm.runInNewContext(engine,context);window.BuffetEngine=context.globalThis.BuffetEngine;vm.runInNewContext(allocation,context);
 const A=window.BuffetAllocation,B=window.BuffetEngine;
 function fullMenu(){return B.plan({eaters:44,proteinKeys:['chicken','pork','pmbe','ribs','brisket','brats'],sideIds:['cucumber','coleslaw','corn','mac','beans','sauerkraut','cauli'],breadIds:['hawaiian'],condimentIds:['bbqSauce','pickles','mustard'],dessertIds:[]})}
 function itemNames(seg){return seg.items.flatMap(g=>g.items).map(x=>x.name||x.side?.name||x.bread?.name||x.item?.name||x.id)}
