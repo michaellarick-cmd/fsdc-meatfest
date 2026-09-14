@@ -1,7 +1,7 @@
 /* FSDC Meatfest — Buffet application. One state owner, one calculation pipeline, one renderer. */
 (() => {
   const STORAGE_KEY='mfBuffet18';
-  const WORKER_URL='/buffet-worker.js?v=4';
+  const WORKER_URL='/buffet-worker.js?v=5';
   const BREAD_TO_SIDE=Object.freeze({hawaiian:'rolls',cornbread:'cornbread'});
   const SIDE_ROWS=Object.freeze(['asparagus','beans','broccoli','cauli','slaw','collards','corn','cucumber','greenbeans','mac','pastasalad','potatosalad','kraut','hawaiian','cornbread']);
   const SUPPLEMENTAL=Object.freeze([['burgers','Burgers'],['hotdogs','Hot Dogs'],['brats','Grilling Brats']]);
@@ -55,7 +55,7 @@
       super();
       this.attachShadow({mode:'open'});
       this.state=readState();this.state.breadIds=coreBreadIds();
-      this.worker=null;this.busy=false;this.pending=null;this.revision=0;this.appliedRevision=0;this.refs={};this.visibilityObserver=null;this.planStarted=false;
+      this.worker=null;this.busy=false;this.pending=null;this.revision=0;this.appliedRevision=0;this.refs={};this.planStarted=false;
       this._coreStateChanged=()=>{
         this.state.breadIds=coreBreadIds();
         this.syncControls();
@@ -70,16 +70,15 @@
       this.shadowRoot.append(this.styles(),this.shell());
       this.bind();
       this.syncControls();
-      this.visibilityObserver=new IntersectionObserver(entries=>{
-        if(entries.some(entry=>entry.isIntersecting)){
-          this.planStarted=true;
-          this.requestPlan();
-        }
-      },{threshold:0,rootMargin:'240px 0px'});
-      this.visibilityObserver.observe(this);
+      // Do not gate the first calculation on viewport visibility. The Buffet is
+      // part of the page's persistent layout, and lazy visibility scheduling can
+      // race with scrolling and make the service/layout regions appear blank.
+      // Calculate immediately; subsequent calculations remain state-change driven.
+      this.planStarted=true;
+      this.requestPlan();
     }
 
-    disconnectedCallback(){window.removeEventListener('meatfest:core-state-changed',this._coreStateChanged);this.visibilityObserver?.disconnect();this.visibilityObserver=null;this.worker?.terminate();this.worker=null;}
+    disconnectedCallback(){window.removeEventListener('meatfest:core-state-changed',this._coreStateChanged);this.worker?.terminate();this.worker=null;}
 
     styles(){return el('style',{text:`
       :host{display:block;margin:11px 0;color:var(--text,#f5f2e9);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -95,10 +94,10 @@
       const grill=this.makeSection(serviceCard,'supplemental','SUPPLEMENTAL GRILLING'),bread=this.makeSection(serviceCard,'bread','GENERAL BREAD / BAKERY'),sausage=this.makeSection(serviceCard,'sausage','SAUSAGE SERVICE'),condiment=this.makeSection(serviceCard,'condiments','CONDIMENTS'),dessert=this.makeSection(serviceCard,'desserts','DESSERTS'),service=this.makeSection(serviceCard,'service','SERVICE QUANTITIES','Calculated from the current Meatfest plan and Buffet selections.');
       this.refs.grill=grill;this.refs.bread=bread;this.refs.sausage=sausage;this.refs.condiment=condiment;this.refs.dessert=dessert;this.refs.service=service;
       const rows=new Map();for(const id of SIDE_ROWS){const row=el('div',{class:'row',dataset:{row:id}}),name=el('div'),title=el('b'),note=el('small'),qty=el('b',{class:'qty'});name.append(title,note);row.append(name,qty);service.append(row);rows.set(id,{row,name:title,note,qty})}this.refs.rows=rows;
-      this.refs.dessertSummary=el('div',{class:'dessertSummary',text:'Scroll to Buffet to calculate service quantities.'});dessert.append(this.refs.dessertSummary);
+      this.refs.dessertSummary=el('div',{class:'dessertSummary',text:'Calculating service quantities…'});dessert.append(this.refs.dessertSummary);
       const load=el('label',{class:'load',text:'Dessert load '});this.refs.load=el('select',{id:'mfDessertLoad'});for(const value of ['light','moderate','heavy'])this.refs.load.append(el('option',{value,text:value[0].toUpperCase()+value.slice(1)}));load.append(this.refs.load);dessert.append(load);
       const layoutCard=el('section',{class:'card',id:'buffetLayoutCard'});layoutCard.append(el('h2',{text:'7. Buffet Table Layout'}),el('p',{class:'note',text:'Canonical Meatfest geometry: a U-shaped main buffet using three 6\' tables plus one 4\' table. Dessert remains a separate 4\' station.'}));
-      const layout=this.makeSection(layoutCard,'layout','TABLE-BY-TABLE SETUP'),tableRefs=[];for(let i=1;i<=8;i++){const table=el('div',{class:'table',dataset:{table:String(i)}}),head=el('b',{text:`Table ${i} — waiting for plan`}),bar=el('div',{class:'bar'}),fill=el('div',{class:'fill'}),items=el('div',{class:'items',text:'Waiting for calculation…'});bar.append(fill);table.append(head,bar,items);layout.append(table);tableRefs.push({table,head,fill,items})}const overflow=el('div',{class:'overflow',text:'No overflow'});layoutCard.append(overflow);this.refs.layout={section:layout,rows:tableRefs,overflow};
+      const layout=this.makeSection(layoutCard,'layout','TABLE-BY-TABLE SETUP'),tableRefs=[];for(let i=1;i<=8;i++){const table=el('div',{class:'table',dataset:{table:String(i)}}),head=el('b',{text:`Table ${i} — calculating…`}),bar=el('div',{class:'bar'}),fill=el('div',{class:'fill'}),items=el('div',{class:'items',text:'Calculating…'});bar.append(fill);table.append(head,bar,items);layout.append(table);tableRefs.push({table,head,fill,items})}const overflow=el('div',{class:'overflow',text:'Calculating overflow…'});layoutCard.append(overflow);this.refs.layout={section:layout,rows:tableRefs,overflow};
       const fragment=document.createDocumentFragment();fragment.append(serviceCard,layoutCard);return fragment;
     }
 
@@ -124,5 +123,5 @@
   }
 
   if(!customElements.get('meatfest-buffet'))customElements.define('meatfest-buffet',MeatfestBuffet);
-  window.MeatfestBuffet=Object.freeze({version:4});
+  window.MeatfestBuffet=Object.freeze({version:5});
 })();
