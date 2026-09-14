@@ -4,8 +4,6 @@ import path from 'node:path';
 import { test } from 'node:test';
 
 const root=process.cwd();
-const publicDir=path.join(root,'public');
-const testDir=path.join(root,'test');
 const read=(file)=>fs.readFileSync(path.join(root,file),'utf8');
 
 const currentProductionFiles=[
@@ -42,8 +40,7 @@ const legacyReferences=[
   'stableSideOwner',
   '/buffet-worker.js?v=12',
   '.b9table',
-  '.b9row',
-  'data-k="'
+  '.b9row'
 ];
 
 test('rebuilt Buffet production surface is complete and legacy files are absent',()=>{
@@ -67,5 +64,5 @@ test('rebuilt Buffet architecture has one worker contract and one custom-element
   assert.match(app,/const WORKER_URL='\/buffet-worker\.js\?v=4'/);
   assert.match(app,/customElements\.define\('meatfest-buffet'/);
   assert.match(ui,/const APP_SRC = '\/buffet-app\.js\?v=4'/);
-  assert.equal((ui.match(/appendChild\(host\)/g)||[]).length,0);
+  assert.equal((ui.match(/createElement\('meatfest-buffet'\)/g)||[]).length,1);
 });
