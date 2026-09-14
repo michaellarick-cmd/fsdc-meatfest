@@ -81,4 +81,5 @@
   };
 
   ready(loadApp);
+  window.addEventListener('load', installStableSideRenderer, { once: true });
 })();
