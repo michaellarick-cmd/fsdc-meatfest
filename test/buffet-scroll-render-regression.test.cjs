@@ -3,6 +3,7 @@ const LIVE_URL = process.env.MEATFEST_LIVE_URL || 'https://fsdc-meatfest.michael
 const BROWSER_NAME = process.env.MEATFEST_BROWSER || 'chromium';
 const VIEWPORT_HEIGHT = 844;
 const fail = message => { throw new Error(message); };
+const labels = buttons => buttons.map(b=>b.textContent.trim().replace(/^✓\s*/,''));
 
 async function runMobile(browser) {
   const page=await browser.newPage({viewport:{width:390,height:VIEWPORT_HEIGHT},deviceScaleFactor:2,isMobile:true});
@@ -53,12 +54,12 @@ async function runDesktop(browser) {
     await page.locator('meatfest-buffet #buffetServiceCard').waitFor({state:'attached',timeout:30000});
     await page.locator('meatfest-buffet #buffetLayoutCard').waitFor({state:'attached',timeout:30000});
     await page.waitForFunction(()=>{const root=document.querySelector('meatfest-buffet')?.shadowRoot;const h=root?.querySelector('[data-mf-section="layout"] .table b');return !!h&&!/waiting for plan/.test(h.textContent||'')},{timeout:30000});
-    const initial=await page.evaluate(()=>{const el=document.querySelector('meatfest-buffet');const root=el.shadowRoot;return{y:scrollY,h:document.documentElement.scrollHeight,version:window.MeatfestBuffet?.version,app:performance.getEntriesByType('resource').filter(x=>x.name.includes('buffet-app.js')||x.name.includes('buffet-ui.js')).map(x=>x.name),host:el.isConnected,pressed:[...root.querySelectorAll('button[data-kind]')].filter(b=>b.dataset.kind!=='sausage'&&b.getAttribute('aria-pressed')==='true').map(b=>b.textContent.trim()),buttons:[...root.querySelectorAll('button[data-kind]')].map(b=>({kind:b.dataset.kind,id:b.dataset.id||b.getAttribute('data-id'),label:b.textContent.trim(),pressed:b.getAttribute('aria-pressed')})),trace:window.__mfTrace}});
+    const initial=await page.evaluate(()=>{const el=document.querySelector('meatfest-buffet');const root=el.shadowRoot;return{y:scrollY,h:document.documentElement.scrollHeight,version:window.MeatfestBuffet?.version,app:performance.getEntriesByType('resource').filter(x=>x.name.includes('buffet-app.js')||x.name.includes('buffet-ui.js')).map(x=>x.name),host:el.isConnected,pressed:[...root.querySelectorAll('button[data-kind]')].filter(b=>b.dataset.kind!=='sausage'&&b.getAttribute('aria-pressed')==='true').map(b=>b.textContent.trim().replace(/^✓\s*/,'')),buttons:[...root.querySelectorAll('button[data-kind]')].map(b=>({kind:b.dataset.kind,id:b.dataset.id||b.getAttribute('data-id'),label:b.textContent.trim(),pressed:b.getAttribute('aria-pressed')})),trace:window.__mfTrace}});
     if(initial.version!==5)fail(`desktop: wrong Buffet version ${initial.version}`);
     if(!initial.app.some(x=>x.includes('buffet-app.js?v=5')))fail(`desktop: buffet-app.js?v=5 was not loaded: ${JSON.stringify(initial.app)}`);
     if(initial.pressed.length)fail(`desktop: clean profile still has persisted Buffet selections: ${JSON.stringify(initial.pressed)}`);
     const button=(kind,label)=>page.locator(`meatfest-buffet button[data-kind="${kind}"]`).filter({hasText:label}).first();
-    const state=()=>page.evaluate(()=>{const host=document.querySelector('meatfest-buffet');const root=host?.shadowRoot;return{y:scrollY,h:document.documentElement.scrollHeight,hostConnected:!!host?.isConnected,pressed:[...root.querySelectorAll('button[data-kind]')].filter(b=>b.getAttribute('aria-pressed')==='true').map(b=>b.textContent.trim()),rows:root?.querySelectorAll('[data-mf-section="service"] .row').length||0,tables:root?.querySelectorAll('[data-mf-section="layout"] .table').length||0,trace:{...window.__mfTrace}}});
+    const state=()=>page.evaluate(()=>{const host=document.querySelector('meatfest-buffet');const root=host?.shadowRoot;return{y:scrollY,h:document.documentElement.scrollHeight,hostConnected:!!host?.isConnected,pressed:[...root.querySelectorAll('button[data-kind]')].filter(b=>b.getAttribute('aria-pressed')==='true').map(b=>b.textContent.trim().replace(/^✓\s*/,'')),rows:root?.querySelectorAll('[data-mf-section="service"] .row').length||0,tables:root?.querySelectorAll('[data-mf-section="layout"] .table').length||0,trace:{...window.__mfTrace}}});
     await page.evaluate(()=>window.scrollTo(0,Math.max(0,document.documentElement.scrollHeight*.35)));await page.waitForTimeout(100);
     const beforeSelect=await state();
     await button('supplemental','Burgers').click();
