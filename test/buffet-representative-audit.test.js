@@ -4,11 +4,11 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 const engine=fs.readFileSync(new URL('../public/buffet-engine.js',import.meta.url),'utf8');
-const layout=fs.readFileSync(new URL('../public/buffet-layout.js',import.meta.url),'utf8');
+const allocation=fs.readFileSync(new URL('../public/buffet-allocation.js',import.meta.url),'utf8');
 const document={getElementById:()=>null,querySelector:()=>null,querySelectorAll:()=>[]};
 const window={BuffetEngine:null,buildSummary:null};
 const context={window,document,globalThis:{},requestAnimationFrame:fn=>fn(),setTimeout:()=>0,MutationObserver:class{observe(){}disconnect(){}}};
-vm.runInNewContext(engine,context);window.BuffetEngine=context.globalThis.BuffetEngine;vm.runInNewContext(layout,context);
+vm.runInNewContext(engine,context);window.BuffetEngine=context.globalThis.BuffetEngine;vm.runInNewContext(allocation,context);
 const B=window.BuffetEngine;
 
 const STATION_RANK={entry:0,cold:0,vegetable:1,starch:1,core:2,specialty:2,bread:3,finish:3};
@@ -35,21 +35,11 @@ function audit(name,input){
 }
 
 const menus=[
-  ['small menu / 20 eaters',{
-    eaters:20,proteinKeys:['pork'],sideIds:['coleslaw','beans','corn'],breadIds:['hawaiian'],condimentIds:['bbqSauce'],dessertIds:[]
-  }],
-  ['normal Meatfest / 32 eaters',{
-    eaters:32,proteinKeys:['chicken','pork','pmbe','brisket'],sideIds:['cucumber','coleslaw','mac','collards','beans'],breadIds:['hawaiian'],condimentIds:['bbqSauce','pickles'],dessertIds:[]
-  }],
-  ['full Meatfest / 44 eaters',{
-    eaters:44,proteinKeys:['chicken','pork','pmbe','ribs','brisket','brats'],sideIds:['cucumber','coleslaw','corn','mac','beans','sauerkraut','cauli'],breadIds:['hawaiian'],condimentIds:['bbqSauce','pickles','mustard'],dessertIds:[]
-  }],
-  ['normal menu + supplemental grilling / 32 eaters',{
-    eaters:32,proteinKeys:['chicken','pork','brisket'],sideIds:['coleslaw','mac','cucumber'],breadIds:['hawaiian','burgerBuns','hotDogBuns','bratBuns'],supplementalIds:['burgers','hotdogs','brats'],condimentIds:['bbqSauce','mustard'],dessertIds:[]
-  }],
-  ['Mac + Cauli + fresh sides / 44 eaters',{
-    eaters:44,proteinKeys:['pork','pmbe','brisket'],sideIds:['mac','cauli','coleslaw','cucumber','collards'],breadIds:['hawaiian'],condimentIds:['bbqSauce','pickles'],dessertIds:[]
-  }]
+  ['small menu / 20 eaters',{eaters:20,proteinKeys:['pork'],sideIds:['coleslaw','beans','corn'],breadIds:['hawaiian'],condimentIds:['bbqSauce'],dessertIds:[]}],
+  ['normal Meatfest / 32 eaters',{eaters:32,proteinKeys:['chicken','pork','pmbe','brisket'],sideIds:['cucumber','coleslaw','mac','collards','beans'],breadIds:['hawaiian'],condimentIds:['bbqSauce','pickles'],dessertIds:[]}],
+  ['full Meatfest / 44 eaters',{eaters:44,proteinKeys:['chicken','pork','pmbe','ribs','brisket','brats'],sideIds:['cucumber','coleslaw','corn','mac','beans','sauerkraut','cauli'],breadIds:['hawaiian'],condimentIds:['bbqSauce','pickles','mustard'],dessertIds:[]}],
+  ['normal menu + supplemental grilling / 32 eaters',{eaters:32,proteinKeys:['chicken','pork','brisket'],sideIds:['coleslaw','mac','cucumber'],breadIds:['hawaiian','burgerBuns','hotDogBuns','bratBuns'],supplementalIds:['burgers','hotdogs','brats'],condimentIds:['bbqSauce','mustard'],dessertIds:[]}],
+  ['Mac + Cauli + fresh sides / 44 eaters',{eaters:44,proteinKeys:['pork','pmbe','brisket'],sideIds:['mac','cauli','coleslaw','cucumber','collards'],breadIds:['hawaiian'],condimentIds:['bbqSauce','pickles'],dessertIds:[]}
 ];
 
 for(const [name,input] of menus)test(`representative buffet audit: ${name}`,()=>{
