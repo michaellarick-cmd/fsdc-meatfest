@@ -56,7 +56,7 @@ const fail = message => { throw new Error(message); };
       buffetCornbread:root?.querySelector('button[data-kind="bread"][data-id="cornbread"]')?.getAttribute('aria-pressed'),
       bbqSauce:root?.querySelector('button[data-kind="condiment"][data-id="bbqSauce"]')?.getAttribute('aria-pressed'),
       scrollHeight:document.documentElement.scrollHeight,
-      tables:root?.querySelectorAll('#buffetLayoutDynamic .table').length||0,
+      tables:root?.querySelectorAll('[data-mf-section="layout"] .table').length||0,
       dynamicRows:root?.querySelectorAll('#buffetServiceCard .row').length||0
     }});
     if(!health.rolls||!health.cornbread||health.buffetRolls!=='true'||health.buffetCornbread!=='true'||health.bbqSauce!=='true')fail(`${BROWSER_NAME}: state did not survive real touch sequence: ${JSON.stringify(health)}`);
