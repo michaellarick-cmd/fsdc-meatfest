@@ -11,8 +11,8 @@ const headers=await readFile(new URL('../public/_headers',import.meta.url),'utf8
 const compactWhitespace=text=>text.replace(/\s+/g,'');
 
 test('Buffet is a self-contained application component',()=>{
-  assert.match(entry,/buffet-app\.js\?v=5/);assert.match(entry,/meatfest-buffet/);assert.match(entry,/customElements\.get\('meatfest-buffet'\)/);assert.match(entry,/insertBefore\(host, footer\)/);assert.match(entry,/wrap\.append\(host\)/);assert.doesNotMatch(entry,/requestAnimationFrame|setTimeout|setInterval|scrollTo\(|scrollBy\(/);
-  assert.match(app,/customElements\.define\('meatfest-buffet'/);assert.match(app,/attachShadow\(\{mode:'open'\}\)/);assert.match(app,/const STORAGE_KEY='mfBuffet18'/);assert.match(app,/const WORKER_URL='\/buffet-worker\.js\?v=5'/);assert.match(app,/window\.buildSummary\(\)/);assert.match(app,/setCoreBread/);assert.doesNotMatch(app,/new IntersectionObserver/);assert.doesNotMatch(app,/addEventListener\('scroll'/);assert.doesNotMatch(app,/MutationObserver|scrollTo\(|scrollBy\(/);assert.doesNotMatch(app,/\.innerHTML\s*=/);assert.doesNotMatch(core,/function renderSideCards\s*\(/);assert.doesNotMatch(core,/mainSideCards\"\)\.innerHTML|accompSideCards\"\)\.innerHTML/);assert.doesNotMatch(core,/querySelectorAll\(\"\[data-side\]\"/);
+  assert.match(entry,/buffet-app\.js\?v=6/);assert.match(entry,/meatfest-buffet/);assert.match(entry,/customElements\.get\('meatfest-buffet'\)/);assert.match(entry,/insertBefore\(host, footer\)/);assert.match(entry,/wrap\.append\(host\)/);assert.doesNotMatch(entry,/requestAnimationFrame|setTimeout|setInterval|scrollTo\(|scrollBy\(/);
+  assert.match(app,/customElements\.define\('meatfest-buffet'/);assert.match(app,/attachShadow\(\{mode:'open'\}\)/);assert.match(app,/const STORAGE_KEY='mfBuffet18'/);assert.match(app,/const WORKER_URL='\/buffet-worker\.js\?v=6'/);assert.match(app,/window\.buildSummary\(\)/);assert.doesNotMatch(app,/setCoreBread|_coreStateChanged|const BREAD_TO_SIDE|const BREAD=/);assert.match(app,/breadIds:coreBreadIds\(\)/);assert.doesNotMatch(app,/new IntersectionObserver/);assert.doesNotMatch(app,/addEventListener\('scroll'/);assert.doesNotMatch(app,/MutationObserver|scrollTo\(|scrollBy\(/);assert.doesNotMatch(app,/\.innerHTML\s*=/);assert.doesNotMatch(core,/function renderSideCards\s*\(/);assert.doesNotMatch(core,/mainSideCards\"\)\.innerHTML|accompSideCards\"\)\.innerHTML/);assert.doesNotMatch(core,/querySelectorAll\(\"\[data-side\]\"/);
 });
 
 test('Buffet calculates immediately instead of racing viewport visibility',()=>{
@@ -23,14 +23,17 @@ test('Buffet calculates immediately instead of racing viewport visibility',()=>{
   assert.doesNotMatch(app,/visibilityObserver|IntersectionObserver|isIntersecting/);
 });
 
-test('Buffet core-state events flow from core into Buffet without mutating core twice',()=>{
+test('Buffet bread state has one owner and remains derived for the engine boundary',()=>{
   const compact=compactWhitespace(app);
-  assert.match(compact,/this\._coreStateChanged=\(\)=>\{this\.state\.breadIds=coreBreadIds\(\);this\.syncControls\(\);if\(this\.planStarted\)this\.requestPlan\(\);\}/);
-  assert.doesNotMatch(compact,/this\._coreStateChanged=[^}]*this\.setCoreBread/);
+  assert.doesNotMatch(compact,/this\.state\.breadIds/);
+  assert.doesNotMatch(compact,/this\._coreStateChanged/);
+  assert.doesNotMatch(compact,/setCoreBread/);
+  assert.doesNotMatch(compact,/\['bread',/);
+  assert.match(compact,/breadIds:coreBreadIds\(\)/);
 });
 
 test('Buffet has one state-to-view pipeline and persistent section owners',()=>{
-  for(const name of ['supplemental','bread','sausage','condiments','desserts','service','layout'])assert.match(app,new RegExp(`'${name}'`));
+  for(const name of ['supplemental','sausage','condiments','desserts','service','layout'])assert.match(app,new RegExp(`'${name}'`));
   assert.match(app,/this\.state=/);assert.match(app,/this\.input\(\)/);assert.match(app,/this\.requestPlan\(\)/);assert.match(app,/this\.renderResult\(message\.result\)/);assert.match(app,/const rows=new Map/);assert.match(app,/this\.refs\.rows=rows/);assert.match(app,/this\.refs\.layout=\{section:layout,rows:tableRefs,overflow\}/);assert.match(app,/revision:\+\+this\.revision/);assert.match(app,/if\(this\.pending\)this\.dispatchPending\(\)/);assert.doesNotMatch(app,/setTimeout\(|setInterval\(|requestAnimationFrame\(/);
 });
 
