@@ -30,7 +30,6 @@ function audit(name,input){
   }
   const accounted=a.segments.reduce((s,x)=>s+x.used,0)+a.overflowGroups.reduce((s,g)=>s+groupWidth(g),0);
   assert.equal(a.linearRequired,accounted,`${name}: physical linear inches are not fully accounted for`);
-  console.log(JSON.stringify({name,required:a.linearRequired,provided:a.linearProvided,overflowIn:a.overflowIn,recommended:Array.from(a.recommendedTables),overflowItems:a.overflowItems,tables:a.segments.map(s=>({table:s.table,length:s.length,used:s.used,stations:Array.from(s.stations),items:names(s)}))},null,2));
   return p;
 }
 
@@ -39,7 +38,7 @@ const menus=[
   ['normal Meatfest / 32 eaters',{eaters:32,proteinKeys:['chicken','pork','pmbe','brisket'],sideIds:['cucumber','coleslaw','mac','collards','beans'],breadIds:['hawaiian'],condimentIds:['bbqSauce','pickles'],dessertIds:[]}],
   ['full Meatfest / 44 eaters',{eaters:44,proteinKeys:['chicken','pork','pmbe','ribs','brisket','brats'],sideIds:['cucumber','coleslaw','corn','mac','beans','sauerkraut','cauli'],breadIds:['hawaiian'],condimentIds:['bbqSauce','pickles','mustard'],dessertIds:[]}],
   ['normal menu + supplemental grilling / 32 eaters',{eaters:32,proteinKeys:['chicken','pork','brisket'],sideIds:['coleslaw','mac','cucumber'],breadIds:['hawaiian','burgerBuns','hotDogBuns','bratBuns'],supplementalIds:['burgers','hotdogs','brats'],condimentIds:['bbqSauce','mustard'],dessertIds:[]}],
-  ['Mac + Cauli + fresh sides / 44 eaters',{eaters:44,proteinKeys:['pork','pmbe','brisket'],sideIds:['mac','cauli','coleslaw','cucumber','collards'],breadIds:['hawaiian'],condimentIds:['bbqSauce','pickles'],dessertIds:[]}
+  ['Mac + Cauli + fresh sides / 44 eaters',{eaters:44,proteinKeys:['pork','pmbe','brisket'],sideIds:['mac','cauli','coleslaw','cucumber','collards'],breadIds:['hawaiian'],condimentIds:['bbqSauce','pickles'],dessertIds:[]}]
 ];
 
 for(const [name,input] of menus)test(`representative buffet audit: ${name}`,()=>{
