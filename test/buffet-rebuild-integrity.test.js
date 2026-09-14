@@ -63,9 +63,9 @@ test('rebuilt Buffet architecture has one worker contract and one custom-element
   const app=read('public/buffet-app.js');
   const ui=read('public/buffet-ui.js');
   assert.equal((app.match(/new Worker\(/g)||[]).length,1);
-  assert.match(app,/const WORKER_URL='\/buffet-worker\.js\?v=5'/);
+  assert.match(app,/const WORKER_URL='\/buffet-worker\.js\?v=6'/);
   assert.match(app,/customElements\.define\('meatfest-buffet'/);
-  assert.match(ui,/const APP_SRC = '\/buffet-app\.js\?v=5'/);
+  assert.match(ui,/const APP_SRC = '\/buffet-app\.js\?v=6'/);
   assert.equal((ui.match(/createElement\('meatfest-buffet'\)/g)||[]).length,1);
 });
 
