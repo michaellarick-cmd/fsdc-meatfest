@@ -4,7 +4,7 @@
    Side cards use the same persistent-UI rule: keyed DOM nodes are updated in place.
 */
 (() => {
-  const APP_SRC = '/buffet-app.js?v=4';
+  const APP_SRC = '/buffet-app.js?v=5';
 
   const ready = (fn) => {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn, { once: true });
